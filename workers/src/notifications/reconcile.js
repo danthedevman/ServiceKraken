@@ -1,0 +1,239 @@
+import { workspaceSettings } from '@servicekraken/shared/domain/workspace-settings';
+import { writeAudit } from '@servicekraken/shared/domain/audit';
+import { ObjectId } from 'mongodb';
+
+import { onCall } from '@servicekraken/shared/domain/on-call';
+import { serviceHealth } from '@servicekraken/shared/domain/service-health';
+import { BUILTIN_FIELDS } from '@servicekraken/shared/forms/schema';
+
+/** Reconcile monitor rollups and write durable, idempotent notification records. */
+export async function reconcileOperations(db, queue) {
+  for await (const catalog of db.collection('catalogs').find({})) {
+    const owner = await db
+      .collection('users')
+      .findOne({ _id: catalog._id }, { projection: { workspaceSettings: 1 } });
+    const preferences = workspaceSettings(owner?.workspaceSettings);
+    const now = new Date();
+    await db
+      .collection('operations')
+      .updateOne(
+        { _id: catalog._id },
+        { $setOnInsert: { revision: 0, fields: BUILTIN_FIELDS, shifts: [], integrations: [] } },
+        { upsert: true },
+      );
+    // One short database-only reconciliation per workspace; outbound calls happen separately.
+    const lock = await db.collection('operations').findOneAndUpdate(
+      {
+        _id: catalog._id,
+        $or: [{ reconcileUntil: { $lte: now } }, { reconcileUntil: { $exists: false } }],
+      },
+      { $set: { reconcileUntil: new Date(+now + 60000) } },
+      { returnDocument: 'after' },
+    );
+    if (!lock) continue;
+    try {
+      const monitors = await db.collection('monitors').find({ userId: catalog._id }).toArray();
+      const health = serviceHealth(catalog.services, monitors);
+      for (const service of catalog.services.filter((service) => !service.demoBatchId)) {
+        const state = health.get(service.id);
+        const existing = await db
+          .collection('incidents')
+          .findOne({ workspaceId: catalog._id, serviceId: service.id, activeAutomatic: true });
+        if (state === 'down' && !existing && preferences.automaticIncidents) {
+          try {
+            const created = await db.collection('incidents').insertOne({
+              _id: new ObjectId(),
+              workspaceId: catalog._id,
+              serviceId: service.id,
+              serviceName: service.name,
+              title: `${service.name} is impacted`,
+              description: 'One or more monitors or service dependencies are down.',
+              severity: 'high',
+              status: 'open',
+              source: 'monitor',
+              createdBy: 'ServiceKraken',
+              updatedBy: 'ServiceKraken',
+              activeAutomatic: true,
+              fields: [],
+              custom: {},
+              assigneeId: onCall(lock.shifts, service.id, now),
+              createdAt: now,
+              updatedAt: now,
+              revision: 0,
+              timeline: [
+                {
+                  at: now,
+                  by: 'ServiceKraken',
+                  status: 'open',
+                  note: 'Confirmed failing monitor or dependency.',
+                },
+              ],
+            });
+            await writeAudit(db, {
+              workspaceId: catalog._id,
+              source: 'worker',
+              action: 'create',
+              recordType: 'incidents',
+              recordId: created.insertedId,
+              operation: 'Automatic incident creation',
+            });
+          } catch (error) {
+            if (error.code !== 11000) throw error;
+          }
+        } else if (state === 'up' && existing && preferences.automaticRecovery) {
+          const resolved = await db.collection('incidents').updateOne(
+            { _id: existing._id, activeAutomatic: true, revision: existing.revision },
+            {
+              $set: {
+                status: 'resolved',
+                statusOption: 'resolved',
+                statusLabel: 'Resolved',
+                activeAutomatic: false,
+                updatedAt: now,
+                updatedBy: 'ServiceKraken',
+                updatedById: null,
+                resolvedAt: now,
+                resolutionNotes: 'All monitors and dependencies recovered.',
+              },
+              $inc: { revision: 1 },
+              $push: {
+                timeline: {
+                  $each: [
+                    {
+                      at: now,
+                      by: 'ServiceKraken',
+                      status: 'resolved',
+                      note: 'All monitors and dependencies recovered.',
+                    },
+                  ],
+                  $slice: -200,
+                },
+              },
+            },
+          );
+          if (resolved.modifiedCount)
+            await writeAudit(db, {
+              workspaceId: catalog._id,
+              source: 'worker',
+              action: 'resolve',
+              recordType: 'incidents',
+              recordId: existing._id,
+              fields: 'status, resolutionNotes',
+              operation: 'Automatic recovery',
+            });
+        }
+      }
+      // A crash before these flags are saved is safe: each outbox key is deterministic.
+      for await (const incident of db.collection('incidents').find({
+        workspaceId: catalog._id,
+        demoBatchId: { $exists: false },
+        $or: [
+          { notifiedOpen: { $ne: true } },
+          { status: 'resolved', notifiedResolved: { $ne: true } },
+        ],
+      })) {
+        for (const event of ['impacted', 'recovered']) {
+          const flag = event === 'impacted' ? 'notifiedOpen' : 'notifiedResolved';
+          if (incident[flag] || (event === 'recovered' && incident.status !== 'resolved')) continue;
+          for (const integration of lock.integrations.filter(
+            (i) =>
+              !i.demoBatchId &&
+              i.enabled &&
+              (!i.serviceIds.length || i.serviceIds.includes(incident.serviceId)) &&
+              (event === 'impacted' || i.recovery),
+          )) {
+            const cycle = incident.resolutionCycle ?? 0;
+            const key = `${incident._id}-${event}-${integration.id}${cycle ? `-cycle${cycle}` : ''}`;
+            await db.collection('deliveries').updateOne(
+              { _id: key },
+              {
+                $setOnInsert: {
+                  workspaceId: catalog._id,
+                  incidentId: incident._id,
+                  integrationId: integration.id,
+                  integrationName: integration.name,
+                  resolutionCycle: cycle,
+                  event,
+                  status: 'pending',
+                  attempts: 0,
+                  createdAt: now,
+                  nextAttemptAt: now,
+                  onCallUserId: onCall(
+                    lock.shifts,
+                    incident.serviceId,
+                    event === 'impacted'
+                      ? (incident.reopenedAt ?? incident.createdAt)
+                      : incident.updatedAt,
+                  ),
+                },
+              },
+              { upsert: true },
+            );
+          }
+          await db
+            .collection('incidents')
+            .updateOne(
+              { _id: incident._id, revision: incident.revision },
+              { $set: { [flag]: true } },
+            );
+        }
+      }
+    } finally {
+      await db
+        .collection('operations')
+        .updateOne({ _id: catalog._id }, { $unset: { reconcileUntil: '' } });
+    }
+  }
+  // Comment insertion is the durable source; deterministic delivery IDs make retries safe.
+  for await (const entry of db
+    .collection('incidentComments')
+    .find({ kind: 'comment', demoBatchId: { $exists: false }, notificationsQueued: false })
+    .limit(200)) {
+    for (const recipientId of entry.recipientIds) {
+      const now = new Date();
+      await db.collection('deliveries').updateOne(
+        { _id: `comment-${entry._id}-${recipientId}` },
+        {
+          $setOnInsert: {
+            workspaceId: entry.workspaceId,
+            incidentId: entry.incidentId,
+            commentId: entry._id,
+            recipientId,
+            integrationName: 'Incident comment email',
+            event: 'comment',
+            status: 'pending',
+            attempts: 0,
+            createdAt: now,
+            nextAttemptAt: now,
+          },
+        },
+        { upsert: true },
+      );
+    }
+    await db
+      .collection('incidentComments')
+      .updateOne({ _id: entry._id }, { $set: { notificationsQueued: true } });
+  }
+  const now = new Date();
+  for await (const row of db
+    .collection('deliveries')
+    .find({
+      demoBatchId: { $exists: false },
+      status: 'pending',
+      nextAttemptAt: { $lte: now },
+      $or: [{ leaseUntil: { $exists: false } }, { leaseUntil: { $lte: now } }],
+    })
+    .limit(200)) {
+    await queue.add(
+      'deliver',
+      { id: row._id },
+      {
+        jobId: row._id,
+        removeOnComplete: true,
+        removeOnFail: 100,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+      },
+    );
+  }
+}

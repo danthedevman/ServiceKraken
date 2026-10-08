@@ -1,0 +1,127 @@
+import { statusRange } from '@servicekraken/shared/domain/status-range';
+import { catalog } from '../routes/services.js';
+
+/** Summarize operational state without treating absent or paused checks as healthy. */
+export function rollup(statuses) {
+  if (statuses.includes('down')) return 'down';
+  if (!statuses.length || statuses.some((status) => status !== 'up')) return 'unknown';
+  return 'up';
+}
+
+/** Build status-only output; public responses exclude URLs, headers, bodies, and account details.
+ * @param {import('mongodb').Db} db @param {import('mongodb').ObjectId} userId
+ * @param {Function} serializeMonitor @param {boolean} [publicView] @returns {Promise<object>}
+ */
+export async function statusData(db, userId, serializeMonitor, publicView = false, range = '30') {
+  const { start: since, end } = statusRange(range);
+  const until = new Date(end.getTime() + 86400000);
+  const [raw, data, recentDays, archivedDays] = await Promise.all([
+    db.collection('monitors').find({ userId }).sort({ name: 1 }).toArray(),
+    catalog(db, userId),
+    db
+      .collection('events')
+      .aggregate([
+        { $match: { userId, checkedAt: { $gte: since, $lt: until } } },
+        {
+          $group: {
+            _id: {
+              monitorId: '$monitorId',
+              day: { $dateToString: { format: '%Y-%m-%d', date: '$checkedAt', timezone: 'UTC' } },
+            },
+            total: { $sum: 1 },
+            up: { $sum: { $cond: [{ $eq: ['$status', 'up'] }, 1, 0] } },
+          },
+        },
+        { $sort: { '_id.day': 1 } },
+      ])
+      .toArray(),
+    db
+      .collection('statusDaily')
+      .find({
+        '_id.userId': userId,
+        '_id.day': { $gte: since.toISOString().slice(0, 10), $lte: end.toISOString().slice(0, 10) },
+      })
+      .toArray(),
+  ]);
+  const daily = new Map(archivedDays.map((day) => [`${day._id.monitorId}-${day._id.day}`, day]));
+  for (const day of recentDays) {
+    const key = `${day._id.monitorId}-${day._id.day}`;
+    if (!daily.has(key) || day.total >= daily.get(key).total) daily.set(key, day);
+  }
+  const days = [...daily.values()];
+  const monitors = raw.map((monitor) => {
+    const history = days
+      .filter((day) => day._id.monitorId.equals(monitor._id))
+      .map((day) => ({ day: day._id.day, total: day.total, up: day.up }));
+    const total = history.reduce((sum, day) => sum + day.total, 0);
+    const up = history.reduce((sum, day) => sum + day.up, 0);
+    const item = serializeMonitor(monitor);
+    // A concurrently removed service must never hide its monitors.
+    if (!data.services.some((service) => service.id === item.serviceId)) {
+      item.serviceId = null;
+      item.component = '';
+    }
+    const safe = publicView
+      ? {
+          id: item.id,
+          name: item.name,
+          serviceId: item.serviceId,
+          component: item.component,
+          status: item.status,
+          paused: item.paused,
+        }
+      : item;
+    return { ...safe, history, total, uptime: total ? (up / total) * 100 : null };
+  });
+  const byId = new Map(data.services.map((service) => [service.id, service]));
+  /** Collect dependency states once per root, remaining safe with legacy cyclic data. */
+  function states(serviceId, seen = new Set()) {
+    if (seen.has(serviceId)) return [];
+    seen.add(serviceId);
+    const service = byId.get(serviceId);
+    if (!service) return ['unknown'];
+    const own = monitors
+      .filter((monitor) => monitor.serviceId === serviceId)
+      .map((monitor) => monitor.status);
+    const children = service.dependencyIds.flatMap((dependency) => states(dependency, seen));
+    return own.length || children.length ? [...own, ...children] : ['unknown'];
+  }
+  const services = data.services.map((service) => ({
+    ...(publicView
+      ? {
+          id: service.id,
+          name: service.name,
+          description: service.description,
+          dependencyIds: service.dependencyIds,
+        }
+      : service),
+    status: rollup(states(service.id)),
+    message:
+      data.serviceMessages?.find(
+        (message) => message.serviceId === service.id && message.enabled,
+      ) ?? null,
+  }));
+  const collections = data.collections.map((collection) => ({
+    ...(publicView
+      ? { id: collection.id, name: collection.name, serviceIds: collection.serviceIds }
+      : collection),
+    status: rollup(
+      collection.serviceIds.map(
+        (serviceId) => services.find((service) => service.id === serviceId)?.status ?? 'unknown',
+      ),
+    ),
+  }));
+  const icon = await db
+    .collection('statusIcons')
+    .findOne({ _id: userId }, { projection: { updatedAt: 1 } });
+  return {
+    iconUrl: icon
+      ? `${publicView ? `/api/public/status/${data.publicToken}/icon` : '/api/status-settings/icon'}?v=${icon.updatedAt.getTime()}`
+      : null,
+    monitors,
+    services,
+    collections,
+    banner: data.banner?.enabled ? data.banner : null,
+    generatedAt: new Date(),
+  };
+}

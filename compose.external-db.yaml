@@ -1,0 +1,12 @@
+# For an already provisioned MongoDB or PostgreSQL server; configure DATABASE_PROVIDER and DATABASE_URL.
+services:
+  mongo:
+    profiles: [bundled-mongodb]
+  api:
+    depends_on: !reset {}
+  workers:
+    depends_on: !override
+      redis: { condition: service_healthy }
+  scheduler:
+    depends_on: !override
+      redis: { condition: service_healthy }

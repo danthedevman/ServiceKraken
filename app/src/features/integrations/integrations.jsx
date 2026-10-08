@@ -1,0 +1,286 @@
+import { api } from '../../data/api.js';
+import { writeApi } from '../../data/query-client.js';
+import { StateBadge } from '../../components/state-badge.jsx';
+import { IntegrationEditor } from './editor.jsx';
+import { providers } from '../../../../shared/integrations/providers.js';
+import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { displayValue } from '../../lib/display-value.js';
+import React, { useContext, useState } from 'react';
+import { AuthContext } from '../../auth/auth-context.js';
+import { useResource } from '../../data/use-resource.js';
+import { DataTable } from '../../components/data-table.jsx';
+import { Notice } from '../../components/forms/fields.jsx';
+import { newId } from '../../lib/identifiers.js';
+import { useSave } from '../../data/use-save.js';
+
+/** Admin integration settings and durable delivery history; secret values never return to the browser. */
+export function IntegrationsPage({ form = false }) {
+  const { id } = useParams(),
+    navigate = useNavigate(),
+    [params] = useSearchParams();
+  const { user } = useContext(AuthContext),
+    admin = user?.role === 'admin';
+  const config = useResource(admin ? '/integrations' : null),
+    services = useResource('/services'),
+    deliveries = useResource(null),
+    save = useSave();
+  const [formVersion, setFormVersion] = useState(0);
+  const [editingId, setEditingId] = useState(null);
+  const resetForm = () => {
+    setEditingId(null);
+    setFormVersion((value) => value + 1);
+  };
+  const [tab, setTab] = useState('catalog');
+  const toolbar = (
+    <nav aria-label="Integration lists" className="flex gap-2 px-6 py-2">
+      {['catalog', 'integrations', 'deliveries'].map((value) => (
+        <button
+          key={value}
+          className={`nav-link ${tab === value ? 'active' : ''}`}
+          aria-pressed={tab === value}
+          onClick={() => setTab(value)}
+        >
+          {value === 'catalog'
+            ? 'App catalog'
+            : value === 'integrations'
+              ? 'Configured apps'
+              : 'Recent deliveries'}
+        </button>
+      ))}
+    </nav>
+  );
+  if (!admin)
+    return (
+      <div className="space-y-6">
+        <h1 className="page-title">Integrations</h1>
+        <p>Workspace admin access is required.</p>
+      </div>
+    );
+  const edit = (item) => navigate(item.id ? `/integrations/${item.id}/edit` : '/integrations/new');
+  const item = config.data?.integrations.find((row) => row.id === id);
+  if (form || id) {
+    if (!config.data || !services.data) return <p role="status">Loading integration…</p>;
+    if (id && !item) return <p role="alert">Integration not found.</p>;
+    const initial = {
+      ...(item || {
+        id: newId(),
+        name: '',
+        type: providers.some((p) => p.id === params.get('provider'))
+          ? params.get('provider')
+          : 'email',
+        enabled: false,
+        recovery: true,
+        onCall: true,
+        serviceIds: [],
+      }),
+      recipients: Array.isArray(item?.recipients) ? item.recipients.join(', ') : '',
+      revision: config.data.revision,
+      url: '',
+      username: '',
+      password: '',
+      smtpHost: '',
+      smtpFrom: '',
+      smtpUser: '',
+      smtpPassword: '',
+      smtpPort: 587,
+      existing: !!item,
+    };
+    const editor = (
+      <IntegrationEditor
+        key={`${id || 'new'}-${formVersion}`}
+        initial={initial}
+        services={services.data.services}
+        close={id ? resetForm : () => navigate('/integrations')}
+        onSaved={(savedId) => {
+          resetForm();
+          navigate(`/integrations/${savedId}`);
+        }}
+        onDeleted={() => navigate('/integrations')}
+      />
+    );
+    return id ? (
+      <RecordWorkspace
+        item={item}
+        kind="integrations"
+        onEdit={editingId !== id ? () => setEditingId(id) : undefined}
+        sidebar={<RecordMetadata item={item} />}
+      >
+        {editingId === id ? (
+          editor
+        ) : (
+          <section className="record-details">
+            <dl className="grid gap-5 sm:grid-cols-2">
+              {[
+                ['Name', item.name],
+                [
+                  'Provider',
+                  providers.find((provider) => provider.id === item.type)?.name || item.type,
+                ],
+                ['Delivery', item.enabled ? 'Enabled' : 'Disabled'],
+                ['Recovery notifications', item.recovery ? 'Enabled' : 'Disabled'],
+                ['On-call recipients', item.onCall ? 'Enabled' : 'Disabled'],
+                ['Recipients', item.recipients?.join(', ') || 'None'],
+                [
+                  'Services',
+                  item.serviceIds?.length
+                    ? item.serviceIds
+                        .map(
+                          (serviceId) =>
+                            services.data.services.find((service) => service.id === serviceId)
+                              ?.name || 'Unavailable service',
+                        )
+                        .join(', ')
+                    : 'All services',
+                ],
+                [
+                  'Credentials',
+                  item.configured || item.smtpConfigured ? 'Configured' : 'Not configured',
+                ],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+      </RecordWorkspace>
+    ) : (
+      editor
+    );
+  }
+
+  const actions = (
+    <button
+      disabled={!config.data}
+      className="btn-primary"
+      onClick={() => navigate('/integrations/new')}
+    >
+      Add integration
+    </button>
+  );
+  return (
+    <div className="list-page">
+      <Notice error={config.error || deliveries.error || save.error} />
+      {tab === 'catalog' && (
+        <section className="overflow-y-auto p-6 space-y-6">
+          <h1 className="page-title">Integrations</h1>
+          {toolbar}
+          {['Communication', 'Ticketing'].map((category) => (
+            <section key={category} className="space-y-3">
+              <h2 className="text-lg font-semibold">{category}</h2>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {providers
+                  .filter((provider) => provider.category === category)
+                  .map((provider) => (
+                    <article key={provider.id} className="panel flex flex-col gap-3 p-5">
+                      <h3 className="font-semibold">{provider.name}</h3>
+                      <p className="flex-1 text-sm text-slate-500">{provider.description}</p>
+                      <button
+                        type="button"
+                        className="btn-secondary self-start"
+                        onClick={() => navigate(`/integrations/new?provider=${provider.id}`)}
+                      >
+                        Configure
+                      </button>
+                    </article>
+                  ))}
+              </div>
+            </section>
+          ))}
+        </section>
+      )}
+      {tab === 'integrations' && (
+        <DataTable
+          fullPage
+          loading={!config.data}
+          actions={actions}
+          toolbar={toolbar}
+          title="Integrations"
+          onRefresh={config.refresh}
+          onDeleteRow={async (row) => {
+            const current = await api('/integrations');
+            await writeApi(`/integrations/${row.id}`, {
+              method: 'DELETE',
+              body: { revision: current.revision },
+            });
+          }}
+          source="integrations"
+          filename="integrations.csv"
+          rowKey={(r) => r.id}
+          rows={config.data?.integrations ?? []}
+          columns={[
+            { key: 'name', label: 'Name', value: (r) => r.name },
+            { key: 'type', label: 'Provider', value: (r) => displayValue(r.type) },
+            { key: 'destination', label: 'Destination', value: (r) => r.destination },
+            {
+              key: 'enabled',
+              label: 'Enabled',
+              value: (r) => (r.enabled ? 'Yes' : 'No'),
+              render: (r) => <StateBadge status={r.enabled ? 'enabled' : 'disabled'} />,
+            },
+            {
+              key: 'actions',
+              label: 'Actions',
+              sortable: false,
+              value: () => '',
+              render: (r) => (
+                <button className="btn-secondary" onClick={() => edit(r)}>
+                  Configure
+                </button>
+              ),
+            },
+          ]}
+        />
+      )}
+      {tab === 'deliveries' && (
+        <DataTable
+          fullPage
+          loading={!deliveries.data}
+          actions={actions}
+          toolbar={toolbar}
+          title="Integrations"
+          description="Export includes all deliveries matching the current filters."
+          source="deliveries"
+          filename="integration-deliveries.csv"
+          rowKey={(r) => r.id}
+          rows={deliveries.data?.deliveries ?? []}
+          dateColumn="createdAt"
+          defaultSort="createdAt:desc"
+          columns={[
+            { key: 'createdAt', label: 'Created (UTC)', value: (r) => r.createdAt },
+            { key: 'integrationName', label: 'Integration', value: (r) => r.integrationName },
+            { key: 'event', label: 'Event', value: (r) => displayValue(r.event) },
+            {
+              key: 'status',
+              label: 'Status',
+              value: (r) => displayValue(r.status),
+              render: (r) => <StateBadge status={r.status} />,
+            },
+            { key: 'attempts', label: 'Attempts', value: (r) => r.attempts },
+            { key: 'externalId', label: 'External incident', value: (r) => r.externalId },
+            { key: 'error', label: 'Details', value: (r) => r.error },
+            {
+              key: 'actions',
+              label: 'Actions',
+              sortable: false,
+              value: () => '',
+              render: (r) =>
+                r.status === 'failed' ? (
+                  <button
+                    disabled={save.busy}
+                    className="btn-secondary"
+                    onClick={() => save.run(`/deliveries/${r.id}/retry`, 'POST', {})}
+                  >
+                    Retry
+                  </button>
+                ) : null,
+            },
+          ]}
+        />
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@servicekraken/workers",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scheduler": "node src/scheduler.js",
+    "dev:scheduler": "node --env-file-if-exists=../.env --watch src/scheduler.js",
+    "start": "node src/index.js",
+    "dev": "node --env-file-if-exists=../.env --watch src/index.js"
+  },
+  "dependencies": {
+    "@servicekraken/shared": "1.0.0",
+    "bullmq": "^5.61.0",
+    "ioredis": "^5.8.0",
+    "mongodb": "^6.20.0",
+    "nodemailer": "^10.0.14"
+  }
+}

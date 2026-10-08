@@ -1,0 +1,13 @@
+node_modules/
+app/dist/
+.env
+*.log
+.DS_Store
+coverage/
+
+.servicekraken/
+
+# Marketing is maintained separately; retain local files without publishing them.
+/marketing/
+/test/marketing-*.test.js
+/test/integration/marketing.test.js

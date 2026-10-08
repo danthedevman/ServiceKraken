@@ -1,0 +1,14 @@
+{
+  "name": "@servicekraken/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./*.js"
+  },
+  "dependencies": {
+    "ipaddr.js": "^2.2.0",
+    "mongodb": "^6.20.0",
+    "pg": "^8.23.1"
+  }
+}

@@ -1,0 +1,447 @@
+import { ActionMenu } from '../components/action-menu.jsx';
+import { Tooltip } from '../components/tooltip.jsx';
+import { Modal } from '../components/modal.jsx';
+import { RolePreview } from '../auth/role-preview.jsx';
+import { GlobalSearch } from '../features/search/global-search.jsx';
+import { prefetchRoute } from '../data/query-client.js';
+import {
+  Cog6ToothIcon,
+  MagnifyingGlassIcon,
+  ClipboardDocumentListIcon,
+  BookOpenIcon,
+  UserGroupIcon,
+  PlusIcon,
+  ExclamationTriangleIcon,
+  CalendarDaysIcon,
+  PuzzlePieceIcon,
+  UsersIcon,
+  Squares2X2Icon,
+  SignalIcon,
+  ServerStackIcon,
+  FolderIcon,
+  ChartBarSquareIcon,
+  ChevronUpIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+  XMarkIcon,
+  Bars3Icon,
+  UserCircleIcon,
+  ArrowRightStartOnRectangleIcon,
+} from '@heroicons/react/24/outline';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { ThemeToggle } from '../preferences/theme.jsx';
+
+const links = [
+  ['/', 'Dashboard', Squares2X2Icon],
+  ['/incidents', 'Incidents', ExclamationTriangleIcon],
+  ['/services', 'Services', ServerStackIcon],
+  ['/tasks', 'Tasks', ClipboardDocumentListIcon],
+  ['/on-call', 'On-call', CalendarDaysIcon],
+  ['/knowledge', 'Knowledge', BookOpenIcon],
+  ['/groups', 'Groups', UserGroupIcon],
+  ['/integrations', 'Integrations', PuzzlePieceIcon],
+  ['/workspace', 'Users', UsersIcon],
+  ['/status', 'Status page', ChartBarSquareIcon],
+  ['/settings', 'Settings', Cog6ToothIcon],
+];
+
+/** Bottom-anchored disclosure with ordinary keyboard-accessible links and buttons. */
+function ProfileMenu({ user, compact, logout, busy, onNavigate, dropdown = false }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const close = (event) => {
+      if (!ref.current?.contains(event.target)) ref.current?.removeAttribute('open');
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, []);
+  if (!user)
+    return (
+      <div role="status" aria-label="Loading profile" className="flex items-center gap-3 p-2">
+        <UserCircleIcon className="h-10 w-10 shrink-0 text-slate-400" aria-hidden="true" />
+        {!compact && <span className="text-sm text-slate-500">Loading profile…</span>}
+      </div>
+    );
+  return (
+    <details
+      ref={ref}
+      className="relative"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.stopPropagation();
+          ref.current.open = false;
+          ref.current.querySelector('summary').focus();
+        }
+      }}
+    >
+      <Tooltip label={compact && !dropdown ? 'Profile and appearance settings' : null}>
+        <summary
+          className="flex cursor-pointer list-none items-center gap-3 rounded-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden"
+          aria-label="Profile and appearance settings"
+          title={compact ? 'Profile and appearance settings' : undefined}
+        >
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-100 font-semibold text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+            {(user.displayName || user.email).slice(0, 1).toUpperCase()}
+          </span>
+          {!compact && (
+            <>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {user.displayName || 'Your account'}
+                </span>
+                <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                  {user.email}
+                </span>
+              </span>
+              <ChevronUpIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </>
+          )}
+        </summary>
+      </Tooltip>
+      <div
+        className={`panel absolute z-50 w-60 max-w-[calc(100vw-2rem)] space-y-2 p-3 shadow-xl ${dropdown ? 'right-0 top-full mt-2 max-h-[calc(100dvh-6rem)] overflow-y-auto' : 'bottom-full left-0 mb-3'}`}
+      >
+        <Link
+          to="/profile"
+          className="nav-link flex items-center gap-3"
+          onClick={() => {
+            ref.current.open = false;
+            onNavigate();
+          }}
+        >
+          <UserCircleIcon className="h-5 w-5" aria-hidden="true" />
+          Profile settings
+        </Link>
+        <div className="flex items-center justify-between gap-2 px-3 py-2">
+          <span className="text-sm">Appearance</span>
+          <ThemeToggle />
+        </div>
+        <RolePreview />
+        <button
+          type="button"
+          className="nav-link flex w-full items-center gap-3 text-left"
+          disabled={busy}
+          onClick={logout}
+        >
+          <ArrowRightStartOnRectangleIcon className="h-5 w-5" aria-hidden="true" />
+          {busy ? 'Signing out…' : 'Sign out'}
+        </button>
+      </div>
+    </details>
+  );
+}
+
+/** Persistent desktop rail and a native mobile dialog with focus trapping and Escape support. */
+export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBrand }) {
+  const dialog = useRef(null);
+  const compact = collapsed;
+  const toggle = () => setCollapsed(!collapsed);
+  const [createOpen, setCreateOpen] = useState(false);
+  const { pathname } = useLocation();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const close = () => {
+    dialog.current?.close();
+    setMobileOpen(false);
+  };
+  useEffect(() => {
+    dialog.current?.close();
+    setMobileOpen(false);
+    setCreateOpen(false);
+    setSearchOpen(false);
+  }, [pathname, user?.role]);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 768px)');
+    const resize = () => {
+      if (media.matches) {
+        dialog.current?.close();
+        setMobileOpen(false);
+      }
+    };
+    media.addEventListener('change', resize);
+    return () => media.removeEventListener('change', resize);
+  }, []);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [mobileOpen]);
+  const openCreate = () => {
+    close();
+    setCreateOpen(true);
+  };
+  const primaryPaths = ['/', '/incidents', '/services', '/tasks', '/on-call'];
+  const visibleLinks = user
+    ? links.filter(([to]) =>
+        user.role === 'user'
+          ? to === '/incidents'
+          : !['/integrations', '/workspace', '/settings'].includes(to) || user.role === 'admin',
+      )
+    : [];
+  const secondaryLinks = visibleLinks.filter(([to]) => !primaryPaths.includes(to));
+  const content = (compact, mobile = false) => (
+    <>
+      <div
+        className={`flex shrink-0 items-center gap-2 p-4 ${compact ? 'flex-col' : 'justify-between'}`}
+      >
+        {compact ? (
+          <div className="group relative grid h-10 w-10 shrink-0 place-items-center">
+            <span className="group-hover:opacity-0 group-focus-within:opacity-0">
+              {renderBrand(true)}
+            </span>
+            <Tooltip label={compact ? 'Expand navigation' : null}>
+              <button
+                type="button"
+                className="absolute inset-0 grid place-items-center rounded-lg bg-white opacity-0 hover:bg-slate-100 focus:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-slate-900 dark:hover:bg-slate-800"
+                aria-label="Expand navigation"
+                title="Expand navigation"
+                onClick={() => setCollapsed(false)}
+              >
+                <ChevronDoubleRightIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </Tooltip>
+          </div>
+        ) : (
+          <Link to="/" onClick={close} aria-label="ServiceKraken dashboard">
+            {renderBrand(false)}
+          </Link>
+        )}
+        <div className={`flex shrink-0 ${compact ? 'flex-col' : 'items-center'}`}>
+          <Tooltip label={compact ? 'Search workspace' : null}>
+            <button
+              type="button"
+              className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Search workspace"
+              title="Search workspace"
+              aria-haspopup="dialog"
+              onClick={() => {
+                close();
+                setSearchOpen(true);
+              }}
+            >
+              <MagnifyingGlassIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </Tooltip>
+          {!compact && (
+            <button
+              type="button"
+              className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+              onClick={mobile ? close : toggle}
+              aria-label={
+                mobile
+                  ? 'Close navigation'
+                  : collapsed
+                    ? 'Expand navigation'
+                    : 'Collapse navigation'
+              }
+              title={
+                mobile
+                  ? 'Close navigation'
+                  : collapsed
+                    ? 'Expand navigation'
+                    : 'Collapse navigation'
+              }
+            >
+              {mobile ? (
+                <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+              ) : compact ? (
+                <ChevronDoubleRightIcon className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <ChevronDoubleLeftIcon className="h-5 w-5" aria-hidden="true" />
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+      {['admin', 'responder', 'user'].includes(user?.role) && (
+        <div className="shrink-0 px-3 pb-3">
+          {['admin', 'responder', 'user'].includes(user?.role) && (
+            <Tooltip label={compact ? 'Create' : null}>
+              <button
+                type="button"
+                className={`btn-primary flex w-full items-center justify-center gap-2 ${compact ? '!px-2' : ''}`}
+                aria-haspopup="dialog"
+                title="Create"
+                onClick={openCreate}
+              >
+                <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <span className={compact ? 'sr-only' : ''}>Create</span>
+              </button>
+            </Tooltip>
+          )}
+        </div>
+      )}
+      <nav
+        aria-label="Main navigation"
+        className={`min-h-0 flex-1 space-y-2 p-3 ${compact ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'}`}
+      >
+        {visibleLinks
+          .filter(([to]) => !compact || primaryPaths.includes(to))
+          .map(([to, label, Icon]) => (
+            <Tooltip key={to} label={compact ? label : null}>
+              <NavLink
+                to={to}
+                onMouseEnter={() => prefetchRoute(to, user)}
+                onFocus={() => prefetchRoute(to, user)}
+                end={to === '/'}
+                onClick={close}
+                title={compact ? label : undefined}
+                className={`nav-link ${to === '/services' && pathname.startsWith('/monitors/') ? 'active' : ''} flex items-center gap-3 ${compact ? 'justify-center px-2' : ''}`}
+              >
+                <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <span className={compact ? 'sr-only' : ''}>
+                  {user?.role === 'user' && to === '/incidents' ? 'My incidents' : label}
+                </span>
+              </NavLink>
+            </Tooltip>
+          ))}
+        {compact && secondaryLinks.length > 0 && (
+          <div className="flex justify-center">
+            <Tooltip label="More">
+              <span>
+                <ActionMenu label="More">
+                  {secondaryLinks.map(([to, label]) => (
+                    <NavLink key={to} to={to} className="nav-link" onClick={close}>
+                      {label}
+                    </NavLink>
+                  ))}
+                </ActionMenu>
+              </span>
+            </Tooltip>
+          </div>
+        )}
+      </nav>
+      <div
+        className={`sidebar-profile shrink-0 border-t border-slate-200 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-slate-700 ${mobile ? '!hidden' : ''}`}
+      >
+        <ProfileMenu user={user} compact={compact} logout={logout} busy={busy} onNavigate={close} />
+      </div>
+    </>
+  );
+  return (
+    <>
+      {searchOpen && <GlobalSearch role={user?.role} onClose={() => setSearchOpen(false)} />}
+      {createOpen && (
+        <CreateDialog role={user?.role} onClose={() => setCreateOpen(false)} onNavigate={close} />
+      )}
+      <aside
+        className={`desktop-sidebar fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 md:flex ${compact ? 'w-20' : 'w-72'}`}
+      >
+        {content(compact)}
+      </aside>
+      <header
+        className="mobile-topbar relative z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 dark:border-slate-700 dark:bg-slate-900 md:hidden"
+        aria-label="Mobile navigation"
+      >
+        <button
+          type="button"
+          className="btn-secondary"
+          aria-label="Open navigation"
+          aria-haspopup="dialog"
+          aria-expanded={mobileOpen}
+          onClick={() => {
+            dialog.current.showModal();
+            setMobileOpen(true);
+          }}
+        >
+          <Bars3Icon className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <ProfileMenu user={user} compact dropdown logout={logout} busy={busy} onNavigate={close} />
+      </header>
+      <dialog
+        ref={dialog}
+        aria-label="Navigation"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-72 max-w-[85vw] border-0 bg-white p-0 text-slate-800 shadow-xl backdrop:bg-slate-950/50 dark:bg-slate-900 dark:text-slate-200"
+        onClose={() => setMobileOpen(false)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) close();
+        }}
+      >
+        <div className="flex h-full flex-col">{content(false, true)}</div>
+      </dialog>
+    </>
+  );
+}
+
+/** Native dialog provides focus trapping and Escape support for global creation choices. */
+function CreateDialog({ role, onNavigate, onClose }) {
+  const options = [
+    {
+      to: '/incidents/new',
+      title: 'Incident',
+      description: 'Track an issue affecting a service.',
+      Icon: ExclamationTriangleIcon,
+    },
+    ...(['admin', 'responder'].includes(role)
+      ? [
+          {
+            to: '/tasks/new',
+            title: 'Task',
+            description: 'Track work for an incident or service.',
+            Icon: ClipboardDocumentListIcon,
+          },
+          {
+            to: '/knowledge/new',
+            title: 'Knowledge article',
+            description: 'Share a runbook or solution.',
+            Icon: BookOpenIcon,
+          },
+        ]
+      : []),
+    ...(role === 'admin'
+      ? [
+          {
+            to: '/monitors/new',
+            title: 'Monitor',
+            description: 'Schedule a service health check.',
+            Icon: SignalIcon,
+          },
+          {
+            to: '/services/new',
+            title: 'Service',
+            description: 'Organize monitors and dependencies.',
+            Icon: ServerStackIcon,
+          },
+          {
+            to: '/collections/new',
+            title: 'Collection',
+            description: 'Group related services together.',
+            Icon: FolderIcon,
+          },
+          {
+            to: '/groups?create=1',
+            title: 'Group',
+            description: 'Organize workspace members.',
+            Icon: UserGroupIcon,
+          },
+        ]
+      : []),
+  ];
+  return (
+    <Modal title="Create" onClose={onClose}>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {options.map(({ to, title, description, Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            className="rounded-xl border border-slate-200 p-5 hover:border-blue-500 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-blue-600 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:bg-blue-950"
+            onClick={() => {
+              onClose();
+              onNavigate();
+            }}
+          >
+            <Icon className="mb-3 h-6 w-6 text-blue-700 dark:text-blue-400" aria-hidden="true" />
+            <span className="block font-semibold">{title}</span>
+            <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">
+              {description}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </Modal>
+  );
+}

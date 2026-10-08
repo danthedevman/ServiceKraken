@@ -1,0 +1,166 @@
+name: servicekraken
+services:
+  app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - '127.0.0.1:${APP_PORT:-8090}:8080'
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [frontend]
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
+    healthcheck:
+      test: [CMD, wget, -q, --spider, 'http://127.0.0.1:8080/']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER:-mongodb}
+      DATABASE_URL: ${DATABASE_URL:-}
+      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicekraken}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DATABASE_CA_FILE: ${DATABASE_CA_FILE:-}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      MONGODB_DB: ${MONGODB_DB:-servicekraken}
+      APP_ORIGIN: ${APP_ORIGIN:-http://127.0.0.1:8090}
+      MARKETING_OWNER_EMAIL: ${MARKETING_OWNER_EMAIL:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TRUST_PROXY: '1'
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
+      INTEGRATION_KEY_FILE: /srv/secrets/integration.key
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes: [integration-keys:/srv/secrets]
+    networks: [frontend, backend]
+    init: true
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  workers:
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
+    environment:
+      NODE_ENV: production
+      CHECK_CONCURRENCY: ${CHECK_CONCURRENCY:-10}
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
+      INTEGRATION_KEY_FILE: /srv/secrets/integration.key
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER:-mongodb}
+      DATABASE_URL: ${DATABASE_URL:-}
+      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicekraken}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DATABASE_CA_FILE: ${DATABASE_CA_FILE:-}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      MONGODB_DB: ${MONGODB_DB:-servicekraken}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes: [integration-keys:/srv/secrets]
+    networks: [backend, outbound]
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
+    command: [node, workers/src/scheduler.js]
+    environment:
+      NODE_ENV: production
+      SCHEDULER_INTERVAL_MS: ${SCHEDULER_INTERVAL_MS:-1000}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER:-mongodb}
+      DATABASE_URL: ${DATABASE_URL:-}
+      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicekraken}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DATABASE_CA_FILE: ${DATABASE_CA_FILE:-}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      MONGODB_DB: ${MONGODB_DB:-servicekraken}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [backend, outbound]
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    read_only: true
+
+  mongo:
+    image: mongo:8.0
+    volumes: [mongo-data:/data/db]
+    networks: [backend]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    command: [redis-server, --appendonly, 'yes', --maxmemory-policy, noeviction]
+    volumes: [redis-data:/data]
+    networks: [backend]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+networks:
+  frontend:
+  backend:
+    internal: true
+  outbound:
+
+volumes:
+  integration-keys:
+    name: ${INTEGRATION_KEYS_VOLUME_NAME:-servicekraken-integration-keys}
+  mongo-data:
+    name: ${MONGO_VOLUME_NAME:-servicekraken-mongo-data}
+  redis-data:
+    name: ${REDIS_VOLUME_NAME:-servicekraken-redis-data}

@@ -1,0 +1,11 @@
+# Audit log
+
+Admins open **Settings → Audit log** to review activity in their workspace. Search all columns or one column, filter by UTC date, sort using column headings, and select 10, 25, or 50 rows per page. CSV exports use the same server filters. Entries cannot be edited or deleted through the application.
+
+New authenticated API record changes, individual record reads, downloads, and exports record the actor, account role, effective role (including role preview), operation, record and parent identifiers where available, submitted field names, HTTP outcome, and timestamp. Invitation acceptance and worker-created/resolved incidents are also recorded. Authentication checks and request validation that reject a request before authentication are not part of this record log. Background list polling and audit-log reads are excluded. Scheduled monitor results remain in monitor check history rather than duplicating every check here. Demo-data operations and cascading deletes are logged as their initiating operation, not as one event for every subordinate record.
+
+No request bodies, field values, passwords, integration secrets, session/invitation tokens, query strings, comment text, or attachment contents are copied into audit history. Submitted fields identify what was requested, not a verified before/after diff. Actor names and record IDs are retained after a record is deleted. Restrict access to backups accordingly.
+
+History starts when this feature is deployed; older activity cannot be reconstructed. MongoDB and PostgreSQL both store audit entries in `auditEvents`, with workspace/time and record indexes. PostgreSQL migration 2 adds the collection table without changing existing records. Entries have no automatic expiration; include them in database backups and capacity planning.
+
+This is an application activity log, not a tamper-proof compliance ledger. Business changes and audit inserts are separate database writes, so a process crash between them can leave a gap. For ordinary JSON/write responses, the API waits for the audit insert before ending the response; if insertion fails it reports an error when headers permit and asks the user to refresh before retrying. Already-streaming downloads cannot be recalled on an audit failure. Database administrators can modify stored entries outside the app.

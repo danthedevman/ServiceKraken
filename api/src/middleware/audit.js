@@ -1,0 +1,155 @@
+import { randomUUID } from 'node:crypto';
+import { writeAudit } from '@servicekraken/shared/domain/audit';
+
+const safeFields = new Set([
+  'title',
+  'name',
+  'displayName',
+  'description',
+  'status',
+  'severity',
+  'priority',
+  'serviceId',
+  'serviceIds',
+  'incidentId',
+  'assigneeId',
+  'openedForId',
+  'knowledgeIds',
+  'ownerIds',
+  'ownerGroupIds',
+  'primaryContactId',
+  'collectionIds',
+  'dependencyIds',
+  'role',
+  'disabled',
+  'enabled',
+  'visibility',
+  'intervalMinutes',
+  'paused',
+  'method',
+  'followRedirects',
+  'fields',
+  'custom',
+  'resolutionNotes',
+  'attachmentIds',
+  'contentDocument',
+  'body',
+  'kind',
+  'shifts',
+  'memberIds',
+  'startsAt',
+  'endsAt',
+]);
+const objectId = (value) => (/^[a-f\d]{24}$/i.test(String(value ?? '')) ? String(value) : '');
+
+/** Audit authenticated mutations and individual record reads, excluding background list polling.
+ * Append before ending the response. Mutations and audit inserts are separate writes; this is
+ * application history, not a transactional or tamper-proof compliance ledger.
+ */
+export function auditActivity(db) {
+  return (req, res, next) => {
+    const path = req.path;
+    if (path.startsWith('/tables/audit')) return next();
+    const mutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+    const recordRead = req.method === 'GET' && /\/[a-f\d]{24}(?:\/|$)/i.test(path);
+    const exporting =
+      req.method === 'GET' && (req.query.export === 'csv' || path.endsWith('/export'));
+    if (!mutation && !recordRead && !exporting) return next();
+    const actor = {
+      workspaceId: req.workspaceId,
+      actorId: req.user._id,
+      actor: req.user.displayName || req.user.email,
+      actualRole: req.actualRole,
+      effectiveRole: req.role,
+      requestId: randomUUID(),
+    };
+    const originalJson = res.json,
+      originalEnd = res.end;
+    let payload,
+      ending = false;
+    res.json = function (value) {
+      payload = value;
+      return originalJson.call(this, value);
+    };
+    res.end = function (...args) {
+      if (ending) return this;
+      ending = true;
+      const route = typeof req.route?.path === 'string' ? req.route.path : '/api/unknown';
+      const parts = route.replace(/^\/api\//, '').split('/');
+      const record =
+        payload?.group ||
+        payload?.item ||
+        payload?.incident ||
+        payload?.monitor ||
+        payload?.attachment ||
+        payload?.user;
+      const recordId =
+        objectId(res.locals.auditRecordId) ||
+        objectId(req.params.fileId) ||
+        objectId(record?.id) ||
+        objectId(req.params.id) ||
+        objectId(req.params.recordId) ||
+        (parts[0] === 'auth' ? String(actor.actorId) : '');
+      const action = exporting
+        ? 'export'
+        : recordRead
+          ? 'view'
+          : {
+              POST: parts[0] === 'auth' || parts.includes('test') ? 'execute' : 'create',
+              PUT: 'update',
+              PATCH: 'update',
+              DELETE: 'delete',
+            }[req.method];
+      const entry = {
+        ...actor,
+        recordId,
+        parentId:
+          objectId(req.params.recordId) ||
+          (parts.includes('comments') ? objectId(req.params.id) : ''),
+        recordType: parts.includes('comments')
+          ? 'comments'
+          : parts[0] === 'tables'
+            ? String(req.params.kind)
+            : parts[0],
+        operation: `${req.method} ${route}`,
+        action,
+        fields:
+          mutation && req.body && !Buffer.isBuffer(req.body)
+            ? Object.keys(req.body)
+                .filter((key) => safeFields.has(key))
+                .join(', ')
+            : '',
+        outcome: res.statusCode < 400 ? 'success' : 'failed',
+        statusCode: res.statusCode,
+      };
+      void Promise.all(
+        (res.locals.auditChanges?.length ? res.locals.auditChanges : [{}]).map((change) =>
+          writeAudit(db, {
+            ...entry,
+            ...(objectId(change.id)
+              ? { recordId: objectId(change.id), action: change.action }
+              : {}),
+          }),
+        ),
+      )
+        .then(() => originalEnd.apply(res, args))
+        .catch(() => {
+          console.error('Audit history could not be saved', actor.requestId);
+          if (!res.headersSent) {
+            res.statusCode = 503;
+            res.removeHeader('Content-Length');
+            res.setHeader('Content-Type', 'application/json');
+            originalEnd.call(
+              res,
+              JSON.stringify({
+                error:
+                  'The operation may have completed, but its audit entry could not be saved. Refresh before retrying.',
+              }),
+            );
+          } else originalEnd.apply(res, args);
+        });
+      return this;
+    };
+    next();
+  };
+}

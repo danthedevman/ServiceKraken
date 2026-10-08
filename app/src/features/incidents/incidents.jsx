@@ -1,0 +1,778 @@
+import { FormSkeleton } from '../../components/skeleton.jsx';
+import { Select } from '../../components/forms/select.jsx';
+import { TableSearch } from '../../components/table-search.jsx';
+import { StateBadge } from '../../components/state-badge.jsx';
+import { mandatoryErrors } from '../../../../shared/forms/schema.js';
+import { RecordActions } from '../../components/record-actions.jsx';
+import { IncidentDiscussion } from './discussion.jsx';
+import { CancelButton } from '../../components/forms/cancel-button.jsx';
+import {
+  RecordWorkspace,
+  RecordSection,
+  RecordMetadata,
+} from '../../components/record-workspace.jsx';
+import { ActionMenu } from '../../components/action-menu.jsx';
+import { AttachmentPanel, AttachmentPicker, useAttachmentDraft } from '../files/attachments.jsx';
+import { RecordTabs } from '../../components/record-tabs.jsx';
+import { ReferenceField } from '../../components/forms/reference-field.jsx';
+import { fieldChoices, recordFields } from '../../../../shared/forms/form-options.js';
+import { displayValue } from '../../lib/display-value.js';
+import { WorkTable } from '../work/work.jsx';
+import { AutoTextarea } from '../../components/forms/auto-textarea.jsx';
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { AuthContext } from '../../auth/auth-context.js';
+import { useResource } from '../../data/use-resource.js';
+import { DataTable } from '../../components/data-table.jsx';
+import { downloadCsv } from '../../lib/csv-download.js';
+import { CustomField, Field, Notice } from '../../components/forms/fields.jsx';
+import { useSave } from '../../data/use-save.js';
+
+/** Paginated incident reporting with identical server filters for CSV exports. */
+export function IncidentsPage({ initialServiceId = '', related = false }) {
+  const { user } = useContext(AuthContext);
+  const [searchColumn, setSearchColumn] = useState('');
+  const [search, setSearch] = useState(''),
+    [status, setStatus] = useState(''),
+    [serviceId, setService] = useState(initialServiceId),
+    [page, setPage] = useState(1),
+    [pageSize, setSize] = useState(10),
+    [sort, setSort] = useState('createdAt:desc');
+  const [sortBy, order] = sort.split(':');
+  const query = new URLSearchParams({
+    searchColumn,
+    search,
+    status,
+    serviceId,
+    page,
+    pageSize,
+    sortBy,
+    order,
+  });
+  const resource = useResource(`/incidents?${query}`, 30000),
+    services = useResource('/services');
+  useEffect(() => {
+    if (resource.data) {
+      const lastPage = Math.max(1, Math.ceil(resource.data.total / pageSize));
+      if (page > lastPage) setPage(lastPage);
+    }
+  }, [resource.data, page, pageSize]);
+  const update = (setter) => (e) => {
+    setter(e.target.value);
+    setPage(1);
+  };
+  const columns = [
+    {
+      key: 'title',
+      label: 'Incident',
+      value: (r) => r.title,
+      render: (r) => (
+        <Link
+          className="text-blue-700 hover:underline dark:text-blue-300"
+          to={`/incidents/${r.id}`}
+        >
+          {r.title}
+        </Link>
+      ),
+    },
+    { key: 'serviceName', label: 'Service', value: (r) => r.serviceName },
+    {
+      key: 'severity',
+      label: 'Severity',
+      value: (r) => r.severityLabel || displayValue(r.severity),
+      render: (r) => <StateBadge status={r.severity} label={r.severityLabel} />,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      value: (r) => r.statusLabel || displayValue(r.status),
+      render: (r) => <StateBadge status={r.status} label={r.statusLabel} />,
+    },
+    {
+      key: 'createdAt',
+      label: 'Created (UTC)',
+      value: (r) => r.createdAt,
+      render: (r) => new Date(r.createdAt).toLocaleString('en-GB', { timeZone: 'UTC' }),
+    },
+  ];
+  return (
+    <div className={related ? 'space-y-4' : 'list-page'}>
+      <Notice error={resource.error} />
+      <DataTable
+        deletePath="/incidents"
+        fullPage={!related}
+        actions={
+          ['admin', 'responder', 'user'].includes(user?.role) && (
+            <Link
+              className="btn-primary"
+              to={`/incidents/new${initialServiceId ? `?serviceId=${initialServiceId}` : ''}`}
+            >
+              Create incident
+            </Link>
+          )
+        }
+        title={user?.role === 'user' ? 'My incidents' : 'Incidents'}
+        columns={columns}
+        rows={resource.data?.incidents ?? []}
+        rowKey={(r) => r.id}
+        remote={{
+          filtersActive: Boolean(search || status || serviceId !== initialServiceId),
+          page,
+          pageSize,
+          total: resource.data?.total ?? 0,
+          sort,
+          pending: resource.pending,
+          loading: resource.loading,
+          onPage: setPage,
+          onPageSize: (n) => {
+            setSize(n);
+            setPage(1);
+          },
+          onSort: (s) => {
+            setSort(s);
+            setPage(1);
+          },
+          onRefresh: resource.refresh,
+          onExport: (signal) => downloadCsv(`/incidents/export?${query}`, 'incidents.csv', signal),
+        }}
+        filters={
+          <div className="flex flex-wrap items-end gap-4 p-6">
+            <TableSearch
+              columns={columns}
+              search={search}
+              column={searchColumn}
+              onSearch={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              onColumn={(value) => {
+                setSearchColumn(value);
+                setPage(1);
+              }}
+            />
+            <label className="field-label">
+              Status
+              <Select value={status} onChange={update(setStatus)}>
+                <option value="">All statuses</option>
+                {['open', 'acknowledged', 'resolved'].map((s) => (
+                  <option key={s} value={s}>
+                    {displayValue(s)}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            {!related && (
+              <label className="field-label">
+                Service
+                <Select value={serviceId} onChange={update(setService)}>
+                  <option value="">All services</option>
+                  {services.data?.services.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            )}
+            {(search || status || serviceId !== initialServiceId || sort !== 'createdAt:desc') && (
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setSearch('');
+                  setSearchColumn('');
+                  setStatus('');
+                  setService(initialServiceId);
+                  setSort('createdAt:desc');
+                  setPage(1);
+                }}
+              >
+                Reset filters and sorting
+              </button>
+            )}
+          </div>
+        }
+      />
+    </div>
+  );
+}
+/** Read-only details are shared by all allowed roles; edit forms open on a dedicated page. */
+export function IncidentPage({ edit = false }) {
+  const [params] = useSearchParams();
+  const { id } = useParams(),
+    { user } = useContext(AuthContext);
+  const [formVersion, setFormVersion] = useState(0);
+  const [editingId, setEditingId] = useState(null);
+  const [resolving, setResolving] = useState(false);
+  const transition = useSave();
+  const editing = editingId === useParams().id;
+  const incident = useResource(id ? `/incidents/${id}` : null),
+    schema = useResource('/incident-fields'),
+    services = useResource('/services'),
+    members = useResource('/members');
+  const loading = schema.loading || services.loading || members.loading || (id && incident.loading);
+  const error = incident.error || schema.error || services.error || members.error;
+  const item = incident.data?.incident,
+    canEdit = ['admin', 'responder'].includes(user?.role);
+  const memberName = (memberId) =>
+    members.data?.members.find((m) => m.id === memberId)?.displayName ||
+    members.data?.members.find((m) => m.id === memberId)?.email ||
+    (memberId ? 'Workspace member' : 'Unassigned');
+  if (edit) return <Navigate replace to={`/incidents/${id}`} />;
+  return (
+    <div className={id ? 'space-y-6' : 'form-page'}>
+      <div className="flex items-center justify-between gap-3">
+        {!id && <h1 className="page-title">Create incident</h1>}
+        {!id && user?.role === 'admin' && (
+          <ActionMenu label="Form actions">
+            <Link className="btn-secondary" to="/incidents/fields">
+              Form builder
+            </Link>
+          </ActionMenu>
+        )}
+      </div>
+      <Notice error={error || transition.error} />
+      {loading ? (
+        <FormSkeleton
+          fields={(
+            schema.data?.fields ?? [
+              { id: 'title' },
+              { id: 'serviceId' },
+              { id: 'severity' },
+              { id: 'status' },
+              { id: 'assigneeId' },
+              { id: 'openedForId' },
+              { id: 'description' },
+              { id: 'knowledgeIds' },
+            ]
+          ).filter((field) => field.id !== 'resolutionNotes')}
+          label="Loading incident…"
+        />
+      ) : (
+        !error &&
+        (!id ? (
+          <IncidentEditor
+            initialServiceId={params.get('serviceId') ?? ''}
+            schema={schema.data.fields}
+            services={services.data.services}
+            members={members.data.members}
+          />
+        ) : (
+          item && (
+            <>
+              <RecordWorkspace
+                item={item}
+                kind={'incidents'}
+                onEdit={
+                  canEdit && !editing
+                    ? () => {
+                        setResolving(false);
+                        setEditingId(id);
+                      }
+                    : undefined
+                }
+                actions={
+                  canEdit && !editing ? (
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={transition.busy}
+                      onClick={() => {
+                        const reopening = item.status === 'resolved';
+                        const notesRequired = schema.data.fields.some(
+                          (field) => field.id === 'resolutionNotes' && field.required,
+                        );
+                        if (reopening || !notesRequired) {
+                          const option = fieldChoices(
+                            'incidents',
+                            schema.data.fields.find((field) => field.id === 'status'),
+                          ).find(
+                            (entry) =>
+                              !entry.hidden && entry.base === (reopening ? 'open' : 'resolved'),
+                          );
+                          transition.run(`/incidents/${id}`, 'PATCH', {
+                            revision: item.revision,
+                            statusOption: option?.value || (reopening ? 'open' : 'resolved'),
+                          });
+                        } else {
+                          setResolving(true);
+                          setEditingId(id);
+                        }
+                      }}
+                    >
+                      {transition.busy
+                        ? item.status === 'resolved'
+                          ? 'Reopening…'
+                          : 'Resolving…'
+                        : item.status === 'resolved'
+                          ? 'Reopen'
+                          : 'Resolve'}
+                    </button>
+                  ) : undefined
+                }
+                sidebar={
+                  <>
+                    <RecordMetadata
+                      item={item}
+                      extra={[
+                        ['Status', item.statusLabel || displayValue(item.status)],
+                        ['Severity', item.severityLabel || displayValue(item.severity)],
+                        ['Source', displayValue(item.source)],
+                        ['Opened by', memberName(item.createdById)],
+                      ]}
+                    />
+                    <RecordSection title="Attachments">
+                      <AttachmentPanel compact kind="incidents" recordId={item.id} />
+                    </RecordSection>
+                  </>
+                }
+              >
+                {canEdit && editing ? (
+                  <IncidentEditor
+                    key={`${id}-${formVersion}`}
+                    incident={item}
+                    resolving={resolving}
+                    linkedArticles={incident.data.knowledge ?? []}
+                    schema={schema.data.fields}
+                    services={services.data.services}
+                    members={members.data.members}
+                    onClose={() => {
+                      setEditingId(null);
+                      setFormVersion((value) => value + 1);
+                    }}
+                  />
+                ) : (
+                  <section className="record-details space-y-6">
+                    <dl>
+                      <div>
+                        <dt>Title</dt>
+                        <dd>{item.title}</dd>
+                      </div>
+                    </dl>
+                    <dl className="grid gap-4 text-sm sm:grid-cols-2">
+                      <div>
+                        <dt className="font-medium">Service</dt>
+                        <dd>{item.serviceName}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium">Status</dt>
+                        <dd>
+                          <StateBadge status={item.status} label={item.statusLabel} />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Severity</dt>
+                        <dd>
+                          <StateBadge status={item.severity} label={item.severityLabel} />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium">Assigned to</dt>
+                        <dd>{memberName(item.assigneeId)}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium">Opened for</dt>
+                        <dd>{memberName(item.openedForId)}</dd>
+                      </div>
+                    </dl>
+                    <dl>
+                      <div>
+                        <dt>Description</dt>
+                        <dd className="whitespace-pre-wrap break-words">
+                          {item.description || 'No description.'}
+                        </dd>
+                      </div>
+                    </dl>
+                    {(item.resolutionNotes || item.status === 'resolved') && (
+                      <dl>
+                        <div>
+                          <dt>
+                            {schema.data.fields.find((field) => field.id === 'resolutionNotes')
+                              ?.label || 'Resolution notes'}
+                          </dt>
+                          <dd className="whitespace-pre-wrap">{item.resolutionNotes || '—'}</dd>
+                        </div>
+                      </dl>
+                    )}
+                    {item.fields.length > 0 && (
+                      <dl className="grid gap-4 sm:grid-cols-2">
+                        {item.fields.map((field) => (
+                          <div key={field.id}>
+                            <dt className="text-sm font-medium">{field.label}</dt>
+                            <dd className="whitespace-pre-wrap break-words text-sm">
+                              {String(item.custom[field.id] ?? '—')}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                  </section>
+                )}
+                <RecordTabs
+                  related
+                  tabs={[
+                    {
+                      id: 'discussion',
+                      label: canEdit ? 'Comments and work notes' : 'Comments',
+                      content: (
+                        <IncidentDiscussion
+                          key={item.id}
+                          incidentId={item.id}
+                          comments={incident.data.comments ?? []}
+                          role={user?.role}
+                        />
+                      ),
+                    },
+                    {
+                      id: 'activity',
+                      label: 'Activity',
+                      content: (
+                        <DataTable
+                          source={`activity?recordId=${item.id}`}
+                          title="Incident activity"
+                          rows={[...item.timeline].reverse()}
+                          columns={[
+                            { key: 'at', label: 'Time (UTC)', value: (row) => row.at },
+                            { key: 'by', label: 'Updated by', value: (row) => row.by },
+                            {
+                              key: 'status',
+                              label: 'Status',
+                              value: (row) => displayValue(row.status),
+                              render: (row) => (
+                                <StateBadge status={row.status} label={row.statusLabel} />
+                              ),
+                            },
+                            {
+                              key: 'note',
+                              label: 'Note',
+                              value: (row) =>
+                                row.previousResolutionNotes
+                                  ? `${row.note} — Previous resolution: ${row.previousResolutionNotes}`
+                                  : row.note,
+                            },
+                          ]}
+                          filename="incident-activity.csv"
+                          defaultSort="at:desc"
+                          dateColumn="at"
+                        />
+                      ),
+                    },
+                    ...(user?.role !== 'user'
+                      ? [
+                          {
+                            id: 'tasks',
+                            label: 'Tasks',
+                            content: (
+                              <WorkTable
+                                related
+                                initialIncidentId={item.id}
+                                initialServiceId={item.serviceId}
+                              />
+                            ),
+                          },
+                          {
+                            id: 'knowledge',
+                            label: 'Knowledge articles',
+                            content: (
+                              <DataTable
+                                source={`incident-knowledge?recordId=${item.id}`}
+                                title="Associated knowledge articles"
+                                rows={incident.data.knowledge ?? []}
+                                rowKey={(row) => row.id}
+                                filename="incident-knowledge.csv"
+                                columns={[
+                                  {
+                                    key: 'title',
+                                    label: 'Title',
+                                    value: (row) => row.title,
+                                    render: (row) => (
+                                      <Link
+                                        className="text-blue-700 dark:text-blue-300"
+                                        to={`/knowledge/${row.id}`}
+                                      >
+                                        {row.title || 'Untitled article'}
+                                      </Link>
+                                    ),
+                                  },
+                                  {
+                                    key: 'summary',
+                                    label: 'Summary',
+                                    value: (row) => row.summary || '',
+                                  },
+                                  {
+                                    key: 'status',
+                                    label: 'Status',
+                                    value: (row) => displayValue(row.status),
+                                    render: (row) => (
+                                      <StateBadge status={row.status} label={row.statusLabel} />
+                                    ),
+                                  },
+                                ]}
+                                actions={
+                                  canEdit && !editing ? (
+                                    <button
+                                      type="button"
+                                      className="btn-secondary"
+                                      onClick={() => {
+                                        setResolving(false);
+                                        setEditingId(id);
+                                      }}
+                                    >
+                                      Link articles
+                                    </button>
+                                  ) : undefined
+                                }
+                              />
+                            ),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              </RecordWorkspace>
+            </>
+          )
+        ))
+      )}
+    </div>
+  );
+}
+/** Built-in layout follows admin labels/order; custom values use an immutable schema snapshot. */
+function IncidentEditor({
+  incident,
+  schema,
+  services,
+  members,
+  onClose,
+  resolving = false,
+  initialServiceId = '',
+  linkedArticles = [],
+}) {
+  const navigate = useNavigate(),
+    save = useSave(),
+    { user } = useContext(AuthContext);
+  const [current] = useState(incident);
+  const [clientErrors, setClientErrors] = useState({});
+  const errors = { ...save.fields, ...clientErrors };
+  const [articleSearch, setArticleSearch] = useState('');
+  const articles = useResource(
+    user.role !== 'user'
+      ? `/knowledge?${new URLSearchParams({ search: articleSearch, pageSize: '50' })}`
+      : null,
+  );
+  const draft = useAttachmentDraft('incidents', incident?.id, incident?.attachmentIds ?? []);
+  const initialChoice = (name, base) =>
+    fieldChoices(
+      'incidents',
+      schema.find((field) => field.id === name),
+    ).find((option) => !option.hidden && option.base === base)?.value ||
+    fieldChoices(
+      'incidents',
+      schema.find((field) => field.id === name),
+    ).find((option) => !option.hidden)?.value ||
+    base;
+  const [value, setValue] = useState({
+    ...incident,
+    title: incident?.title ?? '',
+    description: incident?.description ?? '',
+    resolutionNotes: incident?.resolutionNotes ?? '',
+    knowledgeIds: incident?.knowledgeIds ?? [],
+    serviceId: incident?.serviceId ?? initialServiceId,
+    assigneeId: incident?.assigneeId ?? '',
+    openedForId: incident?.openedForId ?? user.id,
+    custom: incident?.custom ?? {},
+    statusOption: resolving
+      ? fieldChoices(
+          'incidents',
+          schema.find((field) => field.id === 'status'),
+        ).find((option) => !option.hidden && option.base === 'resolved')?.value || 'resolved'
+      : (incident?.statusOption ?? incident?.status ?? initialChoice('status', 'open')),
+    severityOption:
+      incident?.severityOption ?? incident?.severity ?? initialChoice('severity', 'medium'),
+  });
+  const [note, setNote] = useState('');
+  const custom = recordFields(schema, current?.fields).filter((field) => !field.archived);
+  const layout = [
+    ...schema
+      .filter((f) => f.type === 'builtin' || custom.some((c) => c.id === f.id))
+      .map((f) => (f.type === 'builtin' ? f : custom.find((c) => c.id === f.id))),
+    ...custom.filter((f) => !schema.some((s) => s.id === f.id)),
+  ];
+  const set = (name, v) => setValue((old) => ({ ...old, [name]: v }));
+  const selectedStatus =
+    fieldChoices(
+      'incidents',
+      schema.find((field) => field.id === 'status'),
+    ).find((option) => option.value === value.statusOption)?.base ??
+    current?.status ??
+    'open';
+  const control = (field) => {
+    const name = field.id,
+      props = { value: value[name] ?? '', onChange: (e) => set(name, e.target.value) };
+    if (field.type !== 'builtin')
+      return (
+        <CustomField
+          key={name}
+          field={field}
+          value={value.custom[name]}
+          errors={errors}
+          onChange={(v) => set('custom', { ...value.custom, [name]: v })}
+        />
+      );
+    if (name === 'knowledgeIds')
+      return user.role === 'user' ? null : (
+        <ReferenceField
+          key={name}
+          multiple
+          referenceType="knowledge"
+          label={field.label + (field.required ? ' *' : '')}
+          value={value.knowledgeIds}
+          options={[
+            ...new Map(
+              [...linkedArticles, ...(articles.data?.items ?? [])].map((article) => [
+                article.id,
+                { id: article.id, label: article.title || 'Untitled article' },
+              ]),
+            ).values(),
+          ]}
+          onChange={(next) => set(name, next)}
+          onSearch={setArticleSearch}
+          error={errors[name] || articles.error}
+        />
+      );
+    if (name === 'resolutionNotes' && selectedStatus !== 'resolved') return null;
+    if (['serviceId', 'assigneeId', 'openedForId'].includes(name))
+      return (
+        <ReferenceField
+          referenceType={name === 'serviceId' ? 'services' : 'members'}
+          key={name}
+          label={field.label + (field.required ? ' *' : '')}
+          options={(name === 'serviceId'
+            ? services
+            : members.filter((member) => !member.disabled || member.id === value[name])
+          ).map((row) => ({ id: row.id, label: row.name || row.displayName || row.email }))}
+          value={value[name]}
+          onChange={(next) => set(name, next)}
+          disabled={name === 'serviceId' ? !!current : user.role === 'user'}
+          error={errors[name]}
+        />
+      );
+    let input;
+    if (['description', 'resolutionNotes'].includes(name))
+      input = (
+        <AutoTextarea
+          {...props}
+          maxLength={5000}
+          autoFocus={resolving && name === 'resolutionNotes' && field.required}
+        />
+      );
+    else if (name === 'title') input = <input {...props} maxLength={160} />;
+    else {
+      const options = fieldChoices('incidents', field),
+        key = `${name}Option`,
+        chosen = value[key];
+      input = (
+        <Select
+          value={chosen}
+          onChange={(event) => set(key, event.target.value)}
+          disabled={name === 'status' && (user.role === 'user' || resolving)}
+        >
+          {chosen && !options.some((option) => option.value === chosen && !option.hidden) && (
+            <option value={chosen}>
+              {current?.[`${name}Label`] || displayValue(current?.[name] || chosen)} (saved)
+            </option>
+          )}
+          {options
+            .filter((option) => !option.hidden)
+            .map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+                disabled={name === 'status' && !current && option.base !== 'open'}
+              >
+                {option.label}
+              </option>
+            ))}
+        </Select>
+      );
+    }
+    return (
+      <Field
+        key={name}
+        name={name}
+        label={field.label + (field.required ? ' *' : '')}
+        errors={errors}
+      >
+        {input}
+      </Field>
+    );
+  };
+  const form = (
+    <form
+      className="form-body"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        const required = mandatoryErrors(schema, {
+          ...value,
+          status: selectedStatus,
+          severity: value.severityOption,
+        });
+        setClientErrors(required);
+        if (Object.keys(required).length) return;
+        save.run(
+          current ? `/incidents/${current.id}` : '/incidents',
+          current ? 'PATCH' : 'POST',
+          { ...value, attachmentIds: draft.ids, revision: current?.revision, note },
+          (result) => {
+            if (current) onClose();
+            else navigate(`/incidents/${result.incident.id}`);
+          },
+        );
+      }}
+    >
+      {current && user?.role === 'admin' && (
+        <div className="flex justify-end">
+          <ActionMenu label="Form actions">
+            <Link className="btn-secondary" to="/incidents/fields">
+              Form builder
+            </Link>
+          </ActionMenu>
+        </div>
+      )}
+      <Notice
+        error={
+          Object.keys(clientErrors).length
+            ? 'Complete the required fields before saving.'
+            : save.error
+        }
+      />
+      {current?.source === 'monitor' && (
+        <p className="text-sm text-slate-500">
+          {current.reopenedAt && !current.activeAutomatic
+            ? 'This incident was manually reopened and requires manual resolution. Monitoring can create a separate incident for a new failure.'
+            : 'Created from monitor health. It resolves automatically after recovery. Resolving while the service is still down can create a new monitoring incident.'}
+        </p>
+      )}
+      {layout.map(control)}
+      {current && (
+        <Field name="note" label="Internal work note (responders and admins only)" errors={errors}>
+          <AutoTextarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={2000} />
+        </Field>
+      )}
+      <AttachmentPicker draft={draft} />
+      <RecordActions>
+        <CancelButton onCancel={onClose} to={'/incidents'} disabled={save.busy} />
+        <button className="btn-primary" disabled={save.busy || draft.busy}>
+          {save.busy
+            ? 'Saving…'
+            : resolving
+              ? 'Resolve incident'
+              : current
+                ? 'Save incident'
+                : 'Create incident'}
+        </button>
+      </RecordActions>
+    </form>
+  );
+  return <section className="record-details space-y-6">{form}</section>;
+}
