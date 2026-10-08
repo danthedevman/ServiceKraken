@@ -4,7 +4,7 @@ import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
 export const ActionMenuContext = createContext(false);
 
 /** Native top-layer popover avoids clipping inside scrollable tables and modal dialogs. */
-export function ActionMenu({ children, label = 'More actions' }) {
+export function ActionMenu({ children, label = 'More actions', borderless = false }) {
   const id = useId(),
     panel = useRef(null),
     trigger = useRef(null),
@@ -27,7 +27,7 @@ export function ActionMenu({ children, label = 'More actions' }) {
       <button
         ref={trigger}
         type="button"
-        className="btn-secondary !p-2.5"
+        className={`btn-secondary !p-2.5 ${borderless ? '!border-0 !bg-transparent !shadow-none' : ''}`}
         aria-label={label}
         title={label}
         aria-expanded={open}

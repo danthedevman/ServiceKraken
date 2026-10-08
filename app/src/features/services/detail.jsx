@@ -1,3 +1,4 @@
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { RecordTabs } from '../../components/record-tabs.jsx';
 import { IncidentsPage } from '../incidents/incidents.jsx';
 import { WorkTable } from '../work/work.jsx';
@@ -285,6 +286,7 @@ function ServiceMonitors({ serviceId }) {
         actions={
           <AdminOnly>
             <Link className="btn-primary" to={`/monitors/new?serviceId=${serviceId}`}>
+              <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
               Add monitor
             </Link>
           </AdminOnly>

@@ -24,6 +24,12 @@ export async function settings(db, workspaceId) {
       );
     data = await db.collection('operations').findOne({ _id: workspaceId });
   }
+  // Present the previous built-in label consistently while retaining custom labels.
+  data.fields = data.fields.map((field) =>
+    field.id === 'knowledgeIds' && field.label === 'Knowledge articles'
+      ? { ...field, label: 'Knowledge' }
+      : field,
+  );
   return data;
 }
 

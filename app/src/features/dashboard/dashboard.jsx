@@ -1,4 +1,4 @@
-import { ActionMenu } from '../../components/action-menu.jsx';
+import { StateBadge } from '../../components/state-badge.jsx';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { arc, pie, scaleLinear, format } from 'd3';
@@ -207,14 +207,21 @@ export function Dashboard() {
             value: (row) => row.title,
             render: (row) => link('incidents', row),
           },
-          { key: 'severity', label: 'Severity', value: (row) => displayValue(row.severity) },
-          { key: 'status', label: 'Status', value: (row) => displayValue(row.status) },
+          {
+            key: 'severity',
+            label: 'Severity',
+            value: (row) => row.severityLabel || displayValue(row.severity),
+            render: (row) => <StateBadge status={row.severity} label={row.severityLabel} />,
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            value: (row) => row.statusLabel || displayValue(row.status),
+            render: (row) => <StateBadge status={row.status} label={row.statusLabel} />,
+          },
           { key: 'serviceName', label: 'Service', value: (row) => row.serviceName },
         ]}
       />
-      <Link className="btn-secondary" to="/incidents">
-        View all incidents
-      </Link>
     </div>
   ) : (
     <p role="status">
@@ -267,14 +274,21 @@ export function Dashboard() {
             value: (row) => row.title,
             render: (row) => link('tasks', row),
           },
-          { key: 'priority', label: 'Priority', value: (row) => displayValue(row.priority) },
-          { key: 'status', label: 'Status', value: (row) => displayValue(row.status) },
+          {
+            key: 'priority',
+            label: 'Priority',
+            value: (row) => row.priorityLabel || displayValue(row.priority),
+            render: (row) => <StateBadge status={row.priority} label={row.priorityLabel} />,
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            value: (row) => row.statusLabel || displayValue(row.status),
+            render: (row) => <StateBadge status={row.status} label={row.statusLabel} />,
+          },
           { key: 'dueDate', label: 'Due date (UTC)', value: (row) => row.dueDate || '—' },
         ]}
       />
-      <Link className="btn-secondary" to="/tasks">
-        View all tasks
-      </Link>
     </div>
   ) : (
     <p role="status">
@@ -367,13 +381,11 @@ export function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="page-title">Dashboard</h1>
-        <ActionMenu label="Dashboard actions">
-          <RefreshButton
-            busy={response.pending || health.pending}
-            label="Refresh dashboard"
-            onClick={() => Promise.all([response.refresh(), health.refresh()])}
-          />
-        </ActionMenu>
+        <RefreshButton
+          busy={response.pending || health.pending}
+          label="Refresh dashboard"
+          onClick={() => Promise.all([response.refresh(), health.refresh()])}
+        />
       </div>
       {(response.error || health.error) && (
         <p role="alert" className="text-rose-700 dark:text-rose-400">

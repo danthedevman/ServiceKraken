@@ -1,4 +1,8 @@
 export const tables = [
+  'statusSubscribers',
+  'publicStatusUpdates',
+  'publicStatusState',
+  'statusMail',
   'auditEvents',
   'users',
   'sessions',
@@ -67,6 +71,16 @@ export async function migrate(pool, schema) {
       'CREATE TABLE IF NOT EXISTS "auditEvents" (id text PRIMARY KEY, data jsonb NOT NULL)',
     );
     await client.query('INSERT INTO sk_migrations(version) VALUES (2) ON CONFLICT DO NOTHING');
+    for (const name of [
+      'statusSubscribers',
+      'publicStatusUpdates',
+      'publicStatusState',
+      'statusMail',
+    ])
+      await client.query(
+        `CREATE TABLE IF NOT EXISTS ${identifier(name)} (id text PRIMARY KEY, data jsonb NOT NULL)`,
+      );
+    await client.query('INSERT INTO sk_migrations(version) VALUES (3) ON CONFLICT DO NOTHING');
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

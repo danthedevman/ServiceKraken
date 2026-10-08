@@ -225,13 +225,13 @@ export function installIncidentsRoutes(app, db, appOrigin) {
           invalid('assigneeId', 'Choose an active teammate.');
         const knowledgeIds = body.knowledgeIds ?? current?.knowledgeIds ?? [];
         if (req.role === 'user' && knowledgeIds.length)
-          invalid('knowledgeIds', 'A responder can link knowledge articles.');
+          invalid('knowledgeIds', 'A responder can link knowledge.');
         if (
           !Array.isArray(knowledgeIds) ||
           knowledgeIds.length > 50 ||
           knowledgeIds.some((value) => typeof value !== 'string' || !ObjectId.isValid(value))
         )
-          invalid('knowledgeIds', 'Choose up to 50 workspace knowledge articles.');
+          invalid('knowledgeIds', 'Choose up to 50 knowledge records from this workspace.');
         const articles = await db
           .collection('articles')
           .find(

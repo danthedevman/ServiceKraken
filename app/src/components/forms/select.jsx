@@ -55,7 +55,10 @@ export function Select({
     if (trigger.current.matches(':disabled')) return;
     panel.current.showPopover();
     const rect = trigger.current.getBoundingClientRect();
-    panel.current.style.width = `${Math.min(rect.width, window.innerWidth - 16)}px`;
+    // Fit long options independently of the trigger, while keeping the menu inside the viewport.
+    panel.current.style.width = 'max-content';
+    panel.current.style.minWidth = `${Math.min(rect.width, window.innerWidth - 16)}px`;
+    panel.current.style.maxWidth = `${Math.min(640, window.innerWidth - 16)}px`;
     panel.current.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - panel.current.offsetWidth - 8))}px`;
     const height = panel.current.offsetHeight;
     panel.current.style.top = `${Math.max(8, rect.bottom + height + 8 <= window.innerHeight ? rect.bottom + 4 : rect.top - height - 4)}px`;

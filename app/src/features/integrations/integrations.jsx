@@ -1,3 +1,4 @@
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { api } from '../../data/api.js';
 import { writeApi } from '../../data/query-client.js';
 import { StateBadge } from '../../components/state-badge.jsx';
@@ -158,6 +159,7 @@ export function IntegrationsPage({ form = false }) {
       className="btn-primary"
       onClick={() => navigate('/integrations/new')}
     >
+      <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
       Add integration
     </button>
   );

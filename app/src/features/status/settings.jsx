@@ -18,6 +18,7 @@ const emptyMessage = () => ({ enabled: false, level: 'info', text: '' });
 /** Admin settings retain drafts while background queries refresh. */
 export function StatusSettings({ page = false }) {
   const settings = useResource('/status-settings');
+  const integrations = useResource(page ? '/integrations' : null);
   const services = useResource(page ? '/services' : null);
   if (!page)
     return (
@@ -32,7 +33,11 @@ export function StatusSettings({ page = false }) {
     <FormPage title="Status page settings">
       {(settings.error || services.error) && <p role="alert">{settings.error || services.error}</p>}
       {settings.data && services.data ? (
-        <StatusEditor settings={settings.data} services={services.data.services} />
+        <StatusEditor
+          settings={settings.data}
+          services={services.data.services}
+          integrations={integrations.data?.integrations ?? []}
+        />
       ) : (
         <p role="status">Loading status settings…</p>
       )}
@@ -41,8 +46,15 @@ export function StatusSettings({ page = false }) {
 }
 
 /** Publish explicitly, validating messages before sending the same bounded server payload. */
-function StatusEditor({ settings, services }) {
+function StatusEditor({ settings, services, integrations }) {
   const navigate = useNavigate();
+  const [emailSubscriptions, setEmailSubscriptions] = useState(
+    settings.emailSubscriptions ?? false,
+  );
+  const [subscriptionIntegrationId, setSubscriptionIntegrationId] = useState(
+    settings.subscriptionIntegrationId ?? '',
+  );
+  const [publicOrigin, setPublicOrigin] = useState(settings.publicOrigin ?? '');
   const [initial] = useState(settings);
   const [visibility, setVisibility] = useState(settings.visibility);
   const [banner, setBanner] = useState(settings.banner ?? emptyMessage());
@@ -61,6 +73,9 @@ function StatusEditor({ settings, services }) {
     try {
       const body = {
         visibility,
+        emailSubscriptions,
+        subscriptionIntegrationId,
+        publicOrigin,
         revision: initial.revision,
         banner: statusMessage(banner),
         serviceMessages: messages.map((message) => ({
@@ -78,42 +93,102 @@ function StatusEditor({ settings, services }) {
     }
   }
   return (
-    <ValidatedForm kind="status" className="form-body" onSubmit={save}>
+    <ValidatedForm kind="status" className="space-y-8" onSubmit={save}>
       {error && (
         <p role="alert" className="text-rose-700 dark:text-rose-400">
           {error}
         </p>
       )}
-      <label className="field-label">
-        Visibility
-        <Select
-          name="visibility"
-          value={visibility}
-          onChange={(event) => setVisibility(event.target.value)}
-        >
-          <option value="private">Private — signed-in workspace members</option>
-          <option value="public">Public — anyone with the link</option>
-        </Select>
-      </label>
-      <p className="text-sm text-slate-500">
-        The public page has no sidebar or sign-in requirement. Published messages, service status,
-        descriptions, dependencies, and uptime history are public. Monitoring URLs, response
-        details, and account information stay private. Switching to private disables public access.
-      </p>
-      {initial.visibility === 'public' && (
-        <a
-          className="break-all text-sm text-blue-700 underline dark:text-blue-300"
-          href={initial.publicPath}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          View public status page ↗
-        </a>
-      )}
-      <StatusIconUpload hasIcon={initial.hasStatusIcon} />
-      <MessageEditor title="Global banner" value={banner} onChange={setBanner} />
-      <section className="space-y-4">
-        <h2 className="font-semibold">Service messages</h2>
+      <section className="space-y-3">
+        <label className="field-label">
+          Visibility
+          <Select
+            name="visibility"
+            value={visibility}
+            onChange={(event) => setVisibility(event.target.value)}
+          >
+            <option value="private">Private — signed-in workspace members</option>
+            <option value="public">Public — anyone with the link</option>
+          </Select>
+        </label>
+        <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+          Public pages share service details, dependencies, history, and published messages. Check
+          URLs and response details stay private.
+        </p>
+        {initial.visibility === 'public' && (
+          <a
+            className="break-all text-sm text-blue-700 underline dark:text-blue-300"
+            href={initial.publicPath}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View public status page ↗
+          </a>
+        )}
+      </section>
+      <section className="space-y-4 border-t border-slate-200 pt-6 dark:border-slate-700">
+        <h2 className="font-semibold">Subscriptions</h2>
+        <p className="text-sm text-slate-500">
+          Public pages include an RSS feed. Enable email updates with a configured email
+          integration.
+        </p>
+        <label className="field-label">
+          Public origin
+          <input
+            name="publicOrigin"
+            type="url"
+            required
+            value={publicOrigin}
+            onChange={(event) => setPublicOrigin(event.target.value)}
+          />
+        </label>
+        <p className="text-sm text-slate-500">
+          The HTTPS origin used in subscription links, such as https://status.example.com.
+        </p>
+        <label className="flex items-center gap-3 text-sm">
+          <Toggle
+            checked={emailSubscriptions}
+            onChange={(event) => setEmailSubscriptions(event.target.checked)}
+          />
+          Email updates
+        </label>
+        {emailSubscriptions && (
+          <label className="field-label">
+            Email integration
+            <Select
+              name="subscriptionIntegrationId"
+              required
+              value={subscriptionIntegrationId}
+              onChange={(event) => setSubscriptionIntegrationId(event.target.value)}
+            >
+              <option value="">Select an email integration</option>
+              {integrations
+                .filter((item) => item.type === 'email' && item.enabled && item.smtpConfigured)
+                .map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+            </Select>
+          </label>
+        )}
+        <Link className="text-sm text-blue-700 underline dark:text-blue-300" to="/integrations">
+          Configure email integrations
+        </Link>
+      </section>
+      <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
+        <StatusIconUpload hasIcon={initial.hasStatusIcon} />
+      </div>
+      <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
+        <MessageEditor title="Global banner" value={banner} onChange={setBanner} />
+      </div>
+      <section className="space-y-5 border-t border-slate-200 pt-6 dark:border-slate-700">
+        <div className="space-y-1">
+          <h2 className="font-semibold">Service messages</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Messages add context without changing measured health.
+          </p>
+        </div>
         <ReferenceField
           referenceType="services"
           label="Add a service message"
@@ -129,7 +204,7 @@ function StatusEditor({ settings, services }) {
         {messages.map((message) => (
           <div
             key={message.serviceId}
-            className="space-y-3 border-b border-slate-200 pb-5 dark:border-slate-700"
+            className="space-y-4 rounded-xl border border-slate-200 p-4 sm:p-5 dark:border-slate-700"
           >
             <MessageEditor
               title={
@@ -160,19 +235,18 @@ function StatusEditor({ settings, services }) {
           </div>
         ))}
       </section>
-      <p className="text-sm text-slate-500">
-        Messages provide context and do not override measured service health. Changes appear
-        publicly only after saving with public visibility.
-      </p>
-      <section className="space-y-2 text-sm">
-        <h2 className="font-semibold">Custom domain</h2>
-        <p>
-          Point your domain at an HTTPS reverse proxy for this app. Route its homepage to{' '}
-          <code className="break-all">{initial.publicPath}</code> and proxy the public API and
-          assets. DNS alone cannot map a domain to a URL path. See the custom-domain example in the
-          README.
-        </p>
-      </section>
+      <details className="border-t border-slate-200 pt-6 text-sm dark:border-slate-700">
+        <summary className="cursor-pointer font-semibold">Custom domain setup</summary>
+        <div className="mt-3 space-y-2 leading-6 text-slate-500 dark:text-slate-400">
+          <p>
+            Use an HTTPS reverse proxy to serve this public page on your domain. See the README for
+            configuration.
+          </p>
+          <p>
+            Public path: <code className="break-all">{initial.publicPath}</code>
+          </p>
+        </div>
+      </details>
       <div className="form-actions">
         <button
           type="button"
@@ -193,39 +267,43 @@ function StatusEditor({ settings, services }) {
 /** Consistent announcement controls and a live preview; never render administrator HTML. */
 function MessageEditor({ title, value, onChange }) {
   return (
-    <fieldset className="space-y-4">
-      <legend className="font-semibold">{title}</legend>
-      <label className="flex items-center gap-2 text-sm">
-        <Toggle
-          checked={value.enabled}
-          onChange={(event) => onChange({ ...value, enabled: event.target.checked })}
-        />
-        Display message
-      </label>
-      <label className="field-label">
-        Criticality
-        <Select
-          value={value.level}
-          onChange={(event) => onChange({ ...value, level: event.target.value })}
-        >
-          {STATUS_MESSAGE_LEVELS.map((level) => (
-            <option key={level} value={level}>
-              {displayValue(level)}
-            </option>
-          ))}
-        </Select>
-      </label>
-      <label className="field-label">
-        Message{value.enabled ? ' *' : ''}
-        <textarea
-          rows={3}
-          maxLength={1000}
-          required={value.enabled}
-          value={value.text}
-          onChange={(event) => onChange({ ...value, text: event.target.value })}
-        />
-      </label>
-      <StatusMessage message={value} compact />
+    <fieldset className="min-w-0">
+      <legend className="mb-4 font-semibold">{title}</legend>
+      <div className="space-y-5">
+        <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
+          <label className="flex min-h-12 items-center gap-3 text-sm">
+            <Toggle
+              checked={value.enabled}
+              onChange={(event) => onChange({ ...value, enabled: event.target.checked })}
+            />
+            Display message
+          </label>
+          <label className="field-label">
+            Criticality
+            <Select
+              value={value.level}
+              onChange={(event) => onChange({ ...value, level: event.target.value })}
+            >
+              {STATUS_MESSAGE_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {displayValue(level)}
+                </option>
+              ))}
+            </Select>
+          </label>
+        </div>
+        <label className="field-label">
+          Message{value.enabled ? ' *' : ''}
+          <textarea
+            rows={3}
+            maxLength={1000}
+            required={value.enabled}
+            value={value.text}
+            onChange={(event) => onChange({ ...value, text: event.target.value })}
+          />
+        </label>
+        <StatusMessage message={value} compact />
+      </div>
     </fieldset>
   );
 }

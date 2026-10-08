@@ -346,6 +346,13 @@ test(
       assert.equal(key in publicStatus.data.monitors[0], false, key);
     assert.equal(JSON.stringify(publicStatus.data).includes('secret'), false);
     assert.equal((await request(`/monitors/${monitorId}/events`)).status, 401);
+    assert.equal((await request('/status-settings/icon', viewer.cookie, 'DELETE')).status, 403);
+    assert.equal((await request('/status-settings/icon', other, 'DELETE')).status, 204);
+    assert.equal((await fetch(`${base}${publicApi}/icon`)).status, 200);
+    assert.equal((await request('/status-settings/icon', owner, 'DELETE')).status, 204);
+    assert.equal((await request('/status-settings', owner)).data.hasStatusIcon, false);
+    assert.equal((await fetch(`${base}${publicApi}/icon`)).status, 404);
+    assert.equal((await request('/status-settings/icon', owner, 'DELETE')).status, 204);
     await request('/status-settings', owner, 'PATCH', { visibility: 'private' });
     assert.equal((await request(publicApi)).status, 404);
     assert.equal((await fetch(`${base}${publicApi}/icon`)).status, 404);

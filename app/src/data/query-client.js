@@ -102,6 +102,8 @@ export async function writeApi(path, options) {
     }
     if (path === '/status-settings') {
       queryClient.setQueryData(resourceKey(path, account), result);
+    }
+    if (path === '/status-settings' || path === '/status-settings/icon') {
       void queryClient.cancelQueries({ queryKey: ['public'] });
       queryClient.removeQueries({ queryKey: ['public'] });
     }

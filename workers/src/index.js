@@ -1,3 +1,4 @@
+import { reconcileStatusSubscriptions, processStatusMail } from './status/subscriptions.js';
 import { summarizeStatusHistory } from '@servicekraken/shared/domain/status-history';
 import { ensureIntegrationKey } from '@servicekraken/shared/integrations/integration-key';
 import { cleanupAttachments } from '@servicekraken/shared/files/attachment-cleanup';
@@ -18,27 +19,39 @@ const connection = new Redis(process.env.REDIS_URL ?? 'redis://127.0.0.1:6379', 
 connection.on('error', (error) => console.error('Redis error:', error.code ?? error.name));
 const queue = new Queue('website-checks', { connection });
 const deliveries = new Queue('integration-deliveries', { connection });
+const statusMail = new Queue('public-status-mail', { connection });
+const statusMailWorker = new Worker(statusMail.name, (job) => processStatusMail(db, job.data.id), {
+  connection,
+  concurrency: 3,
+});
 const operations = new Queue('service-operations', { connection });
 const operationsWorker = new Worker(
   operations.name,
   (job) =>
-    job.name === 'status-history'
-      ? summarizeStatusHistory(db)
-      : job.name === 'cleanup-attachments'
-        ? cleanupAttachments(db)
-        : reconcileOperations(db, deliveries),
+    job.name === 'public-status'
+      ? reconcileStatusSubscriptions(db, statusMail)
+      : job.name === 'status-history'
+        ? summarizeStatusHistory(db)
+        : job.name === 'cleanup-attachments'
+          ? cleanupAttachments(db)
+          : reconcileOperations(db, deliveries),
   { connection, concurrency: 1 },
 );
 const deliveryWorker = new Worker(deliveries.name, (job) => processDelivery(db, job.data.id), {
   connection,
   concurrency: 3,
 });
-for (const item of [operationsWorker, deliveryWorker]) {
+for (const item of [operationsWorker, deliveryWorker, statusMailWorker]) {
   item.on('error', (error) => console.error('Operations worker error:', error.code ?? error.name));
   item.on('failed', (_job, error) =>
     console.error('Operations job failed:', error.code ?? error.name),
   );
 }
+await operations.upsertJobScheduler(
+  'public-status',
+  { every: 10000 },
+  { name: 'public-status', data: {}, opts: { removeOnComplete: 5, removeOnFail: 20 } },
+);
 await operations.upsertJobScheduler(
   'status-history',
   { every: 3600000 },
@@ -75,8 +88,13 @@ console.log(`Check worker ready; concurrency ${concurrency}. Scheduler runs sepa
 async function shutdown() {
   const deadline = setTimeout(() => process.exit(1), 25000);
   deadline.unref();
-  await Promise.all([worker.close(), operationsWorker.close(), deliveryWorker.close()]);
-  await Promise.all([operations.close(), deliveries.close()]);
+  await Promise.all([
+    worker.close(),
+    operationsWorker.close(),
+    deliveryWorker.close(),
+    statusMailWorker.close(),
+  ]);
+  await Promise.all([operations.close(), deliveries.close(), statusMail.close()]);
   await queue.close();
   await connection.quit();
   await client.close();

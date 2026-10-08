@@ -15,7 +15,7 @@ export const BUILTIN_FIELDS = [
   { id: 'assigneeId', label: 'Assigned to', type: 'builtin', required: false },
   { id: 'openedForId', label: 'Opened for', type: 'builtin', required: false },
   { id: 'description', label: 'Description', type: 'builtin', required: false },
-  { id: 'knowledgeIds', label: 'Knowledge articles', type: 'builtin', required: false },
+  { id: 'knowledgeIds', label: 'Knowledge', type: 'builtin', required: false },
   { id: 'resolutionNotes', label: 'Resolution notes', type: 'builtin', required: true },
 ].map((field) => ({ ...field, archived: false, options: [] }));
 

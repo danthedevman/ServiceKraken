@@ -208,7 +208,7 @@ export function WorkTable({
             </button>
           )
         }
-        title={task ? 'Tasks' : 'Knowledge articles'}
+        title={task ? 'Tasks' : 'Knowledge'}
         rows={resource.data?.items ?? []}
         columns={columns}
         rowKey={(r) => r.id}
@@ -537,8 +537,7 @@ function WorkForm({
   const [clientErrors, setClientErrors] = useState({});
   const errors = { ...save.fields, ...clientErrors };
   const task = kind === 'tasks',
-    navigate = useNavigate(),
-    { user } = useContext(AuthContext);
+    navigate = useNavigate();
   const draft = useAttachmentDraft(kind, item?.id, item?.attachmentIds ?? []);
   const choiceDefault = (field) => {
     const options = fieldChoices(
@@ -772,15 +771,7 @@ function WorkForm({
             : save.error || choices.error || selected.error
         }
       />
-      {item && user?.role === 'admin' && (
-        <div className="flex justify-end">
-          <ActionMenu label="Form actions">
-            <Link className="btn-secondary" to={`/${kind}/fields`}>
-              Form builder
-            </Link>
-          </ActionMenu>
-        </div>
-      )}
+
       {layout.map(control)}
       <AttachmentPicker draft={draft} imageIds={embeddedImageIds(value.contentDocument)} />
       <RecordActions>

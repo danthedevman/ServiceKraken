@@ -77,7 +77,7 @@ function ProfileMenu({ user, compact, logout, busy, onNavigate, dropdown = false
     >
       <Tooltip label={compact && !dropdown ? 'Profile and appearance settings' : null}>
         <summary
-          className="flex cursor-pointer list-none items-center gap-3 rounded-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden"
+          className={`flex cursor-pointer list-none items-center gap-3 rounded-xl p-2 hover:bg-slate-100 dark:hover:bg-slate-800 [&::-webkit-details-marker]:hidden ${compact ? 'mx-auto h-11 w-11 justify-center !gap-0 !p-0' : ''}`}
           aria-label="Profile and appearance settings"
           title={compact ? 'Profile and appearance settings' : undefined}
         >
@@ -255,7 +255,7 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
             <Tooltip label={compact ? 'Create' : null}>
               <button
                 type="button"
-                className={`btn-primary flex w-full items-center justify-center gap-2 ${compact ? '!px-2' : ''}`}
+                className={`btn-primary flex w-full items-center justify-center gap-2 ${compact ? '!mx-auto !h-11 !w-11 !gap-0 !p-0' : ''}`}
                 aria-haspopup="dialog"
                 title="Create"
                 onClick={openCreate}
@@ -282,7 +282,7 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
                 end={to === '/'}
                 onClick={close}
                 title={compact ? label : undefined}
-                className={`nav-link ${to === '/services' && pathname.startsWith('/monitors/') ? 'active' : ''} flex items-center gap-3 ${compact ? 'justify-center px-2' : ''}`}
+                className={`nav-link ${to === '/services' && pathname.startsWith('/monitors/') ? 'active' : ''} flex items-center gap-3 ${compact ? 'mx-auto h-11 w-11 justify-center !gap-0 !p-0' : ''}`}
               >
                 <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                 <span className={compact ? 'sr-only' : ''}>
@@ -295,7 +295,7 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
           <div className="flex justify-center">
             <Tooltip label="More">
               <span>
-                <ActionMenu label="More">
+                <ActionMenu label="More" borderless>
                   {secondaryLinks.map(([to, label]) => (
                     <NavLink key={to} to={to} className="nav-link" onClick={close}>
                       {label}

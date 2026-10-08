@@ -1,3 +1,4 @@
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { Select } from '../../components/forms/select.jsx';
 import { UserRecord } from './user-record.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
@@ -82,6 +83,7 @@ export function WorkspacePage({ form }) {
   );
   const actions = (
     <button className="btn-primary" onClick={() => navigate('/workspace/invite')}>
+      <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
       Invite teammate
     </button>
   );

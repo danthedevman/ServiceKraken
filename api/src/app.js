@@ -1,3 +1,4 @@
+import { installStatusSubscriptions } from './routes/status-subscriptions.js';
 import { installWorkspaceSettings } from './routes/workspace-settings.js';
 import { auditActivity } from './middleware/audit.js';
 import { installReferenceRoutes } from './routes/references.js';
@@ -61,6 +62,7 @@ export function createApp(db) {
     }),
   );
   app.use(express.json({ limit: '256kb' }));
+  installStatusSubscriptions(app, db, appOrigin);
   app.use('/api', (req, res, next) => {
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
       const origin = req.get('origin');

@@ -1,3 +1,5 @@
+import { StatusSubscriptions } from './subscriptions.jsx';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { Select } from '../../components/forms/select.jsx';
 import { statusRange } from '../../../../shared/domain/status-range.js';
 import { StatusMessage } from './message.jsx';
@@ -24,17 +26,19 @@ export function StatusPage({ publicView = false }) {
   );
   return (
     <section className="space-y-6">
-      <header className="flex items-center justify-between gap-4">
+      <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {!publicView && data?.iconUrl && (
             <img src={data.iconUrl} alt="" className="h-10 w-10 object-contain" />
           )}
           <h1 className="page-title">Service status</h1>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="field-label">
+        <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+          <label className="field-label !min-w-0 flex-1 sm:w-64">
             <span className="sr-only">History range</span>
             <Select
+              className="!mt-0 h-11"
+              aria-label="History range"
               value={range}
               onChange={(event) =>
                 setParams(
@@ -59,8 +63,13 @@ export function StatusPage({ publicView = false }) {
           </label>
           {!publicView && (
             <AdminOnly>
-              <Link className="btn-secondary" to="/status/settings">
-                Manage status page
+              <Link
+                className="btn-secondary h-11 w-11 shrink-0 !p-0"
+                to="/status/settings"
+                aria-label="Manage status page"
+                title="Manage status page"
+              >
+                <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
               </Link>
             </AdminOnly>
           )}
@@ -68,7 +77,7 @@ export function StatusPage({ publicView = false }) {
       </header>
       <ErrorNotice>{error}</ErrorNotice>
       {!data ? (
-        <p role="status">Loading service status…</p>
+        <p role="status">{error ? 'Service status is unavailable.' : 'Loading service status…'}</p>
       ) : (
         <>
           <StatusMessage message={data.banner} />
@@ -123,6 +132,7 @@ export function PublicStatusPage() {
         <ThemeToggle />
       </header>
       <main id="main">
+        <StatusSubscriptions token={token} capabilities={data?.subscriptions} />
         <StatusPage publicView />
       </main>
     </div>

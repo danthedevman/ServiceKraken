@@ -1,6 +1,21 @@
 /** Install the shared index and retention contract on the selected backend. */
 export async function initializeDatabase(db) {
   await Promise.all([
+    db.collection('statusSubscribers').createIndex({ workspaceId: 1, state: 1, _id: 1 }),
+    db.collection('statusSubscribers').createIndex({ confirmationHash: 1 }),
+    db.collection('statusSubscribers').createIndex({ unsubscribeHash: 1 }),
+    db
+      .collection('statusSubscribers')
+      .createIndex({ state: 1, confirmationQueued: 1, createdAt: 1 }),
+    db
+      .collection('publicStatusUpdates')
+      .createIndex({ workspaceId: 1, publicToken: 1, createdAt: -1 }),
+    db.collection('publicStatusUpdates').createIndex({ fanoutDone: 1, createdAt: 1 }),
+    db.collection('statusMail').createIndex({ status: 1, nextAttemptAt: 1 }),
+    db.collection('statusMail').createIndex({ workspaceId: 1, status: 1 }),
+    ...['statusSubscribers', 'publicStatusUpdates', 'statusMail'].map((name) =>
+      db.collection(name).createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    ),
     db.collection('auditEvents').createIndex({ workspaceId: 1, createdAt: -1, _id: 1 }),
     db.collection('auditEvents').createIndex({ workspaceId: 1, recordType: 1, recordId: 1 }),
     ...[

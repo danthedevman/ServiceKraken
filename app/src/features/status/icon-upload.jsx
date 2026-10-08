@@ -1,3 +1,4 @@
+import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 import { writeApi } from '../../data/query-client.js';
 
@@ -29,9 +30,11 @@ export function StatusIconUpload({ hasIcon }) {
   const [version, setVersion] = useState(Date.now());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   async function change(file) {
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       if (file)
         await writeApi('/status-settings/icon', {
@@ -40,6 +43,7 @@ export function StatusIconUpload({ hasIcon }) {
         });
       else await writeApi('/status-settings/icon', { method: 'DELETE' });
       setPresent(!!file);
+      setNotice(file ? 'Icon updated.' : 'Custom icon removed. The default icon is restored.');
       setVersion(Date.now());
     } catch (failure) {
       setError(failure.message);
@@ -48,15 +52,26 @@ export function StatusIconUpload({ hasIcon }) {
     }
   }
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
       <h2 className="font-semibold">Status page icon</h2>
-      {present && (
+      <div className="flex flex-wrap items-center gap-4">
         <img
-          src={`/api/status-settings/icon?v=${version}`}
-          alt="Current status page icon"
+          src={present ? `/api/status-settings/icon?v=${version}` : '/favicon.svg?v=connectors'}
+          alt={present ? 'Custom status page icon' : 'Default ServiceKraken icon'}
           className="h-16 w-16 object-contain"
         />
-      )}
+        {present && (
+          <button
+            type="button"
+            className="btn-secondary gap-2"
+            disabled={busy}
+            onClick={() => change(null)}
+          >
+            <TrashIcon className="h-4 w-4" aria-hidden="true" />
+            Remove custom icon
+          </button>
+        )}
+      </div>
       <label className="field-label">
         Upload icon
         <input
@@ -70,21 +85,12 @@ export function StatusIconUpload({ hasIcon }) {
           }}
         />
       </label>
-      <p className="text-sm text-slate-500">
-        PNG, JPEG, or WebP up to 2 MB. Resized to 256 pixels. Uploading or removing saves
-        immediately and updates public branding when the page is public.
+      <p className="text-sm text-slate-500 dark:text-slate-400">
+        PNG, JPEG, or WebP · Up to 2 MB. Icon changes save immediately.
       </p>
-      {present && (
-        <button
-          type="button"
-          className="btn-secondary"
-          disabled={busy}
-          onClick={() => change(null)}
-        >
-          Use default icon
-        </button>
-      )}
-      {busy && <p role="status">Updating icon…</p>}
+      <p role="status" className="text-sm text-slate-500 dark:text-slate-400">
+        {busy ? 'Updating icon…' : notice}
+      </p>
       {error && <p role="alert">{error}</p>}
     </section>
   );

@@ -74,7 +74,7 @@ export function SettingsPage() {
       <section className="panel space-y-4 p-6">
         <h2 className="text-lg font-semibold">Demo data</h2>
         <p>
-          Add 50 records of each type listed below. Only one demo dataset can exist in a workspace;
+          Add 50 records of each supported type. Only one demo dataset can exist in a workspace;
           delete it before adding another.
         </p>
         <p className="text-sm text-slate-500">
@@ -121,17 +121,6 @@ export function SettingsPage() {
           </>
         )}
       </section>
-      <DataTable
-        source="demo"
-        title="Demo dataset"
-        rows={resource.data?.types ?? []}
-        rowKey={(row) => row.key}
-        filename="demo-data-types.csv"
-        columns={[
-          { key: 'label', label: 'Record type', value: (row) => row.label },
-          { key: 'count', label: 'Records added', value: (row) => row.count },
-        ]}
-      />
       {marketing.data?.available && (
         <>
           <Notice error={inbox.error} />

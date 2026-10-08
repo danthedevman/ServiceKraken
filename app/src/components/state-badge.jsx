@@ -43,7 +43,7 @@ export function StateBadge({ status, label }) {
       className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium leading-4 ${tones[states[status] || 'gray']}`}
     >
       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
-      <span className="break-words">{text}</span>
+      <span className="min-w-0 truncate">{text}</span>
     </span>
   );
 }

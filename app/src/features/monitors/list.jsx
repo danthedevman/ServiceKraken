@@ -1,3 +1,4 @@
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { AdminOnly } from '../../auth/role-gates.jsx';
 
 import { DataTable } from '../../components/data-table.jsx';
@@ -28,6 +29,7 @@ export function MonitorList() {
           actions={
             <AdminOnly>
               <Link to="/monitors/new" className="btn-primary">
+                <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
                 Add monitor
               </Link>
             </AdminOnly>

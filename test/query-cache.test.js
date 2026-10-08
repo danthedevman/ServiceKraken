@@ -142,7 +142,12 @@ test('deleting a monitor removes its cached event pages and detail', async (t) =
   const paths = ['/monitors/one', '/monitors/one/events?page=1', '/monitors/one/events/event'];
   for (const path of paths)
     queryClient.setQueryData(resourceKey(path, 'owner@example.com'), { private: true });
-  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 204 }));
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    assert.equal(options.method, 'DELETE');
+    assert.equal(options.headers['Content-Type'], 'application/json');
+    assert.deepEqual(JSON.parse(options.body), {});
+    return new Response(null, { status: 204 });
+  });
   await writeApi('/monitors/one', { method: 'DELETE', body: {} });
   for (const path of paths)
     assert.equal(queryClient.getQueryData(resourceKey(path, 'owner@example.com')), undefined);
@@ -212,4 +217,22 @@ test('reference scrolling appends pages, retains results after failure, and rese
     queryClient.getQueryCache().findAll({ queryKey: ['private', 'owner@example.com'] }).length,
     0,
   );
+});
+
+test('removing a custom status icon clears public branding without replacing status settings', async (t) => {
+  setup(t);
+  const key = resourceKey('/status-settings', 'owner@example.com');
+  const settings = { visibility: 'public', revision: 3, hasStatusIcon: true };
+  queryClient.setQueryData(key, settings);
+  queryClient.setQueryData(resourceKey('/public/status/token', null), { iconUrl: '/old-icon' });
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    assert.equal(options.method, 'DELETE');
+    assert.equal(options.headers['Content-Type'], 'application/json');
+    assert.deepEqual(JSON.parse(options.body), {});
+    return new Response(null, { status: 204 });
+  });
+  await writeApi('/status-settings/icon', { method: 'DELETE' });
+  assert.equal(queryClient.getQueryCache().findAll({ queryKey: ['public'] }).length, 0);
+  assert.deepEqual(queryClient.getQueryData(key), settings);
+  assert.equal(queryClient.getQueryState(key).isInvalidated, true);
 });

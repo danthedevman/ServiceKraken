@@ -4,6 +4,8 @@
 
 ServiceKraken is a free, open source application for service monitoring and incident response. It brings services, health checks, incidents, tasks, knowledge, and on-call coverage into one place that developers and small teams can run themselves.
 
+> **Status: Alpha** — ServiceKraken is under active development and intended for evaluation, development environments, and small-team pilots. Expect changing features and occasional bugs. Back up your data before upgrading, and do not rely on it as your only system for critical monitoring or incident response.
+
 ## Why I built this
 
 After years of working with enterprise platforms, I wanted to take the parts that help teams do their work and make them available in a smaller, more approachable tool. Knowing what a service depends on, who owns it, what is broken, and what happened last time should be within reach of a team without a large platform budget.
@@ -168,7 +170,9 @@ Back up the database, the integration-encryption key, and the persistent Redis d
 
 Checks currently target public HTTP/HTTPS addresses on standard ports. Private and reserved addresses are blocked, and followed redirects are revalidated. Self-hosting does not automatically enable scanning an internal network. These are HTTP availability checks, not TCP, database, or full infrastructure monitoring.
 
-ServiceKraken is still developing. It does not currently include SSO/MFA, password-reset email, SMS/voice paging, multi-step on-call escalation, or a hosted uptime SLA. I would evaluate these gaps against your team's needs before making it the only system you rely on for critical response.
+ServiceKraken is currently alpha. It does not include SSO/MFA, password-reset email, SMS/voice paging, multi-step on-call escalation, or a hosted uptime SLA. Test upgrades and backup restores in an isolated environment before updating a pilot deployment. Automated tests are useful checks, but they are not a guarantee of production readiness.
+
+Before calling it beta, I want the core workflows to be stable, upgrade and recovery procedures to be validated, permissions and integrations to have broader testing, and realistic load tests to establish capacity. There is no committed beta release date.
 
 See [operations and recovery](docs/operations.md), [database deployment](docs/database-backends.md), and [audit-log coverage](docs/audit-log.md) for more detail.
 
@@ -179,6 +183,18 @@ Open **Service status → Manage status page**, choose **Public**, and save. The
 Admins can upload a branding icon and publish a global banner or service-specific message with Information, Maintenance, Warning, or Critical severity. Disabled messages remain drafts. Messages are plain text and do not change measured health. Only publish information intended for your public audience.
 
 History supports 7, 14, and 30 days, plus the current and previous UTC calendar quarters. The chosen range is included in the URL. Missing or expired observations are shown as unavailable rather than assumed healthy.
+
+### Email and RSS subscriptions
+
+Public visitors can use **Subscribe by email** or copy the **RSS feed** link into their feed reader. RSS needs no email provider. Feeds include the latest 50 public updates within the last 30 days.
+
+To enable email, configure and enable an email integration under **Integrations**, then open **Service status → Settings → Subscriptions**. Enable **Email updates**, select that integration, and set **Public origin** to your reachable HTTPS origin (for example, `https://status.example.com`). Local development allows HTTP on localhost. Your SMTP provider must authorize the sender address. SendGrid and other providers offering authenticated SMTP can use this integration.
+
+Subscribers must confirm their email address using a link that expires after 24 hours. Each email includes an unsubscribe link; visitors confirm that action on the page, so email link scanners cannot unsubscribe them automatically. Repeat signup requests do not send duplicate confirmations during that period. Unsubscribe still works when the page is private.
+
+Workers check for public service-health changes and published banner/service-message changes every 10 seconds. Unchanged checks do not generate emails. Internal incidents, work notes, monitor endpoints, response bodies, and drafts are excluded. Turning the page private stops new public deliveries and RSS access; previously delivered emails or cached feeds cannot be recalled.
+
+Keep the API, workers, Redis, and database running. Delivery jobs survive restarts, retry transient email failures up to five times, and expire after seven days. Delivery is at least once: an interruption after SMTP acceptance can cause a duplicate email. Pending subscribers expire after 24 hours; confirmed subscriptions remain until unsubscribed. Delivery metadata is retained for seven days. Signup has per-IP and per-page limits; for multiple API replicas, also apply shared rate limiting at your reverse proxy and provider sending limits. Confirmation and update delivery failures are recorded in the `statusMail` collection without SMTP error details or credentials.
 
 ### Serve a public status page on your own domain
 
@@ -203,6 +219,14 @@ location = /api/public/status/YOUR_PUBLIC_TOKEN/icon {
     limit_except GET { deny all; }
     proxy_pass http://127.0.0.1:8090;
 }
+location = /api/public/status/YOUR_PUBLIC_TOKEN/feed.xml {
+    limit_except GET { deny all; }
+    proxy_pass http://127.0.0.1:8090;
+}
+location ~ ^/api/public/status/YOUR_PUBLIC_TOKEN/subscriptions(/confirm|/unsubscribe)?$ {
+    limit_except POST { deny all; }
+    proxy_pass http://127.0.0.1:8090;
+}
 location /assets/ {
     proxy_pass http://127.0.0.1:8090;
 }
@@ -217,9 +241,9 @@ location / {
 }
 ```
 
-Keep the private app on its existing origin. The public page uses same-origin
-read requests, so no change to `APP_ORIGIN` or cross-origin write permissions is
-needed. DNS, proxy configuration, and TLS certificates remain deployment tasks;
+Keep the private app on its existing origin. Set **Public origin** in status settings to this domain. Public requests stay
+same-origin; subscription writes accept only the configured status origin or app
+origin. No change to `APP_ORIGIN` is needed. DNS, proxy configuration, and TLS certificates remain deployment tasks;
 the app does not provision domains or certificates.
 
 ## Local development

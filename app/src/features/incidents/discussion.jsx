@@ -69,6 +69,7 @@ export function IncidentDiscussion({ incidentId, comments, role }) {
             errors={save.fields}
           >
             <AutoTextarea
+              className="discussion-composer"
               aria-describedby="discussion-visibility"
               placeholder={
                 kind === 'work_note'

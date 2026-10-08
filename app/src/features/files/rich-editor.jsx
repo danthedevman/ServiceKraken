@@ -91,7 +91,8 @@ export function RichEditor({
   return (
     <div className="space-y-2">
       <div
-        className={`overflow-hidden rounded-lg border bg-white dark:bg-slate-900 ${error ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
+        className="rich-editor-field overflow-hidden bg-white dark:bg-slate-900"
+        aria-invalid={error ? true : undefined}
       >
         <div
           role="group"

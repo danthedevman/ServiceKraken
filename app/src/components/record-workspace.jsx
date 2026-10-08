@@ -1,7 +1,10 @@
+import { Link } from 'react-router-dom';
+import { AuthContext } from '../auth/auth-context.js';
+import { ActionMenu } from './action-menu.jsx';
 import { StateBadge } from './state-badge.jsx';
 import { RecordActionContext } from './record-actions.jsx';
 import { recordNumber } from '../lib/record-number.js';
-import React, { useId, useState } from 'react';
+import React, { useContext, useId, useState } from 'react';
 import {
   PencilSquareIcon,
   ChevronDoubleLeftIcon,
@@ -22,6 +25,9 @@ export function RecordWorkspace({
   actions,
   status,
 }) {
+  const { user } = useContext(AuthContext);
+  const showFormBuilder =
+    user?.role === 'admin' && ['incidents', 'tasks', 'knowledge'].includes(kind);
   const { rightCollapsed: collapsed, setPreference } = useUiPreferences(),
     id = useId();
   const [toolbar, setToolbar] = useState(null);
@@ -55,6 +61,11 @@ export function RecordWorkspace({
             <div ref={setToolbar} className="flex flex-wrap items-center gap-2">
               {onEdit && <EditRecordButton onClick={onEdit} />}
               {actions}
+              {showFormBuilder && (
+                <ActionMenu label="Form actions">
+                  <Link to={`/${kind}/fields`}>Form builder</Link>
+                </ActionMenu>
+              )}
             </div>
           </div>
           <RecordActionContext.Provider value={toolbar}>{children}</RecordActionContext.Provider>

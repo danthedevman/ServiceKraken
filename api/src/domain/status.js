@@ -1,3 +1,4 @@
+import { subscriptionInfo } from '@servicekraken/shared/status/subscriptions';
 import { statusRange } from '@servicekraken/shared/domain/status-range';
 import { catalog } from '../routes/services.js';
 
@@ -115,6 +116,7 @@ export async function statusData(db, userId, serializeMonitor, publicView = fals
     .collection('statusIcons')
     .findOne({ _id: userId }, { projection: { updatedAt: 1 } });
   return {
+    ...(publicView ? { subscriptions: await subscriptionInfo(db, data) } : {}),
     iconUrl: icon
       ? `${publicView ? `/api/public/status/${data.publicToken}/icon` : '/api/status-settings/icon'}?v=${icon.updatedAt.getTime()}`
       : null,

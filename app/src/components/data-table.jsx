@@ -184,38 +184,6 @@ function DataTableView({
               label={`Refresh ${title.toLowerCase()}`}
             />
           )}
-          {selectedRows.length > 0 && (
-            <>
-              <span className="self-center text-xs" role="status">
-                {selectedRows.length} selected
-              </span>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() =>
-                  saveCsv(
-                    new Blob([toCsv(selectedRows, columns)], { type: 'text/csv;charset=utf-8' }),
-                    filename.replace(/\.csv$/, '-selected.csv'),
-                  )
-                }
-              >
-                Export selected
-              </button>
-              {user?.role === 'admin' && (deletePath || onDeleteRow) && (
-                <button
-                  type="button"
-                  className="btn-secondary text-rose-700"
-                  disabled={deleting}
-                  onClick={() => {
-                    setDeleteError('');
-                    setConfirmRows([...selectedRows]);
-                  }}
-                >
-                  Delete selected
-                </button>
-              )}
-            </>
-          )}
           <ActionMenu label={`${title} actions`}>
             {secondaryActions}
             <button
@@ -239,6 +207,42 @@ function DataTableView({
         <p role="alert" className="px-6 py-3 text-sm text-rose-700 dark:text-rose-400">
           {exportError}
         </p>
+      )}
+      {selectedRows.length > 0 && (
+        <div
+          role="group"
+          aria-label="Selected record actions"
+          className="flex shrink-0 flex-wrap items-center gap-3 border-b border-slate-200 px-6 py-3 dark:border-slate-800"
+        >
+          <span className="self-center text-xs" role="status">
+            {selectedRows.length} selected
+          </span>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() =>
+              saveCsv(
+                new Blob([toCsv(selectedRows, columns)], { type: 'text/csv;charset=utf-8' }),
+                filename.replace(/\.csv$/, '-selected.csv'),
+              )
+            }
+          >
+            Export selected
+          </button>
+          {user?.role === 'admin' && (deletePath || onDeleteRow) && (
+            <button
+              type="button"
+              className="btn-secondary text-rose-700"
+              disabled={deleting}
+              onClick={() => {
+                setDeleteError('');
+                setConfirmRows([...selectedRows]);
+              }}
+            >
+              Delete selected
+            </button>
+          )}
+        </div>
       )}
       {invalid ? (
         <p role="alert" className="p-6 text-sm text-rose-700 dark:text-rose-400">
@@ -349,9 +353,19 @@ function DataTableView({
                         {column.key === 'actions' && column.render ? (
                           <RowActions render={column.render} row={row} />
                         ) : column.render ? (
-                          column.render(row)
+                          <div
+                            className="table-cell-value"
+                            title={String(column.value?.(row) ?? '')}
+                          >
+                            {column.render(row)}
+                          </div>
                         ) : (
-                          String(column.value(row) ?? '—')
+                          <div
+                            className="table-cell-value"
+                            title={String(column.value(row) ?? '—')}
+                          >
+                            {String(column.value(row) ?? '—')}
+                          </div>
                         )}
                       </td>
                     ))}

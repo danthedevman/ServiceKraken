@@ -366,7 +366,7 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
         </Modal>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="field-label">
+        <label className="field-label w-full sm:w-80">
           Service
           <Select value={serviceId} onChange={(e) => setService(e.target.value)}>
             <option value="">All services</option>

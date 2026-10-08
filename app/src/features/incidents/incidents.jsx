@@ -1,3 +1,4 @@
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { FormSkeleton } from '../../components/skeleton.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { TableSearch } from '../../components/table-search.jsx';
@@ -107,6 +108,7 @@ export function IncidentsPage({ initialServiceId = '', related = false }) {
               className="btn-primary"
               to={`/incidents/new${initialServiceId ? `?serviceId=${initialServiceId}` : ''}`}
             >
+              <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
               Create incident
             </Link>
           )
@@ -471,11 +473,11 @@ export function IncidentPage({ edit = false }) {
                           },
                           {
                             id: 'knowledge',
-                            label: 'Knowledge articles',
+                            label: 'Knowledge',
                             content: (
                               <DataTable
                                 source={`incident-knowledge?recordId=${item.id}`}
-                                title="Associated knowledge articles"
+                                title="Knowledge"
                                 rows={incident.data.knowledge ?? []}
                                 rowKey={(row) => row.id}
                                 filename="incident-knowledge.csv"
@@ -730,15 +732,6 @@ function IncidentEditor({
         );
       }}
     >
-      {current && user?.role === 'admin' && (
-        <div className="flex justify-end">
-          <ActionMenu label="Form actions">
-            <Link className="btn-secondary" to="/incidents/fields">
-              Form builder
-            </Link>
-          </ActionMenu>
-        </div>
-      )}
       <Notice
         error={
           Object.keys(clientErrors).length

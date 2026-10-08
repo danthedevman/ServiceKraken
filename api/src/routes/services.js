@@ -1,3 +1,4 @@
+import { publicOrigin, subscriptionMailer } from '@servicekraken/shared/status/subscriptions';
 import { installStatusIconRoutes } from './status-icon.js';
 import { statusMessage } from '@servicekraken/shared/domain/status-messages';
 import { auditStamp } from '@servicekraken/shared/domain/audit';
@@ -269,6 +270,9 @@ export function installServiceRoutes(app, db) {
       hasStatusIcon: !!(await db
         .collection('statusIcons')
         .findOne({ _id: req.workspaceId }, { projection: { _id: 1 } })),
+      emailSubscriptions: data.emailSubscriptions ?? false,
+      subscriptionIntegrationId: data.subscriptionIntegrationId ?? '',
+      publicOrigin: data.publicOrigin || process.env.APP_ORIGIN || 'http://127.0.0.1:8090',
       visibility: data.visibility,
       publicPath: `/status/public/${data.publicToken}`,
       revision: data.revision,
@@ -303,6 +307,31 @@ export function installServiceRoutes(app, db) {
         };
       });
     }
+    if (req.body.emailSubscriptions !== undefined) {
+      if (typeof req.body.emailSubscriptions !== 'boolean')
+        throw new InputError('Choose whether email subscriptions are enabled.', 400);
+      data.emailSubscriptions = req.body.emailSubscriptions;
+    }
+    if (req.body.publicOrigin !== undefined)
+      data.publicOrigin = publicOrigin(req.body.publicOrigin);
+    if (req.body.subscriptionIntegrationId !== undefined) {
+      if (
+        typeof req.body.subscriptionIntegrationId !== 'string' ||
+        (req.body.subscriptionIntegrationId &&
+          !/^[a-f\d]{24}$/i.test(req.body.subscriptionIntegrationId))
+      )
+        throw new InputError('Choose an email integration.', 400, {
+          subscriptionIntegrationId: 'Choose an email integration.',
+        });
+      data.subscriptionIntegrationId = req.body.subscriptionIntegrationId;
+    }
+    if (data.emailSubscriptions && !(await subscriptionMailer(db, data)))
+      throw new InputError('Choose an enabled email integration with SMTP credentials.', 400, {
+        subscriptionIntegrationId: 'Choose an enabled email integration with SMTP credentials.',
+      });
+    data.publicOrigin = publicOrigin(
+      data.publicOrigin || process.env.APP_ORIGIN || 'http://127.0.0.1:8090',
+    );
     data.statusUpdatedAt = new Date();
     data.statusUpdatedById = String(req.user._id);
     data.visibility = req.body.visibility;
@@ -311,6 +340,9 @@ export function installServiceRoutes(app, db) {
       hasStatusIcon: !!(await db
         .collection('statusIcons')
         .findOne({ _id: req.workspaceId }, { projection: { _id: 1 } })),
+      emailSubscriptions: data.emailSubscriptions ?? false,
+      subscriptionIntegrationId: data.subscriptionIntegrationId ?? '',
+      publicOrigin: data.publicOrigin || process.env.APP_ORIGIN || 'http://127.0.0.1:8090',
       visibility: data.visibility,
       publicPath: `/status/public/${data.publicToken}`,
       revision: data.revision,

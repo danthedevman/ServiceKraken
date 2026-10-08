@@ -2,21 +2,19 @@
  * @param {string} path @param {RequestInit & {body?: any}} [options] @returns {Promise<any>}
  */
 export async function api(path, options = {}) {
+  // Express requires an actual JSON body for write requests, including bodyless deletes.
+  const method = (options.method ?? 'GET').toUpperCase();
+  const body =
+    options.body === undefined && !['GET', 'HEAD', 'OPTIONS'].includes(method) ? {} : options.body;
   const response = await fetch(`/api${path}`, {
     ...options,
     credentials: 'same-origin',
     headers: {
-      'Content-Type':
-        options.body instanceof Blob ? 'application/octet-stream' : 'application/json',
+      'Content-Type': body instanceof Blob ? 'application/octet-stream' : 'application/json',
       'X-Requested-With': 'ServiceKraken',
       ...options.headers,
     },
-    body:
-      options.body === undefined
-        ? undefined
-        : options.body instanceof Blob
-          ? options.body
-          : JSON.stringify(options.body),
+    body: body === undefined ? undefined : body instanceof Blob ? body : JSON.stringify(body),
   });
   if (response.status === 204) return null;
   const data = await response

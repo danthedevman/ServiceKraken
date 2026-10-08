@@ -60,10 +60,10 @@
     @apply mt-2 block w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-3 text-sm font-normal text-slate-900 dark:text-slate-100 focus:border-blue-600 dark:focus:border-blue-400 focus:outline-blue-600 dark:focus:outline-blue-400;
   }
   .panel {
-    @apply rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xs;
+    @apply rounded-[4px] border-0 bg-white dark:bg-slate-900 shadow-xs;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-3 rounded-lg bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-800;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-800;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 transition hover:bg-slate-50 dark:hover:bg-slate-800;
@@ -791,6 +791,11 @@ select:disabled,
   background-color: transparent;
 }
 
+/* Give inline labeled dropdowns room without overflowing narrow form columns. */
+.field-label:has(> .custom-select) {
+  min-width: min(100%, 16rem);
+}
+
 .custom-select {
   display: block;
   min-width: 0;
@@ -830,6 +835,11 @@ select:disabled,
   cursor: pointer;
   font-size: 0.875rem;
 }
+.select-option > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
 .select-option[data-active='true'],
 .select-option:hover {
   background: #eff6ff;
@@ -853,11 +863,12 @@ select:disabled,
 /* Related lists share one tab strip and a compact table action row. */
 .related-lists {
   min-width: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
+  border: 0;
+  border-radius: 4px;
   background: #fff;
 }
 .related-lists > [role='tablist'] {
+  border-radius: 0;
   gap: 0;
   padding-bottom: 0;
   background: #f8fafc;
@@ -884,7 +895,6 @@ select:disabled,
   min-width: 0;
 }
 [data-theme='dark'] .related-lists {
-  border-color: #334155;
   background: #0f172a;
 }
 [data-theme='dark'] .related-lists > [role='tablist'] {
@@ -933,4 +943,69 @@ select:disabled,
   .skeleton {
     animation: none;
   }
+}
+
+/* Keep long record values compact without clipping action menus. */
+.data-table .table-cell-value {
+  max-width: 24rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.data-table .table-cell-value > a {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Shared field and action geometry; composite controls retain their own focus handling. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+textarea,
+select,
+.select-trigger,
+.history-select,
+.reference-control,
+.rich-editor-field,
+.record-details dd {
+  border: 0;
+  border-radius: 4px;
+}
+button,
+.btn-primary,
+.btn-secondary,
+.select-options {
+  border-radius: 4px;
+}
+input[aria-invalid='true'],
+textarea[aria-invalid='true'],
+.select-trigger[aria-invalid='true'],
+.reference-control[aria-invalid='true'],
+.rich-editor-field[aria-invalid='true'] {
+  outline: 2px solid #e11d48;
+  outline-offset: 1px;
+}
+
+/* Related-list tabs meet flush, independent of shared button corners. */
+button.related-list-tab {
+  border-radius: 0;
+}
+
+/* Distinguish the composer from its borderless conversation panel in both themes. */
+textarea.discussion-composer {
+  background-color: #f1f5f9;
+  box-shadow: inset 0 0 0 1px #cbd5e1;
+}
+[data-theme='dark'] textarea.discussion-composer {
+  background-color: #1e293b;
+  box-shadow: inset 0 0 0 1px #64748b;
+}
+textarea.discussion-composer:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+[data-theme='dark'] textarea.discussion-composer:focus {
+  outline-color: #60a5fa;
+}
+textarea.discussion-composer[aria-invalid='true'] {
+  outline-color: #e11d48;
 }
