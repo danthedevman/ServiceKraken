@@ -1,34 +1,6 @@
+import { serviceDays } from './service-days.js';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-
-/** Summarize a service and its dependencies once per day, without duplicating shared dependencies. */
-function serviceDays(service, services, monitors, generatedAt, days) {
-  const ids = new Set();
-  const visit = (id) => {
-    if (ids.has(id)) return;
-    ids.add(id);
-    services.find((item) => item.id === id)?.dependencyIds?.forEach(visit);
-  };
-  visit(service.id);
-  const relevant = monitors.filter((monitor) => ids.has(monitor.serviceId));
-  return Array.from({ length: days }, (_, index) => {
-    const date = new Date(generatedAt);
-    date.setUTCHours(0, 0, 0, 0);
-    date.setUTCDate(date.getUTCDate() - days + 1 + index);
-    const day = date.toISOString().slice(0, 10);
-    const checks = relevant.map((monitor) => monitor.history.find((entry) => entry.day === day));
-    const total = checks.reduce((sum, entry) => sum + (entry?.total ?? 0), 0);
-    const up = checks.reduce((sum, entry) => sum + (entry?.up ?? 0), 0);
-    const status =
-      total > up
-        ? 'down'
-        : checks.length && checks.every((entry) => entry?.total)
-          ? 'up'
-          : 'unknown';
-    const label = `${date.toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' })} (UTC): ${status === 'down' ? 'Disruption detected' : status === 'up' ? 'Operational' : 'Incomplete or no data'}${total ? ` · ${((up / total) * 100).toFixed(1)}% of checks successful` : ''}`;
-    return { day, status, label };
-  });
-}
 
 /** Accessible daily status blocks with tooltips anchored above the hovered or focused block. */
 export function ServiceHistory({
@@ -49,7 +21,7 @@ export function ServiceHistory({
       window.removeEventListener('resize', dismiss);
     };
   }, []);
-  const days = serviceDays(service, services, monitors, endDate || generatedAt, range);
+  const days = serviceDays(service, services, monitors, endDate || generatedAt, range, generatedAt);
   const show = (event, label) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const width = Math.min(280, window.innerWidth - 16);
@@ -66,6 +38,7 @@ export function ServiceHistory({
   const colors = {
     up: 'bg-emerald-500 dark:bg-emerald-400',
     down: 'bg-rose-500 dark:bg-rose-400',
+    degraded: 'bg-amber-500 dark:bg-amber-400',
     unknown: 'bg-slate-200 dark:bg-slate-700',
   };
   return (

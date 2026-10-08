@@ -120,7 +120,7 @@ export function GroupsPage({ form = false }) {
           secondaryActions={
             admin && (
               <Link className="btn-secondary" to="/workspace">
-                Workspace users
+                Users
               </Link>
             )
           }
@@ -128,7 +128,7 @@ export function GroupsPage({ form = false }) {
             admin && (
               <button className="btn-primary" onClick={() => navigate('/groups/new')}>
                 <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                Create group
+                Create
               </button>
             )
           }

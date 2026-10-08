@@ -88,6 +88,19 @@ export async function processMonitor(db, monitorId, check = checkWebsite, { queu
     ...result,
   };
   const { details, ...summary } = result;
+  // A long gap or a successful response breaks the consecutive-failure sequence.
+  const previous = monitor.lastCheck;
+  const continuous =
+    previous &&
+    +monitor.lastStartedAt - +new Date(previous.checkedAt) <=
+      (monitor.intervalMinutes * 60 + 60) * 1000;
+  const consecutiveFailures =
+    result.status === 'down'
+      ? Math.min(
+          10,
+          (continuous && previous.status === 'down' ? (previous.consecutiveFailures ?? 1) : 0) + 1,
+        )
+      : 0;
   // Deleted monitors must not regain a visible status from an in-flight request.
   await db.collection('monitors').updateOne(
     {
@@ -101,7 +114,9 @@ export async function processMonitor(db, monitorId, check = checkWebsite, { queu
         ],
       },
     },
-    { $set: { lastCheck: { checkedAt: event.checkedAt, timing, ...summary } } },
+    {
+      $set: { lastCheck: { checkedAt: event.checkedAt, timing, ...summary, consecutiveFailures } },
+    },
   );
   if (await db.collection('monitors').findOne({ _id }, { projection: { _id: 1 } }))
     await db.collection('events').insertOne(event);

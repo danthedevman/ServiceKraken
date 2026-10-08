@@ -28,6 +28,7 @@ const states = {
   queued: 'amber',
   medium: 'amber',
   down: 'red',
+  degraded: 'amber',
   blocked: 'red',
   failed: 'red',
   high: 'red',

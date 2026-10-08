@@ -37,6 +37,33 @@ Admins manage configuration and membership. Responders work on incidents, tasks,
 
 ## Start with Docker
 
+### Install the prerequisites
+
+For the default Docker setup, install Git and Docker with Compose:
+
+| Tool                             | Installation guide                                                                                                                                         | What you need it for                                                                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Git                              | [Install Git for your operating system](https://git-scm.com/install/)                                                                                      | Clone the repository and download future updates.                                          |
+| Docker Desktop                   | [Get Docker for macOS, Windows, or Linux](https://docs.docker.com/get-started/get-docker/)                                                                 | Run the application containers locally. Docker Desktop includes Docker Engine and Compose. |
+| Docker Engine and Compose plugin | [Install Docker Engine on Linux](https://docs.docker.com/engine/install/) and [install the Compose plugin](https://docs.docker.com/compose/install/linux/) | An alternative to Docker Desktop for a Linux server.                                       |
+
+Choose Docker Desktop or Docker Engine with the Compose plugin; you do not need both. Follow the linked guide for your operating system's requirements, then start Docker Desktop or the Docker Engine service before continuing.
+
+Open a terminal and check that the tools are available and Docker is running:
+
+```sh
+git --version
+docker --version
+docker compose version
+docker info
+```
+
+If `docker compose` is unavailable, follow the [Compose installation guide](https://docs.docker.com/compose/install/). If `docker info` cannot connect, start Docker and check the installation guide for your platform.
+
+You do not need to install Node.js, npm, MongoDB, or Redis separately for this setup; the containers supply them. The first build needs internet access to download images and packages. Keep port **8090** available for the application.
+
+### Download and start ServiceKraken
+
 Clone the repository and enter its directory:
 
 ```sh
@@ -46,7 +73,9 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Docker with Compose is required. Open **<http://127.0.0.1:8090>** and create an account. The API health endpoint is <http://127.0.0.1:8090/api/health>.
+These commands work in macOS/Linux shells and Windows PowerShell. In Windows Command Prompt, use `copy .env.example .env` instead of `cp .env.example .env`.
+
+Wait for the build and startup to finish, then open **<http://127.0.0.1:8090>** and create an account. The API health endpoint is <http://127.0.0.1:8090/api/health>.
 
 The default setup runs the frontend, Express API, check workers, scheduler, MongoDB, and Redis as separate containers. Data and the integration-encryption key are kept in persistent volumes.
 
@@ -70,7 +99,7 @@ docker compose down
 
 1. Create a service for an application or API your team owns.
 2. Add a monitor to its health endpoint. Use HEAD if the endpoint supports it and you only need its HTTP status; use GET when response content is useful for investigation.
-3. Invite teammates, assign service owners, and add dependencies where a failure can affect another service.
+3. Create user profiles from Users, assign service owners, and add dependencies where a failure can affect another service.
 4. Connect one notification channel and confirm delivery before relying on it.
 5. Add a short runbook and an on-call schedule so an alert has an owner and a next step.
 
@@ -176,6 +205,100 @@ Before calling it beta, I want the core workflows to be stable, upgrade and reco
 
 See [operations and recovery](docs/operations.md), [database deployment](docs/database-backends.md), and [audit-log coverage](docs/audit-log.md) for more detail.
 
+## Deploy to Render
+
+You can host ServiceKraken on [Render](https://render.com/). This is a manual deployment using the repository's Dockerfiles; the Compose file is for local hosting and is not a one-click Render deployment. I have not yet validated this guide with a live Render deployment.
+
+### 1. Create the database and queue
+
+Connect your GitHub repository in the [Render dashboard](https://dashboard.render.com/). Keep the application services and managed data services in the same workspace and region so they can communicate over [Render's private network](https://render.com/docs/private-network).
+
+- **Database:** create [Render Postgres](https://render.com/docs/postgresql-creating-connecting), or use an existing MongoDB deployment such as [MongoDB Atlas](https://www.mongodb.com/atlas). For Atlas, allow the connecting services' [Render outbound IP ranges](https://render.com/docs/outbound-ip-addresses) and use a database user scoped to the application database.
+- **Queue:** create a paid [Render Key Value](https://render.com/docs/key-value) instance with persistence enabled and the memory policy set to `noeviction`. Copy its internal connection URL for `REDIS_URL`. Leave external access disabled unless you need it.
+
+Use always-on services for monitoring. Sleeping services and nonpersistent queues are unsuitable for reliable scheduled checks. Review [free-plan limitations](https://render.com/docs/free) and [Render pricing](https://render.com/pricing): the frontend, API, workers, scheduler, database, and queue are separate resources with separate costs.
+
+### 2. Configure shared secrets
+
+Use Render's [environment variables and environment groups](https://render.com/docs/configure-environment-variables) for configuration. Render does not read the local Compose environment automatically. Share the following settings with the API, workers, and scheduler, but never the frontend:
+
+| Variable                     | Value                                                  |
+| ---------------------------- | ------------------------------------------------------ |
+| `NODE_ENV`                   | `production`                                           |
+| `INTEGRATION_ENCRYPTION_KEY` | One shared, persistent 64-character hexadecimal secret |
+| `INTEGRATION_KEY_FILE`       | `/srv/secrets/integration.key`                         |
+
+For a new installation, generate the encryption key once on your own computer:
+
+```sh
+openssl rand -hex 32
+```
+
+Save it as a Render secret and keep a secure backup. For an existing installation, reuse its original key so saved integration credentials remain readable. Do not regenerate it during deployments. Separate Render containers cannot share the local Compose key volume; the shared environment secret lets each container recreate its key file safely.
+
+Choose one database configuration and apply it to all three Node services:
+
+| Database                             | Environment variables                                                                                                         |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Render Postgres, internal connection | `DATABASE_PROVIDER=postgres`, `DATABASE_URL=<internal connection URL>`, `DATABASE_SCHEMA=servicekraken`, `DATABASE_SSL=false` |
+| MongoDB                              | `DATABASE_PROVIDER=mongodb`, `MONGODB_URI=<authenticated connection URL>`, `MONGODB_DB=servicekraken`                         |
+
+The PostgreSQL internal example uses an unencrypted connection on Render's private network. Render's internal TLS uses self-signed certificates, which do not work with this app's default certificate verification. If you require verified TLS, use the full external database hostname with `DATABASE_SSL=true` and restrict database access to the services' outbound IP ranges. Do not disable certificate verification. See [Render's connection and TLS guidance](https://render.com/docs/postgresql-creating-connecting) and the [database setup guide](docs/database-backends.md).
+
+### 3. Create the application services
+
+For each service, select the same repository and deployment branch with the **Docker** runtime. Leave **Root Directory** empty and use the repository root (`.`) as the Docker build context; the Dockerfiles need the shared workspace files. See [Docker on Render](https://render.com/docs/docker).
+
+| Service   | Render service type | Dockerfile path      | Docker command override         |
+| --------- | ------------------- | -------------------- | ------------------------------- |
+| API       | Private Service     | `api/Dockerfile`     | Leave empty                     |
+| Workers   | Background Worker   | `workers/Dockerfile` | Leave empty                     |
+| Scheduler | Background Worker   | `workers/Dockerfile` | `node workers/src/scheduler.js` |
+| Frontend  | Web Service         | `app/Dockerfile`     | Leave empty                     |
+
+The scheduler is a continuously running [background worker](https://render.com/docs/background-workers), not a cron job. Start with one scheduler and one worker instance.
+
+Add these service-specific environment variables:
+
+| Service   | Variables                                                                                             |
+| --------- | ----------------------------------------------------------------------------------------------------- |
+| API       | `PORT=3000`, `APP_ORIGIN=https://<your-frontend>.onrender.com`, `COOKIE_SECURE=true`, `TRUST_PROXY=1` |
+| Workers   | `REDIS_URL=<internal Key Value URL>`, `CHECK_CONCURRENCY=10`                                          |
+| Scheduler | `REDIS_URL=<same internal Key Value URL>`, `SCHEDULER_INTERVAL_MS=1000`                               |
+| Frontend  | `PORT=8080`                                                                                           |
+
+Replace placeholders with your actual values. `APP_ORIGIN` must exactly match the frontend origin, without a trailing slash or path. Update it if you add a custom domain. All Node services must use the same database, and both background services must use the same queue.
+
+### 4. Point the frontend at the private API
+
+Before deploying the frontend, copy the API's private hostname from Render. In a deployment-specific copy or branch of `app/nginx.conf`, replace **both** occurrences of:
+
+```nginx
+proxy_pass http://api:3000;
+```
+
+with:
+
+```nginx
+proxy_pass http://YOUR_RENDER_API_PRIVATE_HOSTNAME:3000;
+```
+
+Keep the port and omit a trailing slash so the `/api/` request path is preserved. Both the normal API location and the attachment-upload location need this change. The Compose hostname `api` will not resolve on Render, and setting a frontend environment variable alone does not change this Nginx configuration.
+
+In both proxy locations, replace `proxy_set_header X-Forwarded-Proto $scheme;` with `proxy_set_header X-Forwarded-Proto https;` for this HTTPS-only deployment, because Render terminates public TLS before Nginx. Keep the API private and retain the existing overwritten `X-Forwarded-For` header rather than trusting arbitrary client headers. With this conservative setup, API rate limits can group visitors behind the Render proxy; verify trusted client-IP forwarding before a larger rollout.
+
+Commit the deployment configuration to the branch Render builds, then deploy the frontend after the API is available. Keep the original Compose configuration if you also run the app locally.
+
+### 5. Verify the deployment
+
+- Open `https://<your-frontend>.onrender.com/api/health` and confirm a successful health response.
+- Register and sign in, create a service and monitor, and confirm new check events arrive after the configured interval.
+- Check worker and scheduler logs for database or queue connection failures. If checks do not arrive, verify both processes are running and share `REDIS_URL`.
+- Test an attachment upload and any enabled notification integration. Attachments are stored in the database, so include them in database backups.
+- If writes fail with an origin error, check `APP_ORIGIN`. If the frontend reports a gateway error, check both Nginx proxy locations and the private API hostname.
+
+Keep database backups and the encryption-key backup outside the application containers. Increase worker capacity only after measuring queue delays, memory use, and database load; see [Scaling the application](#scaling-the-application).
+
 ## Public status pages
 
 Open **Service status → Manage status page**, choose **Public**, and save. The public link uses `/status/public/<token>` and displays service health without the application sidebar. Switching back to Private revokes anonymous access. The page refreshes every 30 seconds.
@@ -186,7 +309,9 @@ History supports 7, 14, and 30 days, plus the current and previous UTC calendar 
 
 ### Email and RSS subscriptions
 
-Public visitors can use **Subscribe by email** or copy the **RSS feed** link into their feed reader. RSS needs no email provider. Feeds include the latest 50 public updates within the last 30 days.
+Public visitors can use **Subscribe to updates**, beside the theme toggle, to choose email or copy the RSS feed URL into their feed reader. RSS needs no email provider. Feeds include the latest 50 public updates within the last 30 days.
+
+Status page settings let admins show or hide the subscription button, enable or disable subscriptions globally, and enable email and RSS independently. Hiding the button only changes its visibility. Disabling subscriptions stops email delivery and RSS access, while unsubscribe links remain available. A visible button is disabled when subscriptions are disabled or neither channel is available. Existing pages retain RSS access by default.
 
 To enable email, configure and enable an email integration under **Integrations**, then open **Service status → Settings → Subscriptions**. Enable **Email updates**, select that integration, and set **Public origin** to your reachable HTTPS origin (for example, `https://status.example.com`). Local development allows HTTP on localhost. Your SMTP provider must authorize the sender address. SendGrid and other providers offering authenticated SMTP can use this integration.
 
@@ -250,6 +375,8 @@ the app does not provision domains or certificates.
 
 The stack uses React and Tailwind CSS, Express with ESM, the MongoDB driver or PostgreSQL adapter, and BullMQ with Redis. The code is JavaScript; Node.js 24 or newer is required.
 
+For development outside the application containers, install [Node.js 24 LTS with npm](https://nodejs.org/en/download), alongside Git and Docker from the prerequisites above. Confirm your installation with `node --version` and `npm --version`. Run the following commands from the cloned repository with your `.env` file in place:
+
 ```sh
 npm ci
 docker compose -f compose.yaml -f compose.dev.yaml up -d mongo redis
@@ -303,3 +430,15 @@ Remove credentials, webhook URLs, session cookies, and private record data from 
 ## License
 
 ServiceKraken is available under the [MIT License](LICENSE). My intention is to keep this a useful, freely available tool that developers and small teams can run and adapt. Hosting and any third-party services you choose remain your responsibility.
+
+### Managing users
+
+Admins can create users with a name, email, role, initial password, and contact details. Share initial passwords privately; users can change them in Profile settings. To reset another user’s password, open their record and select **Reset password** from the actions menu. Confirm your current admin password and enter the new password twice. Resetting signs the user out of existing sessions. Workspace owners change their own password in Profile settings.
+
+### Degraded service health
+
+Edit a service’s **Health thresholds** to flag it as Degraded or Down manually, set a response-time threshold in milliseconds (0 disables it), or choose 1–10 consecutive failed checks before Down. Each monitor is evaluated separately. A successful response at or above the response-time threshold is Degraded; failed responses below the failure-count threshold are Degraded, and reaching the threshold is Down. A successful check resets the failure count, as does a gap longer than the monitor interval plus one minute. Defaults preserve the previous behavior: no manual flag, no response-time threshold, and Down after one failed check.
+
+Down takes precedence over Degraded, including dependency failures. Degradation propagates to dependent services and collections. Clear a manual flag yourself when the issue is resolved; it does not expire. Stale or paused checks remain Unknown unless another signal establishes degradation or an outage. Monitor events and past daily history continue to show actual HTTP success/failure. Today’s date box reflects current Degraded or Down health, with hover text showing current status alongside the day’s check-success percentage; past dates are not rewritten.
+
+When automatic incidents are enabled, degradation creates a medium-severity incident if no automatic incident is active for that service. Outages create high-severity incidents. Recovery resolves the automatic incident only when the service is fully Operational. Existing incident severity remains available for responders to manage. Public email and RSS updates include Degraded transitions when subscriptions are enabled.

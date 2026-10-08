@@ -1,3 +1,4 @@
+import { DateTime } from '../../preferences/date-time.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -144,6 +145,7 @@ export function Dashboard() {
   const healthLabels = {
     up: 'Operational',
     down: 'Down',
+    degraded: 'Degraded',
     unknown: 'Unknown / stale',
     pending: 'Awaiting check',
     paused: 'Paused',
@@ -151,6 +153,7 @@ export function Dashboard() {
   const healthColors = {
     up: '#10b981',
     down: '#e11d48',
+    degraded: '#d97706',
     unknown: '#64748b',
     pending: '#d97706',
     paused: '#64748b',
@@ -320,7 +323,7 @@ export function Dashboard() {
             title="Service health"
             rows={healthRows(
               Object.fromEntries(
-                ['up', 'down', 'unknown'].map((status) => [
+                ['up', 'degraded', 'down', 'unknown'].map((status) => [
                   status,
                   health.data.services.filter((service) => service.status === status).length,
                 ]),
@@ -402,7 +405,7 @@ export function Dashboard() {
       />
       {data && (
         <p className="text-xs text-slate-500">
-          Updated {new Date(data.generatedAt).toLocaleString()} · Refreshes every 30 seconds
+          Updated {<DateTime value={data.generatedAt} />} · Refreshes every 30 seconds
         </p>
       )}
     </div>

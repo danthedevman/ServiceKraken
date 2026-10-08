@@ -160,7 +160,7 @@ export function IntegrationsPage({ form = false }) {
       onClick={() => navigate('/integrations/new')}
     >
       <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-      Add integration
+      Create
     </button>
   );
   return (

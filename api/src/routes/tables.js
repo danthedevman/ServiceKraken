@@ -4,7 +4,7 @@ import { pipeline } from 'node:stream/promises';
 import { InputError } from '@servicekraken/shared/validation/input-error';
 import { csvRow } from '@servicekraken/shared/files/csv';
 import { DEMO_COUNT, DEMO_TYPES } from '@servicekraken/shared/domain/demo-data';
-import { serviceHealth } from '@servicekraken/shared/domain/service-health';
+import { serviceHealth, rollupHealth } from '@servicekraken/shared/domain/service-health';
 import { tableQuery, databaseTable, embeddedTable } from '../repositories/table-page.js';
 import { members, memberFilter } from '../repositories/members.js';
 import { settings } from '../repositories/settings.js';
@@ -377,11 +377,7 @@ async function source(db, req) {
       status:
         kind === 'services'
           ? health.get(row.id)
-          : row.serviceIds.some((v) => health.get(v) === 'down')
-            ? 'down'
-            : row.serviceIds.length && row.serviceIds.every((v) => health.get(v) === 'up')
-              ? 'up'
-              : 'unknown',
+          : rollupHealth(row.serviceIds.map((value) => health.get(value) ?? 'unknown')),
       monitors: raw.filter((m) => String(m.serviceId) === row.id).length,
       owners:
         [
@@ -400,7 +396,9 @@ async function source(db, req) {
       services: serviceNames(row.serviceIds ?? []),
     }));
     for (const row of rows)
-      row.health = { up: 'Operational', down: 'Down', unknown: 'Unknown' }[row.status];
+      row.health = { up: 'Operational', degraded: 'Degraded', down: 'Down', unknown: 'Unknown' }[
+        row.status
+      ];
     return embeddedTable(
       rows,
       kind === 'services'

@@ -94,6 +94,7 @@ export function requireUser(db) {
         projection: {
           email: 1,
           displayName: 1,
+          timeZone: 1,
           uiPreferences: 1,
           workspaceId: 1,
           role: 1,
@@ -124,6 +125,7 @@ export function serializeUser(user) {
     id: String(user._id),
     email: user.email,
     displayName: user.displayName ?? '',
+    timeZone: user.timeZone ?? '',
     uiPreferences: user.uiPreferences ? uiPreferences(user.uiPreferences) : null,
     workspaceId: String(user.workspaceId ?? user._id),
     role: user.workspaceId ? user.role : 'admin',

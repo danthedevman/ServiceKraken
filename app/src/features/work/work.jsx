@@ -1,3 +1,4 @@
+import { notify } from '../../data/toast.js';
 import { FormSkeleton, Skeleton } from '../../components/skeleton.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { TableSearch } from '../../components/table-search.jsx';
@@ -101,8 +102,7 @@ export function WorkTable({
   const navigate = useNavigate();
   const { user } = useContext(AuthContext),
     canEdit = ['admin', 'responder'].includes(user?.role);
-  const task = kind === 'tasks',
-    noun = task ? 'task' : 'article';
+  const task = kind === 'tasks';
   const [searchColumn, setSearchColumn] = useState('');
   const [search, setSearch] = useState(''),
     [status, setStatus] = useState('');
@@ -173,6 +173,11 @@ export function WorkTable({
     ...(task
       ? [
           {
+            key: 'assignmentGroupName',
+            label: 'Assignment group',
+            value: (r) => r.assignmentGroupName || 'Unassigned',
+          },
+          {
             key: 'assignee',
             label: 'Assigned to',
             sortable: false,
@@ -204,7 +209,7 @@ export function WorkTable({
               }
             >
               <PlusIcon className="h-5 w-5" />
-              Create {noun}
+              Create
             </button>
           )
         }
@@ -310,7 +315,6 @@ export function WorkDetail({ kind = 'tasks' }) {
   };
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3"></div>
       <Notice error={resource.error} />
       {!item ? (
         <p role="status">{resource.error ? 'Record unavailable.' : 'Loading details…'}</p>
@@ -403,6 +407,10 @@ export function WorkDetail({ kind = 'tasks' }) {
                             'Unassigned'
                           )}
                         </dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium">Assignment group</dt>
+                        <dd>{item.assignmentGroupName || 'Unassigned'}</dd>
                       </div>
                       <div>
                         <dt className="font-medium">Assigned to</dt>
@@ -562,6 +570,7 @@ function WorkForm({
       ? {
           description: item?.description ?? '',
           priorityOption: item?.priorityOption ?? item?.priority ?? choiceDefault('priority'),
+          assignmentGroupId: item?.assignmentGroupId ?? '',
           assigneeId: item?.assigneeId ?? '',
           dueDate: item?.dueDate ?? '',
           incidentId: item?.incidentId ?? initialIncidentId,
@@ -583,6 +592,7 @@ function WorkForm({
   const set = (name, next) => setValue((old) => ({ ...old, [name]: next }));
   const references = (field, options, selectedValue, change, extra = {}) => (
     <ReferenceField
+      groupId={field.id === 'assigneeId' ? value.assignmentGroupId : undefined}
       referenceType={
         field.id === 'serviceId' ? 'services' : field.id === 'incidentId' ? 'incidents' : 'members'
       }
@@ -619,6 +629,19 @@ function WorkForm({
         incident?.serviceId ?? value.serviceId,
         (next) => set(name, next),
         { disabled: task && !!value.incidentId },
+      );
+    if (name === 'assignmentGroupId')
+      return (
+        <ReferenceField
+          key={name}
+          referenceType="groups"
+          label={field.label + (field.required ? ' *' : '')}
+          value={value.assignmentGroupId}
+          onChange={(next) =>
+            setValue((old) => ({ ...old, assignmentGroupId: next, assigneeId: '' }))
+          }
+          error={errors[name]}
+        />
       );
     if (name === 'assigneeId')
       return references(
@@ -738,6 +761,7 @@ function WorkForm({
             : undefined;
         } catch (error) {
           setClientErrors(error.fields || { content: error.message });
+          notify(error.message, 'error');
           return;
         }
         const required = mandatoryErrors(schema, {
@@ -747,7 +771,10 @@ function WorkForm({
           priority: value.priorityOption,
         });
         setClientErrors(required);
-        if (Object.keys(required).length) return;
+        if (Object.keys(required).length) {
+          notify('Please correct the highlighted fields.', 'error');
+          return;
+        }
         save.run(
           item ? `/${kind}/${item.id}` : `/${kind}`,
           item ? 'PATCH' : 'POST',

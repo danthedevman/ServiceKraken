@@ -1,3 +1,4 @@
+import { subscriptionInfo } from '../../shared/status/subscriptions.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -128,6 +129,45 @@ test('public subscriptions confirm, deliver, isolate, and unsubscribe while priv
   const xml = await feed.text();
   assert.ok(!xml.includes('<script>'));
   assert.ok(!xml.includes('subscriber@example.com'));
+  await db
+    .collection('catalogs')
+    .updateOne({ _id: workspace }, { $set: { subscriptionButtonVisible: false } });
+  let capabilities = await subscriptionInfo(
+    db,
+    await db.collection('catalogs').findOne({ _id: workspace }),
+  );
+  assert.equal(capabilities.visible, false);
+  assert.equal(capabilities.emailEnabled, true);
+  assert.equal((await fetch(base + '/feed.xml')).status, 200);
+  await db
+    .collection('catalogs')
+    .updateOne({ _id: workspace }, { $set: { rssSubscriptions: false } });
+  assert.equal((await fetch(base + '/feed.xml')).status, 404);
+  capabilities = await subscriptionInfo(
+    db,
+    await db.collection('catalogs').findOne({ _id: workspace }),
+  );
+  assert.equal(capabilities.rssPath, null);
+  assert.equal(capabilities.emailEnabled, true);
+  await db
+    .collection('catalogs')
+    .updateOne(
+      { _id: workspace },
+      { $set: { subscriptionsEnabled: false, rssSubscriptions: true } },
+    );
+  assert.equal((await fetch(base + '/feed.xml')).status, 404);
+  assert.equal(
+    (await post('/subscriptions', { email: 'another@example.com', consent: true })).status,
+    409,
+  );
+  capabilities = await subscriptionInfo(
+    db,
+    await db.collection('catalogs').findOne({ _id: workspace }),
+  );
+  assert.equal(capabilities.enabled, false);
+  assert.equal(capabilities.emailEnabled, false);
+  assert.equal(capabilities.rssEnabled, false);
+
   await db
     .collection('catalogs')
     .updateOne({ _id: workspace }, { $set: { visibility: 'private' } });

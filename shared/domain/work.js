@@ -25,6 +25,9 @@ export function validateWork(body, kind, schema = null) {
     result.description = text(body.description ?? '', 'description', 5000, false);
     result.priority = choice(body.priority ?? 'medium', ['low', 'medium', 'high'], 'priority');
     result.incidentId = body.incidentId ? identifier(body.incidentId, 'incidentId') : null;
+    result.assignmentGroupId = body.assignmentGroupId
+      ? identifier(body.assignmentGroupId, 'assignmentGroupId')
+      : null;
     result.assigneeId = body.assigneeId ? identifier(body.assigneeId, 'assigneeId') : null;
     result.dueDate = body.dueDate ?? '';
     if (
@@ -62,6 +65,7 @@ export function workQuery(query, workspaceId, kind) {
         ? {
             priority: { $ifNull: ['$priorityLabel', '$priority'] },
             dueDate: '$dueDate',
+            assignmentGroupName: { $ifNull: ['$assignmentGroupName', 'Unassigned'] },
             assignee: { $ifNull: ['$assigneeName', 'Unassigned'] },
           }
         : {}),
@@ -75,7 +79,7 @@ export function workQuery(query, workspaceId, kind) {
   const sortBy = choice(
     query.sortBy ?? 'updatedAt',
     task
-      ? ['title', 'status', 'priority', 'dueDate', 'createdAt', 'updatedAt']
+      ? ['title', 'status', 'priority', 'dueDate', 'createdAt', 'updatedAt', 'assignmentGroupName']
       : ['title', 'status', 'createdAt', 'updatedAt'],
     'sortBy',
   );

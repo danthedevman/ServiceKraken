@@ -12,6 +12,7 @@ export const BUILTIN_FIELDS = [
   { id: 'serviceId', label: 'Service', type: 'builtin', required: true },
   { id: 'severity', label: 'Severity', type: 'builtin', required: true },
   { id: 'status', label: 'Status', type: 'builtin', required: true },
+  { id: 'assignmentGroupId', label: 'Assignment group', type: 'builtin', required: false },
   { id: 'assigneeId', label: 'Assigned to', type: 'builtin', required: false },
   { id: 'openedForId', label: 'Opened for', type: 'builtin', required: false },
   { id: 'description', label: 'Description', type: 'builtin', required: false },

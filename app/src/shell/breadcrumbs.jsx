@@ -12,8 +12,8 @@ const sections = {
   monitors: 'Monitors',
   groups: 'Groups',
   integrations: 'Integrations',
-  workspace: 'Workspace users',
-  'on-call': 'On-call schedule',
+  workspace: 'Users',
+  'on-call': 'On call',
   status: 'Status page',
 };
 /** Keep every routed form connected to its parent list and, when available, its saved record. */
@@ -58,7 +58,7 @@ export function Breadcrumbs({ resolveNames = true }) {
     monitors: 'monitor',
     groups: 'group',
     integrations: 'integration',
-    workspace: 'teammate',
+    workspace: 'user',
     'on-call': 'coverage',
   };
   const noun = nouns[kind] || 'record',
@@ -74,6 +74,7 @@ export function Breadcrumbs({ resolveNames = true }) {
       label: name || `${noun.charAt(0).toUpperCase()}${noun.slice(1)}`,
       to: `/${kind}/${id}`,
     });
+    if (action === 'password') crumbs.push({ label: 'Reset password' });
     if (action === 'edit') crumbs.push({ label: 'Edit' });
     if (action === 'events') crumbs.push({ label: 'Check event' });
   }

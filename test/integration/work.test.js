@@ -90,6 +90,10 @@ test(
     const savedContact = directory.find((member) => member.id === responder.data.user.id);
     assert.equal(savedContact.phone, contact.phone);
     assert.equal(savedContact.timeZone, contact.timeZone);
+    assert.equal(
+      (await request('/auth/me', responder.cookie)).data.user.timeZone,
+      contact.timeZone,
+    );
     assert.equal(savedContact.role, 'responder');
     assert.equal(savedContact.email, 'responder@example.com');
     assert.equal(savedContact.disabled, false);
@@ -336,6 +340,68 @@ test(
     );
     const group = await request('/groups', owner.cookie, 'POST', groupBody);
     assert.equal(group.status, 201);
+    const assignmentGroupId = group.data.group.id;
+    const filtered = await request(
+      `/references/members?groupId=${assignmentGroupId}`,
+      responder.cookie,
+    );
+    assert.deepEqual(
+      filtered.data.options.map((row) => row.id).sort(),
+      groupBody.memberIds.slice().sort(),
+    );
+    assert.equal(
+      (await request(`/references/members?groupId=${assignmentGroupId}`, other.cookie)).status,
+      404,
+    );
+    for (const [route, input, key] of [
+      ['incidents', incidentInput, 'incident'],
+      ['tasks', taskInput, 'item'],
+    ]) {
+      const assigned = await request(`/${route}`, responder.cookie, 'POST', {
+        ...input,
+        assignmentGroupId,
+        assigneeId: responder.data.user.id,
+      });
+      assert.equal(assigned.status, 201, JSON.stringify(assigned.data));
+      assert.equal(assigned.data[key].assignmentGroupId, assignmentGroupId);
+      assert.equal(assigned.data[key].assignmentGroupName, groupBody.name);
+      assert.equal(
+        (
+          await request(`/${route}/${assigned.data[key].id}`, responder.cookie, 'PATCH', {
+            ...input,
+            assignmentGroupId,
+            assigneeId: owner.data.user.id,
+            revision: assigned.data[key].revision,
+          })
+        ).status,
+        400,
+      );
+      assert.equal(
+        (
+          await request(`/${route}`, responder.cookie, 'POST', {
+            ...input,
+            assignmentGroupId: new ObjectId().toHexString(),
+          })
+        ).status,
+        400,
+      );
+      assert.equal(
+        (
+          await request(`/${route}`, responder.cookie, 'POST', {
+            ...input,
+            assignmentGroupId,
+            assigneeId: '',
+          })
+        ).status,
+        201,
+      );
+    }
+    assert.equal(
+      (await request('/incidents', user.cookie, 'POST', { ...incidentInput, assignmentGroupId }))
+        .status,
+      400,
+    );
+
     assert.equal((await request('/groups', viewer.cookie)).data.groups.length, 1);
     assert.equal((await request('/groups', other.cookie)).data.groups.length, 0);
     assert.equal(
@@ -479,9 +545,9 @@ test(
     );
     const responseDashboard = await request('/response-dashboard', responder.cookie);
     assert.equal(responseDashboard.status, 200);
-    assert.equal(responseDashboard.data.severity.high, 3);
+    assert.equal(responseDashboard.data.severity.high, 5);
     assert.equal(responseDashboard.data.services.length, 1);
-    assert.equal(responseDashboard.data.services[0].count, 3);
+    assert.equal(responseDashboard.data.services[0].count, 5);
     assert.equal((await request('/response-dashboard', user.cookie)).status, 403);
     assert.equal((await request('/response-dashboard', other.cookie)).data.services.length, 0);
 

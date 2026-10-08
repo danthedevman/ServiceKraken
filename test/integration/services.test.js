@@ -55,6 +55,29 @@ test(
     const user = await db.collection('users').findOne({ email: 'owner@example.com' });
     const settings = await request('/status-settings', owner);
     assert.equal(settings.data.visibility, 'private');
+    assert.equal(settings.data.subscriptionButtonVisible, true);
+    assert.equal(settings.data.subscriptionsEnabled, true);
+    assert.equal(settings.data.rssSubscriptions, true);
+    assert.equal(
+      (
+        await request('/status-settings', owner, 'PATCH', {
+          visibility: 'private',
+          rssSubscriptions: 'false',
+        })
+      ).status,
+      400,
+    );
+    const controls = await request('/status-settings', owner, 'PATCH', {
+      visibility: 'private',
+      subscriptionButtonVisible: false,
+      subscriptionsEnabled: false,
+      rssSubscriptions: false,
+    });
+    assert.equal(controls.status, 200);
+    assert.equal(controls.data.subscriptionButtonVisible, false);
+    assert.equal(controls.data.subscriptionsEnabled, false);
+    assert.equal(controls.data.rssSubscriptions, false);
+
     const publicApi = settings.data.publicPath.replace('/status/public/', '/public/status/');
     assert.equal((await request(publicApi)).status, 404);
     assert.equal((await fetch(`${base}${publicApi}/icon`)).status, 404);
@@ -83,6 +106,38 @@ test(
     assert.deepEqual((await request('/collections', owner)).data.collections[0].serviceIds, [
       selectedService.id,
     ]);
+    assert.equal(
+      (
+        await request(`/services/${selectedService.id}`, owner, 'PATCH', {
+          healthPolicy: { failuresBeforeDown: 0 },
+        })
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await request(`/services/${selectedService.id}`, other, 'PATCH', {
+          healthPolicy: { manualDegraded: true },
+        })
+      ).status,
+      404,
+    );
+    assert.equal(
+      (
+        await request(`/services/${selectedService.id}`, owner, 'PATCH', {
+          healthPolicy: { manualDegraded: true },
+        })
+      ).status,
+      200,
+    );
+    assert.equal(
+      (await request('/status', owner)).data.services.find((row) => row.id === selectedService.id)
+        .status,
+      'degraded',
+    );
+    await request(`/services/${selectedService.id}`, owner, 'PATCH', {
+      healthPolicy: { manualDegraded: false },
+    });
     const membershipOnly = await request(`/services/${selectedService.id}`, owner, 'PATCH', {
       collectionIds: [],
     });

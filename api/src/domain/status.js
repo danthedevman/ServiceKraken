@@ -1,13 +1,10 @@
+import { serviceHealth, rollupHealth } from '@servicekraken/shared/domain/service-health';
 import { subscriptionInfo } from '@servicekraken/shared/status/subscriptions';
 import { statusRange } from '@servicekraken/shared/domain/status-range';
 import { catalog } from '../routes/services.js';
 
 /** Summarize operational state without treating absent or paused checks as healthy. */
-export function rollup(statuses) {
-  if (statuses.includes('down')) return 'down';
-  if (!statuses.length || statuses.some((status) => status !== 'up')) return 'unknown';
-  return 'up';
-}
+export const rollup = rollupHealth;
 
 /** Build status-only output; public responses exclude URLs, headers, bodies, and account details.
  * @param {import('mongodb').Db} db @param {import('mongodb').ObjectId} userId
@@ -74,19 +71,7 @@ export async function statusData(db, userId, serializeMonitor, publicView = fals
       : item;
     return { ...safe, history, total, uptime: total ? (up / total) * 100 : null };
   });
-  const byId = new Map(data.services.map((service) => [service.id, service]));
-  /** Collect dependency states once per root, remaining safe with legacy cyclic data. */
-  function states(serviceId, seen = new Set()) {
-    if (seen.has(serviceId)) return [];
-    seen.add(serviceId);
-    const service = byId.get(serviceId);
-    if (!service) return ['unknown'];
-    const own = monitors
-      .filter((monitor) => monitor.serviceId === serviceId)
-      .map((monitor) => monitor.status);
-    const children = service.dependencyIds.flatMap((dependency) => states(dependency, seen));
-    return own.length || children.length ? [...own, ...children] : ['unknown'];
-  }
+  const health = serviceHealth(data.services, raw);
   const services = data.services.map((service) => ({
     ...(publicView
       ? {
@@ -96,7 +81,7 @@ export async function statusData(db, userId, serializeMonitor, publicView = fals
           dependencyIds: service.dependencyIds,
         }
       : service),
-    status: rollup(states(service.id)),
+    status: health.get(service.id),
     message:
       data.serviceMessages?.find(
         (message) => message.serviceId === service.id && message.enabled,

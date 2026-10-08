@@ -34,7 +34,7 @@
 - Use shared account layout preferences for both sidebar toggles. Cache only non-sensitive layout values for first paint; never remount forms when collapsing a rail. Record pages scroll their main content, not the document, with a separate scrolling right rail on desktop.
 - Audit metadata is an explicit allowlist. Show UTC dates and never invent missing historical authors or timestamps. New monitor forms require a service; preserve legacy unassigned records on edit.
 
-- Keep table filters collapsed by default behind the shared Filters button; preserve active filters when hiding them.
+- Keep table filters collapsed for new users; persist the Filters button visibility through the shared filtersOpen user preference across list views and refreshes. Preserve active filters when hiding them; share visibility only, not filter values.
 - The status page is a flat service-only list. Do not expose individual monitor details there.
 - Use the tagline “Know the impact · Own the response” and ServiceKraken branding.
 
@@ -56,3 +56,24 @@
 - ReferenceField queries the authorized reference endpoint for paged search results and selected labels. Never download an unbounded dataset to implement a search dropdown.
 
 - Related lists use `RecordTabs related`; tab labels replace visible table titles while table actions stay available. Keep conversation composers and messages padded inside the tab panel border.
+
+- Every user-triggered deletion or destructive removal must require an explicit confirmation before mutating local form data or sending an API request. This includes single and bulk record deletion, attachments, custom status icons, integration removal, invitation revocation, demo cleanup, and form-builder custom options/fields. Use `ConfirmDeleteButton` or the existing shared Modal confirmation flow; name the target and consequences, focus Cancel initially, disable duplicate submissions, and preserve errors. Never delete on initial click, dropdown selection, dialog opening, or GET requests. Do not stack a second confirmation on an action already guarded by a confirmation dialog. Removing a selected reference pill only changes the reference and does not delete the referenced record.
+- Profile email values use the same labeled read-only input spacing as other fields. Offer built-in IANA timezone choices (including UTC), preserve saved aliases, and validate timezone values server-side. Use the shared reactive date formatter for personal timestamps; keep explicitly UTC schedules, date filters, exports, and status-history day buckets in UTC. Respect daylight-saving offsets for each timestamp and refresh displays when the viewer changes their saved timezone.
+
+- Show accessible, dismissible success/error toasts for explicit user mutations, retaining inline validation errors. Do not toast background reads, polling, automatic layout saves, or aborted requests. Shared `api` mutation feedback avoids per-form duplication. Keep errors until dismissed and never include credentials or whole response payloads in notifications.
+- Attachment selection and drag/drop use the shared AttachmentDropzone, validate file count/type/size, upload sequentially, and preserve existing authorization and embedded-image separation. Keep keyboard file selection and visible busy/error feedback.
+- Sidebar links use 4px corners in normal, hover, and active states, matching buttons and fields. On-call shift removal always uses an explicit confirmation before saving the changed schedule.
+
+- Use the shared Select without a search input for option dropdowns. Use ReferenceField for searchable record relationships and the on-call Service filter, with server-side searches.
+
+- Form action rows are right-aligned with Cancel immediately before the primary Save/Create button. Keep destructive or auxiliary actions before that pair. Preserve the same DOM and keyboard order in record toolbars, page footers, and modal footers; do not reorder with CSS.
+
+# Accessibility for every UI change
+
+- Treat accessibility as an acceptance requirement for all new or changed HTML, JSX, components, styles, and interaction flows. Prefer semantic HTML and native controls; use ARIA only when native semantics do not express the interaction.
+- Give every input a programmatically associated label and every icon-only button a meaningful accessible name. Preserve accessible labels when hiding visible text. Use buttons for actions and links for navigation.
+- Support keyboard operation, visible focus, logical DOM/tab order, and predictable focus restoration. Dialogs must contain focus, support Escape when safe, and return focus to their trigger. Avoid keyboard traps and positive tabindex values.
+- Associate validation and help text with controls, expose invalid states, and announce meaningful loading, success, and error changes without repeatedly announcing background polling.
+- Maintain readable text and control contrast in both themes, useful pointer target sizes, and usable layouts with zoom and narrow screens. Never communicate state using color alone. Respect reduced-motion settings.
+- Hide decorative icons from assistive technology; provide useful alternative text for informative images. Preserve headings, landmarks, table headers, and accessible names for tabs, menus, and related sections.
+- Check affected keyboard flows and accessible names when practical, alongside automated validation. Report any unverified accessibility behavior; passing lint or a build does not establish accessibility compliance.

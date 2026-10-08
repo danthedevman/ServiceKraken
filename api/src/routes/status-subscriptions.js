@@ -24,6 +24,8 @@ export function installStatusSubscriptions(app, db, appOrigin) {
   };
   app.get(`${path}/feed.xml`, async (req, res) => {
     const page = await findPage(req.params.token);
+    if (page.subscriptionsEnabled === false || page.rssSubscriptions === false)
+      throw new InputError('RSS subscriptions are not available.', 404);
     const updates = await db
       .collection('publicStatusUpdates')
       .find({
@@ -74,7 +76,7 @@ export function installStatusSubscriptions(app, db, appOrigin) {
     const page = req.statusPage;
     if (page.visibility !== 'public') throw new InputError('Status page not found.', 404);
     if (!(await subscriptionMailer(db, page)))
-      throw new InputError('Email subscriptions are not available. Use the RSS feed instead.', 409);
+      throw new InputError('Email subscriptions are not available.', 409);
     const email = subscriberEmail(req.body?.email);
     if (req.body?.consent !== true)
       throw new InputError('Confirm that you want to receive status emails.', 400, {
@@ -103,12 +105,10 @@ export function installStatusSubscriptions(app, db, appOrigin) {
       },
       { upsert: true },
     );
-    res
-      .status(202)
-      .json({
-        message:
-          'If this address needs confirmation, you will receive an email shortly. Check your inbox and spam folder.',
-      });
+    res.status(202).json({
+      message:
+        'If this address needs confirmation, you will receive an email shortly. Check your inbox and spam folder.',
+    });
   });
   app.post(`${path}/subscriptions/confirm`, async (req, res) => {
     const page = req.statusPage,
@@ -117,21 +117,19 @@ export function installStatusSubscriptions(app, db, appOrigin) {
       throw new InputError('Invalid confirmation link.', 400);
     if (page.visibility !== 'public' || !(await subscriptionMailer(db, page)))
       throw new InputError('Email subscriptions are not available.', 409);
-    const result = await db
-      .collection('statusSubscribers')
-      .updateOne(
-        {
-          workspaceId: page._id,
-          publicToken: page.publicToken,
-          state: 'pending',
-          confirmationHash: digest(token),
-          expiresAt: { $gt: new Date() },
-        },
-        {
-          $set: { state: 'active', confirmedAt: new Date() },
-          $unset: { expiresAt: '', confirmationHash: '' },
-        },
-      );
+    const result = await db.collection('statusSubscribers').updateOne(
+      {
+        workspaceId: page._id,
+        publicToken: page.publicToken,
+        state: 'pending',
+        confirmationHash: digest(token),
+        expiresAt: { $gt: new Date() },
+      },
+      {
+        $set: { state: 'active', confirmedAt: new Date() },
+        $unset: { expiresAt: '', confirmationHash: '' },
+      },
+    );
     if (!result.matchedCount)
       throw new InputError('This confirmation link has expired or was already used.', 400);
     res.json({ message: 'Subscription confirmed. You will receive future public status updates.' });
@@ -141,13 +139,11 @@ export function installStatusSubscriptions(app, db, appOrigin) {
     if (typeof token !== 'string' || !/^[a-f\d]{64}$/.test(token))
       throw new InputError('Invalid unsubscribe link.', 400);
     // Unsubscribe stays available while the page is private or its email integration is disabled.
-    await db
-      .collection('statusSubscribers')
-      .deleteOne({
-        workspaceId: req.statusPage._id,
-        publicToken: req.statusPage.publicToken,
-        unsubscribeHash: digest(token),
-      });
+    await db.collection('statusSubscribers').deleteOne({
+      workspaceId: req.statusPage._id,
+      publicToken: req.statusPage.publicToken,
+      unsubscribeHash: digest(token),
+    });
     res.json({ message: 'You are unsubscribed from email updates.' });
   });
 }

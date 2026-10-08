@@ -1,6 +1,7 @@
 import { userDetails, userDetailView } from '@servicekraken/shared/domain/user-details';
 import { auditStamp, auditFields } from '@servicekraken/shared/domain/audit';
 
+import { rateLimit } from 'express-rate-limit';
 import { randomBytes } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 
@@ -8,13 +9,97 @@ import { InputError } from '@servicekraken/shared/validation/validation';
 import { text, choice, identifier, invalid } from '@servicekraken/shared/validation/fields';
 
 import { id } from './services.js';
-import { requireAdmin, digestToken, serializeUser } from '../auth/auth.js';
+import {
+  requireAdmin,
+  digestToken,
+  serializeUser,
+  credentials,
+  hashPassword,
+  verifyPassword,
+} from '../auth/auth.js';
 
 import { memberFilter } from '../repositories/members.js';
 import { members } from '../repositories/members.js';
 
 /** Register workspace routes; authentication and workspace policy run in app.js. */
 export function installWorkspaceRoutes(app, db, appOrigin) {
+  const credentialLimit = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many account changes. Try again in 15 minutes.' },
+  });
+  // Account creation never accepts identity, workspace, or session fields from the client.
+  app.post('/api/members', requireAdmin, credentialLimit, async (req, res) => {
+    const { email, password } = credentials(req.body);
+    const details = userDetails(req.body);
+    const role = choice(req.body.role, ['admin', 'responder', 'user', 'viewer'], 'role');
+    if (req.body.confirmPassword !== password) invalid('confirmPassword', 'Passwords must match.');
+    if (await db.collection('users').findOne({ email }))
+      invalid('email', 'An account already uses this email address.');
+    const count = await db
+      .collection('users')
+      .countDocuments({ ...memberFilter(req.workspaceId), demoBatchId: { $exists: false } });
+    const pending = await db
+      .collection('invitations')
+      .countDocuments({ workspaceId: req.workspaceId, demoBatchId: { $exists: false } });
+    if (count + pending >= 100)
+      throw new InputError('A workspace supports up to 100 users and pending invitations.', 409);
+    const user = {
+      _id: new ObjectId(),
+      workspaceId: req.workspaceId,
+      email,
+      ...details,
+      role,
+      disabled: false,
+      passwordHash: await hashPassword(password),
+      ...auditStamp(null, req.user),
+    };
+    try {
+      await db.collection('users').insertOne(user);
+    } catch (error) {
+      if (error.code === 11000) invalid('email', 'An account already uses this email address.');
+      throw error;
+    }
+    res.status(201).json({ user: serializeUser(user) });
+  });
+  // Reauthentication protects privileged resets; existing target sessions are revoked.
+  app.patch('/api/members/:id/password', requireAdmin, credentialLimit, async (req, res) => {
+    const userId = id(req.params.id);
+    if (String(userId) === String(req.user._id))
+      throw new InputError('Change your own password in Profile settings.', 409);
+    if (String(userId) === String(req.workspaceId))
+      throw new InputError('The workspace owner must change their own password.', 409);
+    const target = await db
+      .collection('users')
+      .findOne({ ...memberFilter(req.workspaceId), _id: userId });
+    if (!target) throw new InputError('User not found.', 404);
+    if (target.demoBatchId)
+      throw new InputError('Demo users cannot sign in or receive password resets.', 409);
+    const { password } = credentials({ email: target.email, password: req.body.password });
+    if (req.body.confirmPassword !== password) invalid('confirmPassword', 'Passwords must match.');
+    if (typeof req.body.currentPassword !== 'string' || req.body.currentPassword.length > 128)
+      invalid('currentPassword', 'Enter your current password.');
+    const actor = await db.collection('users').findOne({ _id: req.user._id });
+    if (
+      !actor ||
+      actor.disabled ||
+      (actor.workspaceId ? actor.role : 'admin') !== 'admin' ||
+      !(await verifyPassword(req.body.currentPassword, actor.passwordHash))
+    )
+      invalid('currentPassword', 'Your current password is incorrect.');
+    const result = await db
+      .collection('users')
+      .updateOne(
+        { ...memberFilter(req.workspaceId), _id: userId, passwordHash: target.passwordHash },
+        { $set: { passwordHash: await hashPassword(password), ...auditStamp(target, req.user) } },
+      );
+    if (!result.matchedCount)
+      throw new InputError('This account changed. Refresh and try again.', 409);
+    await db.collection('sessions').deleteMany({ userId });
+    res.json({ ok: true });
+  });
   app.get('/api/members', async (req, res) =>
     res.json({
       members: (await members(db, req.workspaceId))

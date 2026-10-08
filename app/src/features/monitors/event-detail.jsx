@@ -1,3 +1,4 @@
+import { DateTime } from '../../preferences/date-time.jsx';
 import { recordNumber } from '../../lib/record-number.js';
 import { Stat } from '../../components/stat.jsx';
 import { DataTable } from '../../components/data-table.jsx';
@@ -90,7 +91,7 @@ export function EventDetail() {
                 <Badge status={event.status} />
               </div>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                {new Date(event.checkedAt).toLocaleString()} · Event {event.id}
+                {<DateTime value={event.checkedAt} />} · Event {event.id}
               </p>
             </div>
             <div className={layouts.scores}>
@@ -121,21 +122,21 @@ export function EventDetail() {
                   <dl className="mt-4 grid gap-5 text-sm sm:grid-cols-3">
                     <div>
                       <dt className="text-slate-500 dark:text-slate-400">Scheduled for</dt>
-                      <dd className="mt-1">
-                        {new Date(event.timing.scheduledAt).toLocaleString()}
-                      </dd>
+                      <dd className="mt-1">{<DateTime value={event.timing.scheduledAt} />}</dd>
                     </div>
                     <div>
                       <dt className="text-slate-500 dark:text-slate-400">Queued at</dt>
                       <dd className="mt-1">
-                        {event.timing.queuedAt
-                          ? new Date(event.timing.queuedAt).toLocaleString()
-                          : 'Not recorded'}
+                        {event.timing.queuedAt ? (
+                          <DateTime value={event.timing.queuedAt} />
+                        ) : (
+                          'Not recorded'
+                        )}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-slate-500 dark:text-slate-400">Actually started</dt>
-                      <dd className="mt-1">{new Date(event.timing.startedAt).toLocaleString()}</dd>
+                      <dd className="mt-1">{<DateTime value={event.timing.startedAt} />}</dd>
                     </div>
                     <div>
                       <dt className="text-slate-500 dark:text-slate-400">Total start delay</dt>

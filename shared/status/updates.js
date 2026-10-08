@@ -17,7 +17,8 @@ export function publicSnapshot(page, monitors, now = Date.now()) {
   };
 }
 const stateLabel = (value) =>
-  ({ up: 'Operational', down: 'Down', unknown: 'Unknown' })[value] ?? 'Unknown';
+  ({ up: 'Operational', down: 'Down', degraded: 'Degraded', unknown: 'Unknown' })[value] ??
+  'Unknown';
 const line = (label, value) =>
   `${label}: ${String(value).replace(/\r\n?/g, '\n').replaceAll('\n', '\n  ')}`;
 

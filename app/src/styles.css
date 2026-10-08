@@ -291,7 +291,7 @@
   color: #1e293b;
   background: #fff;
   border: 1px solid #cbd5e1;
-  border-radius: 0.75rem;
+  border-radius: 4px;
   min-width: 12rem;
   max-width: calc(100vw - 1rem);
   max-height: calc(100dvh - 1rem);
@@ -309,7 +309,7 @@
   text-align: left;
   background: 0 0;
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: 4px;
   justify-content: flex-start;
   align-items: center;
   gap: 0.5rem;
@@ -840,6 +840,9 @@ select:disabled,
   overflow-wrap: anywhere;
   line-height: 1.5;
 }
+.select-option + .select-option {
+  margin-top: 0.25rem;
+}
 .select-option[data-active='true'],
 .select-option:hover {
   background: #eff6ff;
@@ -976,6 +979,17 @@ button,
 .select-options {
   border-radius: 4px;
 }
+
+/* Distinguish search controls from the dialog surface without changing other forms. */
+.global-search-modal :is(input[type='search'], .select-trigger, header button, footer button) {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+[data-theme='dark']
+  .global-search-modal
+  :is(input[type='search'], .select-trigger, header button, footer button) {
+  border-color: #64748b;
+}
 input[aria-invalid='true'],
 textarea[aria-invalid='true'],
 .select-trigger[aria-invalid='true'],
@@ -1008,4 +1022,161 @@ textarea.discussion-composer:focus {
 }
 textarea.discussion-composer[aria-invalid='true'] {
   outline-color: #e11d48;
+}
+
+/* Shared destructive actions stay legible in both themes, including action menus. */
+button.btn-danger,
+a.btn-danger,
+.action-menu button.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 0;
+  border-radius: 4px;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+button.btn-danger:hover,
+a.btn-danger:hover,
+.action-menu button.btn-danger:hover,
+[data-theme='dark'] .action-menu button.btn-danger:hover {
+  background: #991b1b;
+  color: #fff;
+}
+.btn-danger:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+
+/* Upload targets remain visually distinct from borderless form controls. */
+.attachment-dropzone {
+  display: flex;
+  width: 100%;
+  min-height: 9rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.5rem;
+  border: 1px dashed #64748b;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #334155;
+}
+[data-theme='dark'] .attachment-dropzone {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+.attachment-dropzone:hover:not(:disabled),
+.attachment-dropzone.is-dragging {
+  border-color: #2563eb;
+  background: #dbeafe;
+  color: #1e40af;
+}
+[data-theme='dark'] .attachment-dropzone:hover:not(:disabled),
+[data-theme='dark'] .attachment-dropzone.is-dragging {
+  border-color: #60a5fa;
+  background: #172554;
+  color: #bfdbfe;
+}
+.attachment-dropzone:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Navigation states share the same corners as the rest of the interface. */
+.nav-link,
+.nav-link:hover,
+.nav-link.active,
+.profile-menu-item,
+.profile-menu-item:hover {
+  border-radius: 4px;
+}
+
+/* Destructive menu items are compact and separated from ordinary actions. */
+.action-menu button.btn-danger {
+  position: relative;
+  justify-content: flex-start;
+  margin-top: 0.75rem;
+  padding: 0.375rem 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.action-menu button.btn-danger::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -0.4rem;
+  border-top: 1px solid #cbd5e1;
+}
+[data-theme='dark'] .action-menu button.btn-danger::before {
+  border-top-color: #475569;
+}
+
+.select-search {
+  display: block;
+  position: sticky;
+  top: -0.25rem;
+  z-index: 1;
+  padding: 0.25rem;
+  background: #fff;
+}
+.select-search input {
+  margin: 0;
+  min-height: 2rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background: #f1f5f9;
+}
+.select-search + [role='listbox'] {
+  margin-top: 0.25rem;
+}
+[data-theme='dark'] .select-search {
+  background: #0f172a;
+}
+[data-theme='dark'] .select-search input {
+  background: #1e293b;
+}
+
+.profile-dropup {
+  border: 1px solid #e2e8f0;
+}
+[data-theme='dark'] .profile-dropup {
+  border-color: #475569;
+}
+
+/* Sidebar fields stay distinct from the rail surface in both themes. */
+.record-sidebar
+  :is(
+    input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']),
+    textarea,
+    select,
+    .select-trigger,
+    .reference-control,
+    .rich-editor-field
+  ) {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+[data-theme='dark']
+  .record-sidebar
+  :is(
+    input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']),
+    textarea,
+    select,
+    .select-trigger,
+    .reference-control,
+    .rich-editor-field
+  ) {
+  border-color: #64748b;
+}
+/* Composite reference fields need one outer border, not a second around their input. */
+.record-sidebar .reference-control input:not([type='checkbox']) {
+  border: 0;
 }

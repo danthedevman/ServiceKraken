@@ -1,3 +1,4 @@
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { useUiPreferences } from '../../preferences/ui-preferences.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
@@ -132,13 +133,15 @@ function OptionsEditor({ field, kind, onChange }) {
               {option.hidden ? 'Show option' : 'Hide option'}
             </button>
             {(!builtin || !bases.includes(option.value)) && (
-              <button
+              <ConfirmDeleteButton
+                confirmation="Remove this custom option? Save the form configuration to apply the change."
+                confirmLabel="Remove"
                 type="button"
-                className="btn-secondary"
-                onClick={() => commit(options.filter((_, i) => i !== index))}
+                className="btn-danger"
+                onConfirm={() => commit(options.filter((_, i) => i !== index))}
               >
                 Remove
-              </button>
+              </ConfirmDeleteButton>
             )}
           </div>
         </div>
@@ -212,7 +215,7 @@ export function IncidentBuilderPage({ kind = 'incidents' }) {
           : '/knowledge-fields';
   const resource = useResource(user?.role === 'admin' ? path : null);
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <h1 className="page-title">
         {kind === 'incidents' ? 'Incident' : kind === 'tasks' ? 'Task' : 'Knowledge'} form builder
       </h1>
@@ -260,11 +263,6 @@ function Builder({ initial, path, kind, reload }) {
   };
   return (
     <>
-      <p className="text-sm text-slate-500">
-        Built-in fields stay in the form. Rename or reorder them, and manage their dropdown choices.
-        Built-in choices cannot be deleted; new choices map to a built-in meaning. Saved custom
-        field types are locked.
-      </p>
       <Notice error={save.error} />
       {saved && <p role="status">Form saved.</p>}
       <div className="flex flex-wrap gap-3">
@@ -323,6 +321,7 @@ function Builder({ initial, path, kind, reload }) {
         </button>
       </div>
       <RecordWorkspace
+        showToolbar={false}
         label="Field settings"
         sidebar={
           <section className="panel form-body p-6">
@@ -372,9 +371,19 @@ function Builder({ initial, path, kind, reload }) {
                         )}
                       </Select>
                     </Field>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => {
+                    <ConfirmDeleteButton
+                      confirmation={
+                        field.archived
+                          ? 'Restore this field?'
+                          : 'Remove or archive this field? Save the form configuration to apply the change.'
+                      }
+                      confirmLabel={field.archived ? 'Restore' : 'Remove'}
+                      className={
+                        savedIds.includes(field.id) && field.archived
+                          ? 'btn-secondary'
+                          : 'btn-danger'
+                      }
+                      onConfirm={() => {
                         if (savedIds.includes(field.id)) update({ archived: !field.archived });
                         else {
                           setFields(fields.filter((row) => row.id !== field.id));
@@ -388,7 +397,7 @@ function Builder({ initial, path, kind, reload }) {
                           ? 'Restore field'
                           : 'Archive field'
                         : 'Remove field'}
-                    </button>
+                    </ConfirmDeleteButton>
                   </>
                 )}
                 {(field.type === 'select' || builtinChoices[kind]?.[field.id]) && (

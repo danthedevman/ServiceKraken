@@ -23,7 +23,9 @@ export function RecordWorkspace({
   item,
   kind,
   actions,
+  secondaryActions,
   status,
+  showToolbar = true,
 }) {
   const { user } = useContext(AuthContext);
   const showFormBuilder =
@@ -47,27 +49,32 @@ export function RecordWorkspace({
   return (
     <div className="record-container">
       <div className="record-workspace">
-        <div className="record-body min-w-0 space-y-6">
-          <div className="record-toolbar flex min-h-12 flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-3">
-              <span
-                className="break-all font-mono text-xs text-slate-500"
-                aria-label="Record number"
-              >
-                {recordNumber(kind, item)}
-              </span>
-              {state && <StateBadge status={state} label={item?.statusLabel} />}
+        <div className="record-body min-w-0 space-y-3">
+          {showToolbar && (
+            <div className="record-toolbar flex min-h-12 flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-3">
+                <span
+                  className="break-all font-mono text-xs text-slate-500"
+                  aria-label="Record number"
+                >
+                  {recordNumber(kind, item)}
+                </span>
+                {state && <StateBadge status={state} label={item?.statusLabel} />}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div ref={setToolbar} className="flex flex-wrap items-center gap-2">
+                  {onEdit && <EditRecordButton onClick={onEdit} />}
+                  {actions}
+                </div>
+                {(showFormBuilder || secondaryActions) && (
+                  <ActionMenu label="Record actions">
+                    {secondaryActions}
+                    {showFormBuilder && <Link to={`/${kind}/fields`}>Form builder</Link>}
+                  </ActionMenu>
+                )}
+              </div>
             </div>
-            <div ref={setToolbar} className="flex flex-wrap items-center gap-2">
-              {onEdit && <EditRecordButton onClick={onEdit} />}
-              {actions}
-              {showFormBuilder && (
-                <ActionMenu label="Form actions">
-                  <Link to={`/${kind}/fields`}>Form builder</Link>
-                </ActionMenu>
-              )}
-            </div>
-          </div>
+          )}
           <RecordActionContext.Provider value={toolbar}>{children}</RecordActionContext.Provider>
         </div>
         <aside aria-label={label} data-collapsed={collapsed} className="record-sidebar min-w-0">

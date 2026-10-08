@@ -1,3 +1,4 @@
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
 import { writeApi } from '../../data/query-client.js';
@@ -61,15 +62,17 @@ export function StatusIconUpload({ hasIcon }) {
           className="h-16 w-16 object-contain"
         />
         {present && (
-          <button
+          <ConfirmDeleteButton
+            confirmation="Remove the custom status icon and restore the default icon?"
+            confirmLabel="Remove"
             type="button"
-            className="btn-secondary gap-2"
+            className="btn-danger gap-2"
             disabled={busy}
-            onClick={() => change(null)}
+            onConfirm={() => change(null)}
           >
             <TrashIcon className="h-4 w-4" aria-hidden="true" />
             Remove custom icon
-          </button>
+          </ConfirmDeleteButton>
         )}
       </div>
       <label className="field-label">

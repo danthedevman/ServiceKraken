@@ -1,5 +1,5 @@
-import { EyeIcon } from '@heroicons/react/24/outline';
 import { Select } from '../components/forms/select.jsx';
+import { EyeIcon } from '@heroicons/react/24/outline';
 import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './auth-context.js';
@@ -14,6 +14,7 @@ export function RolePreview({ banner = false }) {
     [error, setError] = useState('');
   if ((user?.actualRole ?? user?.role) !== 'admin' || (banner && !user.impersonating)) return null;
   async function change(role) {
+    if (busy || role === user.role) return;
     setBusy(true);
     setError('');
     try {
@@ -52,10 +53,12 @@ export function RolePreview({ banner = false }) {
           <label className="block text-sm font-medium">
             <span className="flex items-center gap-3">
               <EyeIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-              View as role
+              Impersonation
             </span>
-            <span className="ml-8 block">
+            <span className="mt-2 block">
               <Select
+                className="!mt-0 !min-h-10 !py-2 !pl-3 !pr-7 !bg-slate-100 dark:!bg-slate-800"
+                aria-label="Impersonate role"
                 value={user.role}
                 disabled={busy}
                 onChange={(event) => change(event.target.value)}
@@ -68,7 +71,7 @@ export function RolePreview({ banner = false }) {
               </Select>
             </span>
           </label>
-          <p className="ml-8 text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Actions are real and use your account.
           </p>
         </>

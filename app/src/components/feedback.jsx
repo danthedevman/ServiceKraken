@@ -4,6 +4,7 @@ import React from 'react';
 export const statusLabels = {
   up: 'Operational',
   down: 'Down',
+  degraded: 'Degraded',
   pending: 'Awaiting check',
   paused: 'Paused',
   unknown: 'Unknown',

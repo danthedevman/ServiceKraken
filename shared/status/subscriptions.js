@@ -31,7 +31,12 @@ export function publicOrigin(value) {
 
 /** Allow only an enabled SMTP integration explicitly selected for public subscriptions. */
 export async function subscriptionMailer(db, page) {
-  if (!page.emailSubscriptions || !page.subscriptionIntegrationId) return null;
+  if (
+    page.subscriptionsEnabled === false ||
+    !page.emailSubscriptions ||
+    !page.subscriptionIntegrationId
+  )
+    return null;
   const settings = await db.collection('operations').findOne({ _id: page._id });
   return (
     settings?.integrations?.find(
@@ -62,7 +67,13 @@ export function subscriberEmail(value) {
 /** Return only advertised subscription capabilities, never integration credentials or recipients. */
 export async function subscriptionInfo(db, page) {
   return {
+    visible: page.subscriptionButtonVisible !== false,
+    enabled: page.subscriptionsEnabled !== false,
     emailEnabled: !!(await subscriptionMailer(db, page)),
-    rssPath: `/api/public/status/${page.publicToken}/feed.xml`,
+    rssEnabled: page.subscriptionsEnabled !== false && page.rssSubscriptions !== false,
+    rssPath:
+      page.subscriptionsEnabled !== false && page.rssSubscriptions !== false
+        ? `/api/public/status/${page.publicToken}/feed.xml`
+        : null,
   };
 }

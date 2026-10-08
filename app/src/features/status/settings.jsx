@@ -1,3 +1,4 @@
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
 import { StatusIconUpload } from './icon-upload.jsx';
@@ -48,6 +49,13 @@ export function StatusSettings({ page = false }) {
 /** Publish explicitly, validating messages before sending the same bounded server payload. */
 function StatusEditor({ settings, services, integrations }) {
   const navigate = useNavigate();
+  const [subscriptionButtonVisible, setSubscriptionButtonVisible] = useState(
+    settings.subscriptionButtonVisible ?? true,
+  );
+  const [subscriptionsEnabled, setSubscriptionsEnabled] = useState(
+    settings.subscriptionsEnabled ?? true,
+  );
+  const [rssSubscriptions, setRssSubscriptions] = useState(settings.rssSubscriptions ?? true);
   const [emailSubscriptions, setEmailSubscriptions] = useState(
     settings.emailSubscriptions ?? false,
   );
@@ -73,6 +81,9 @@ function StatusEditor({ settings, services, integrations }) {
     try {
       const body = {
         visibility,
+        subscriptionButtonVisible,
+        subscriptionsEnabled,
+        rssSubscriptions,
         emailSubscriptions,
         subscriptionIntegrationId,
         publicOrigin,
@@ -128,6 +139,32 @@ function StatusEditor({ settings, services, integrations }) {
       </section>
       <section className="space-y-4 border-t border-slate-200 pt-6 dark:border-slate-700">
         <h2 className="font-semibold">Subscriptions</h2>
+        <label className="flex items-center gap-3 text-sm">
+          <Toggle
+            checked={subscriptionButtonVisible}
+            onChange={(event) => setSubscriptionButtonVisible(event.target.checked)}
+          />
+          Show Subscribe to updates button
+        </label>
+        <label className="flex items-center gap-3 text-sm">
+          <Toggle
+            checked={subscriptionsEnabled}
+            onChange={(event) => setSubscriptionsEnabled(event.target.checked)}
+          />
+          Enable subscriptions
+        </label>
+        <p className="text-sm text-slate-500">
+          Hiding the button keeps existing subscriptions active. Disabling subscriptions stops email
+          updates and RSS access. Unsubscribe links still work.
+        </p>
+        <label className="flex items-center gap-3 text-sm">
+          <Toggle
+            checked={rssSubscriptions}
+            onChange={(event) => setRssSubscriptions(event.target.checked)}
+          />
+          RSS updates
+        </label>
+
         <p className="text-sm text-slate-500">
           Public pages include an RSS feed. Enable email updates with a configured email
           integration.
@@ -157,7 +194,7 @@ function StatusEditor({ settings, services, integrations }) {
             Email integration
             <Select
               name="subscriptionIntegrationId"
-              required
+              required={subscriptionsEnabled}
               value={subscriptionIntegrationId}
               onChange={(event) => setSubscriptionIntegrationId(event.target.value)}
             >
@@ -221,17 +258,19 @@ function StatusEditor({ settings, services, integrations }) {
                 )
               }
             />
-            <button
+            <ConfirmDeleteButton
+              confirmation="Remove this service message? Save status settings to apply the change."
+              confirmLabel="Remove"
               type="button"
-              className="text-sm text-rose-700 dark:text-rose-400"
-              onClick={() =>
+              className="btn-danger text-sm"
+              onConfirm={() =>
                 setMessages((current) =>
                   current.filter((item) => item.serviceId !== message.serviceId),
                 )
               }
             >
               Remove message
-            </button>
+            </ConfirmDeleteButton>
           </div>
         ))}
       </section>

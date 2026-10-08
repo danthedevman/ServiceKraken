@@ -1,15 +1,11 @@
+import { AuthContext } from '../../auth/auth-context.js';
 import { RecordTabs } from '../../components/record-tabs.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { EditRecordButton } from '../../components/record-workspace.jsx';
 import { Stat } from '../../components/stat.jsx';
 import { PendingPage } from '../../components/pending-page.jsx';
-import {
-  RecordWorkspace,
-  RecordSection,
-  RecordMetadata,
-} from '../../components/record-workspace.jsx';
+import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
 import { Modal } from '../../components/modal.jsx';
-import { ActionMenu } from '../../components/action-menu.jsx';
 
 import { AdminOnly } from '../../auth/role-gates.jsx';
 
@@ -20,7 +16,7 @@ import { writeApi } from '../../data/query-client.js';
 import { useResource } from '../../data/use-resource.js';
 
 import { ArrowRightIcon, ArrowUpRightIcon } from '@heroicons/react/24/outline';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { dateRangeErrors } from '../../../../shared/validation/form-validation.js';
@@ -32,12 +28,14 @@ import { MonitorOrganization } from '../services/monitor-organization.jsx';
 import { Badge } from '../../components/feedback.jsx';
 import { ErrorNotice } from '../../components/feedback.jsx';
 
-import { dateTime } from '../../lib/date-time.js';
+import { useDateTime } from '../../preferences/date-time.jsx';
 
 import { MonitorForm } from './form.jsx';
 
 /** Paginated check history plus pause, resume, and delete controls. */
 export function MonitorDetail() {
+  const dateTime = useDateTime();
+  const { user } = useContext(AuthContext);
   const [formVersion, setFormVersion] = useState(0);
   const [editingId, setEditingId] = useState(null);
   const editing = editingId === useParams().id;
@@ -204,30 +202,28 @@ export function MonitorDetail() {
                   </AdminOnly>
                 )
               }
+              secondaryActions={
+                user?.role === 'admin' && (
+                  <>
+                    <button
+                      className="btn-secondary"
+                      disabled={busy || !!monitor.demoBatchId || monitor.unsupported}
+                      onClick={() => change()}
+                    >
+                      {monitor.paused ? 'Resume monitor' : 'Pause monitor'}
+                    </button>
+                    <button
+                      className="btn-danger"
+                      disabled={busy}
+                      onClick={() => setConfirmDelete(true)}
+                    >
+                      Delete monitor
+                    </button>
+                  </>
+                )
+              }
               sidebar={
                 <>
-                  <AdminOnly>
-                    <RecordSection title="Actions">
-                      <div className="flex gap-3">
-                        <ActionMenu>
-                          <button
-                            className="btn-secondary"
-                            disabled={busy || !!monitor.demoBatchId || monitor.unsupported}
-                            onClick={() => change()}
-                          >
-                            {monitor.paused ? 'Resume monitor' : 'Pause monitor'}
-                          </button>
-                          <button
-                            className="text-rose-700 dark:text-rose-400"
-                            disabled={busy}
-                            onClick={() => setConfirmDelete(true)}
-                          >
-                            Delete monitor
-                          </button>
-                        </ActionMenu>
-                      </div>
-                    </RecordSection>
-                  </AdminOnly>
                   <RecordMetadata
                     item={monitor}
                     extra={[
@@ -278,19 +274,9 @@ export function MonitorDetail() {
                 />
                 <Stat
                   title="Last checked"
-                  value={
-                    monitor.lastCheck
-                      ? new Date(monitor.lastCheck.checkedAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : '—'
-                  }
-                  note={
-                    monitor.lastCheck
-                      ? new Date(monitor.lastCheck.checkedAt).toLocaleDateString()
-                      : 'First check starts shortly'
-                  }
+                  compact
+                  value={monitor.lastCheck ? dateTime(monitor.lastCheck.checkedAt) : '—'}
+                  note={!monitor.lastCheck ? 'First check starts shortly' : undefined}
                 />
               </div>
               {monitor.status === 'unknown' && (
@@ -308,7 +294,7 @@ export function MonitorDetail() {
                     content: (
                       <DataTable
                         title="Check history"
-                        description="Last 30 days · Times shown in your local timezone"
+                        description="Last 30 days · Times shown in your profile time zone"
                         rows={eventState.data?.events ?? []}
                         columns={eventColumns}
                         rowKey={(event) => event.id}
@@ -434,7 +420,7 @@ export function MonitorDetail() {
                         </button>
                         <button
                           type="button"
-                          className="btn-primary"
+                          className="btn-danger"
                           disabled={busy}
                           onClick={() => change(true)}
                         >

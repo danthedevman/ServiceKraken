@@ -30,7 +30,7 @@ export function MonitorList() {
             <AdminOnly>
               <Link to="/monitors/new" className="btn-primary">
                 <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                Add monitor
+                Create
               </Link>
             </AdminOnly>
           }

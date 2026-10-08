@@ -1,3 +1,6 @@
+import { healthPolicy } from '../../../../shared/domain/service-health.js';
+import { Toggle } from '../../components/forms/toggle.jsx';
+import { FormPage } from '../../components/forms/form-page.jsx';
 import { FormSkeleton } from '../../components/skeleton.jsx';
 import { RecordActions } from '../../components/record-actions.jsx';
 import { CancelButton } from '../../components/forms/cancel-button.jsx';
@@ -57,6 +60,8 @@ export function CatalogForm({
   onCancel,
 }) {
   const isService = kind === 'services';
+  const [manualDown, setManualDown] = useState(item?.healthPolicy?.manualDown ?? false);
+  const [manualDegraded, setManualDegraded] = useState(item?.healthPolicy?.manualDegraded ?? false);
   const [ownerIds, setOwnerIds] = useState(item?.ownerIds ?? []);
   const [ownerGroupIds, setOwnerGroupIds] = useState(item?.ownerGroupIds ?? []);
   const [contactId, setContactId] = useState(item?.primaryContactId ?? '');
@@ -84,6 +89,12 @@ export function CatalogForm({
           name: form.get('name'),
           ...(isService
             ? {
+                healthPolicy: healthPolicy({
+                  manualDown,
+                  manualDegraded,
+                  responseTimeMs: Number(form.get('responseTimeMs')),
+                  failuresBeforeDown: Number(form.get('failuresBeforeDown')),
+                }),
                 description: form.get('description'),
                 ownerIds,
                 ownerGroupIds,
@@ -130,6 +141,70 @@ export function CatalogForm({
             placeholder="What this service provides"
           />
         </label>
+      )}
+      {isService && (
+        <section className="space-y-5">
+          <h2 className="font-semibold">Health thresholds</h2>
+          <label className="flex items-center gap-2">
+            <Toggle
+              aria-describedby="manual-degraded-help"
+              checked={manualDegraded}
+              onChange={(event) => {
+                setManualDegraded(event.target.checked);
+                if (event.target.checked) setManualDown(false);
+              }}
+            />
+            Flag as degraded
+          </label>
+          <label className="flex items-center gap-2">
+            <Toggle
+              aria-describedby="manual-degraded-help"
+              checked={manualDown}
+              onChange={(event) => {
+                setManualDown(event.target.checked);
+                if (event.target.checked) setManualDegraded(false);
+              }}
+            />
+            Flag as down
+          </label>
+          <p id="manual-degraded-help" className="text-sm text-slate-500">
+            Manual flags stay enabled until you clear them. Down takes precedence over all other
+            health signals.
+          </p>
+          <label className="field-label">
+            Degraded response time (ms)
+            <input
+              aria-describedby="response-time-help"
+              name="responseTimeMs"
+              type="number"
+              min="0"
+              max="120000"
+              step="1"
+              defaultValue={item?.healthPolicy?.responseTimeMs ?? 0}
+            />
+          </label>
+          <p id="response-time-help" className="text-sm text-slate-500">
+            A successful check at or above this duration marks the service Degraded. Use 0 to
+            disable.
+          </p>
+          <label className="field-label">
+            Consecutive failures before Down
+            <input
+              aria-describedby="failure-threshold-help"
+              name="failuresBeforeDown"
+              type="number"
+              min="1"
+              max="10"
+              step="1"
+              required
+              defaultValue={item?.healthPolicy?.failuresBeforeDown ?? 1}
+            />
+          </label>
+          <p id="failure-threshold-help" className="text-sm text-slate-500">
+            Each monitor is evaluated separately. Failed checks below this threshold show Degraded;
+            a successful check resets the failure count.
+          </p>
+        </section>
       )}
       {isService && (
         <section className="space-y-5 border-t border-slate-200 pt-5 dark:border-slate-700">
@@ -186,7 +261,11 @@ export function CatalogForm({
       <RecordActions>
         <CancelButton onCancel={onCancel} to={`/${kind}`} disabled={busy} />
         <button className="btn-primary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save'}
+          {busy
+            ? 'Saving…'
+            : item
+              ? 'Save changes'
+              : `Create ${kind === 'services' ? 'service' : 'collection'}`}
         </button>
       </RecordActions>
     </ValidatedForm>
@@ -202,12 +281,7 @@ export function CatalogFormPage({ kind = 'services' }) {
   const noun = kind === 'services' ? 'service' : 'collection';
   if (id) return <Navigate replace to={`/${kind}/${id}`} />;
   return (
-    <div className="form-page">
-      <div>
-        <h1 className="page-title">
-          {id ? 'Edit' : 'Create'} {noun}
-        </h1>
-      </div>
+    <FormPage title={`Create ${noun}`}>
       {error && (
         <p role="alert" className="text-rose-700 dark:text-rose-400">
           {error}
@@ -253,6 +327,6 @@ export function CatalogFormPage({ kind = 'services' }) {
           onCancel={() => navigate(id ? `/${kind}/${id}` : `/${kind}`)}
         />
       )}
-    </div>
+    </FormPage>
   );
 }

@@ -1,3 +1,4 @@
+import { assignmentGroup } from '../domain/assignment.js';
 import { claimAttachments } from './attachments.js';
 import { validateRichContent } from '@servicekraken/shared/files/rich-content';
 import { ObjectId } from 'mongodb';
@@ -56,7 +57,10 @@ async function associations(db, workspaceId, input, current, task) {
       invalid('assigneeId', 'Choose an active workspace teammate.');
     assigneeName = member.displayName || member.email;
   }
-  return { serviceId, serviceName, ...(task ? { incidentTitle, assigneeName } : {}) };
+  const group = task
+    ? await assignmentGroup(db, workspaceId, input.assignmentGroupId, input.assigneeId)
+    : {};
+  return { ...group, serviceId, serviceName, ...(task ? { incidentTitle, assigneeName } : {}) };
 }
 
 /** Tasks and knowledge stay private to the workspace. Admins and responders can create/edit both. */
@@ -116,6 +120,7 @@ export function installWorkRoutes(app, db) {
             'Priority',
             'Service',
             'Incident',
+            'Assignment group',
             'Assignee',
             'Due date',
             'Description',
@@ -136,6 +141,7 @@ export function installWorkRoutes(app, db) {
                   row.priorityLabel || row.priority,
                   row.serviceName,
                   row.incidentTitle,
+                  row.assignmentGroupName,
                   row.assigneeName,
                   row.dueDate,
                   row.description,
@@ -197,6 +203,7 @@ export function installWorkRoutes(app, db) {
                 'incidentId',
                 'description',
                 'priority',
+                'assignmentGroupId',
                 'assigneeId',
                 'dueDate',
                 'revision',

@@ -7,7 +7,7 @@ export function FormPage({ title, children }) {
   return (
     <div className="form-page">
       {!record && <h1 className="page-title">{title}</h1>}
-      <section className="panel p-6">{children}</section>
+      <section className="record-details space-y-6">{children}</section>
     </div>
   );
 }

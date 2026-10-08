@@ -1,3 +1,4 @@
+import { HelpPage } from './features/help/help.jsx';
 import { AuditPage } from './features/settings/audit.jsx';
 import { SettingsPage } from './features/settings/settings.jsx';
 
@@ -72,6 +73,7 @@ export function App() {
               <Route path="/join/:token" element={<JoinPage />} />
               <Route element={<Layout />}>
                 <Route index element={<HomePage />} />
+                <Route path="help" element={<HelpPage />} />
                 <Route path="tasks" element={<WorkPage key="tasks" />} />
                 <Route
                   path="tasks/:id/edit"
@@ -148,10 +150,19 @@ export function App() {
                 />
                 <Route path="on-call/:id" element={<OnCallPage />} />
                 <Route
-                  path="workspace/invite"
+                  path="workspace/new"
                   element={
                     <AdminOnly page>
-                      <WorkspacePage form="invite" />
+                      <WorkspacePage form="create" />
+                    </AdminOnly>
+                  }
+                />
+                <Route path="workspace/invite" element={<Navigate replace to="/workspace/new" />} />
+                <Route
+                  path="workspace/:id/password"
+                  element={
+                    <AdminOnly page>
+                      <WorkspacePage form="password" />
                     </AdminOnly>
                   }
                 />

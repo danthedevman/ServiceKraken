@@ -44,6 +44,15 @@ export function installReferenceRoutes(app, db) {
             : type === 'monitors'
               ? { userId: req.workspaceId }
               : { workspaceId: req.workspaceId };
+      if (type === 'members' && req.query.groupId) {
+        const groupId = String(req.query.groupId);
+        if (!/^[a-f\d]{24}$/i.test(groupId)) throw new InputError('Invalid group.');
+        const group = (await settings(db, req.workspaceId)).groups?.find(
+          (row) => row.id === groupId,
+        );
+        if (!group) throw new InputError('Group not found.', 404);
+        base.$and = [...(base.$and ?? []), { _id: { $in: group.memberIds.map(id) } }];
+      }
       const search = tableSearch(
         { search: q },
         { label: `$${label}`, ...(type === 'members' ? { email: '$email' } : {}) },

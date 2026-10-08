@@ -74,7 +74,7 @@ export function Layout() {
         className={
           listPage
             ? 'list-main'
-            : `mx-auto min-h-[calc(100dvh-5rem)] ${recordPage ? 'record-main max-w-none' : 'max-w-6xl'} space-y-6 p-4 lg:p-6`
+            : `mx-auto min-h-[calc(100dvh-5rem)] ${recordPage ? 'record-main max-w-none space-y-3' : 'max-w-6xl space-y-6'} p-4 lg:p-6`
         }
       >
         <RolePreview banner />

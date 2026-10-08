@@ -21,14 +21,22 @@ export function Select({
   required,
   disabled,
   className = '',
+  searchable = false,
+  searchLabel = 'Search options',
   ...props
 }) {
   const generated = useId();
   const listId = `${generated}-options`;
   const trigger = useRef(null),
     panel = useRef(null),
-    native = useRef(null);
+    native = useRef(null),
+    searchInput = useRef(null);
   const options = optionsFrom(children);
+  const [search, setSearch] = useState('');
+  const matches = (option, query = search) =>
+    `${option.children} ${option.value}`
+      .toLocaleLowerCase()
+      .includes(query.trim().toLocaleLowerCase());
   const [internal, setInternal] = useState(defaultValue ?? options[0]?.value ?? '');
   const selected = String(value ?? internal);
   const [open, setOpen] = useState(false);
@@ -36,7 +44,7 @@ export function Select({
   const [active, setActive] = useState(0);
   const prefix = useRef({ text: '', at: 0 });
   const available = options
-    .map((option, index) => (option.disabled ? -1 : index))
+    .map((option, index) => (option.disabled || (searchable && !matches(option)) ? -1 : index))
     .filter((index) => index >= 0);
   function close() {
     panel.current.hidePopover();
@@ -53,7 +61,9 @@ export function Select({
   }
   function show() {
     if (trigger.current.matches(':disabled')) return;
+    setSearch('');
     panel.current.showPopover();
+    if (searchable) searchInput.current.focus();
     const rect = trigger.current.getBoundingClientRect();
     // Fit long options independently of the trigger, while keeping the menu inside the viewport.
     panel.current.style.width = 'max-content';
@@ -77,7 +87,7 @@ export function Select({
         return;
       }
       if (event.key === 'Enter' || event.key === ' ') {
-        choose(active);
+        if (available.includes(active)) choose(active);
         return;
       }
       const position = available.indexOf(active);
@@ -92,12 +102,13 @@ export function Select({
               ];
       if (next !== undefined) {
         setActive(next);
-        panel.current.children[next]?.scrollIntoView({ block: 'nearest' });
+        document.getElementById(`${listId}-${next}`)?.scrollIntoView({ block: 'nearest' });
       }
     } else if (event.key === 'Escape' && open) {
       event.preventDefault();
       event.stopPropagation();
       close();
+      trigger.current.focus();
     } else if (event.key === 'Tab') close();
     else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
       if (!open) show();
@@ -110,7 +121,7 @@ export function Select({
       );
       if (index >= 0) {
         setActive(index);
-        panel.current.children[index]?.scrollIntoView({ block: 'nearest' });
+        document.getElementById(`${listId}-${index}`)?.scrollIntoView({ block: 'nearest' });
       }
     }
   }
@@ -143,12 +154,12 @@ export function Select({
         ref={trigger}
         type="button"
         disabled={disabled}
-        role="combobox"
+        role={searchable ? undefined : 'combobox'}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
         aria-required={required || undefined}
-        aria-activedescendant={open ? `${listId}-${active}` : undefined}
+        aria-activedescendant={open && !searchable ? `${listId}-${active}` : undefined}
         className={`select-trigger ${className}`}
         onClick={(event) => {
           event.preventDefault();
@@ -169,35 +180,77 @@ export function Select({
       )}
       <span
         ref={panel}
-        id={listId}
-        role="listbox"
-        aria-label={props['aria-label'] || 'Options'}
         popover="auto"
         className="select-options"
         onToggle={(event) => setOpen(event.newState === 'open')}
       >
-        {options.map((option, index) => (
-          <span
-            key={`${option.value}-${index}`}
-            id={`${listId}-${index}`}
-            role="option"
-            aria-selected={option.value === selected}
-            aria-disabled={option.disabled || undefined}
-            data-active={index === active}
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              choose(index);
-            }}
-            className="select-option"
-          >
-            <span>{option.children}</span>
-            {option.value === selected && (
-              <CheckIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            )}
+        {searchable && (
+          <span className="select-search">
+            <input
+              ref={searchInput}
+              type="search"
+              role="combobox"
+              aria-label={searchLabel}
+              placeholder={searchLabel}
+              autoComplete="off"
+              value={search}
+              aria-expanded={open}
+              aria-controls={listId}
+              aria-autocomplete="list"
+              aria-activedescendant={
+                open && available.includes(active) ? `${listId}-${active}` : undefined
+              }
+              onChange={(event) => {
+                const query = event.target.value;
+                setSearch(query);
+                setActive(
+                  options.findIndex((option) => !option.disabled && matches(option, query)),
+                );
+              }}
+              onKeyDown={(event) => {
+                if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(event.key))
+                  keyboard(event);
+              }}
+            />
           </span>
-        ))}
+        )}
+        <span
+          id={listId}
+          role="listbox"
+          aria-label={props['aria-label'] || 'Options'}
+          className="block"
+        >
+          {options.map(
+            (option, index) =>
+              (!searchable || matches(option)) && (
+                <span
+                  key={`${option.value}-${index}`}
+                  id={`${listId}-${index}`}
+                  role="option"
+                  aria-selected={option.value === selected}
+                  aria-disabled={option.disabled || undefined}
+                  data-active={index === active}
+                  onPointerDown={(event) => event.preventDefault()}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    choose(index);
+                  }}
+                  className="select-option"
+                >
+                  <span>{option.children}</span>
+                  {option.value === selected && (
+                    <CheckIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  )}
+                </span>
+              ),
+          )}
+        </span>
+        {searchable && !options.some((option) => matches(option)) && (
+          <span role="status" className="block px-3 py-4 text-sm text-slate-500">
+            No matching options
+          </span>
+        )}
       </span>
     </span>
   );

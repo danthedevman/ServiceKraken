@@ -1,3 +1,4 @@
+import { healthPolicy } from '@servicekraken/shared/domain/service-health';
 import { publicOrigin, subscriptionMailer } from '@servicekraken/shared/status/subscriptions';
 import { installStatusIconRoutes } from './status-icon.js';
 import { statusMessage } from '@servicekraken/shared/domain/status-messages';
@@ -156,6 +157,9 @@ export function installServiceRoutes(app, db) {
           name: text(req.body.name ?? current?.name, 80, true),
         };
         if (kind === 'services') {
+          item.healthPolicy = healthPolicy(
+            req.body.healthPolicy === undefined ? current?.healthPolicy : req.body.healthPolicy,
+          );
           item.description = text(req.body.description ?? current?.description ?? '', 1000);
           item.dependencyIds = references(
             req.body.dependencyIds ?? current?.dependencyIds ?? [],
@@ -270,6 +274,9 @@ export function installServiceRoutes(app, db) {
       hasStatusIcon: !!(await db
         .collection('statusIcons')
         .findOne({ _id: req.workspaceId }, { projection: { _id: 1 } })),
+      subscriptionButtonVisible: data.subscriptionButtonVisible ?? true,
+      subscriptionsEnabled: data.subscriptionsEnabled ?? true,
+      rssSubscriptions: data.rssSubscriptions ?? true,
       emailSubscriptions: data.emailSubscriptions ?? false,
       subscriptionIntegrationId: data.subscriptionIntegrationId ?? '',
       publicOrigin: data.publicOrigin || process.env.APP_ORIGIN || 'http://127.0.0.1:8090',
@@ -307,6 +314,15 @@ export function installServiceRoutes(app, db) {
         };
       });
     }
+    for (const field of ['subscriptionButtonVisible', 'subscriptionsEnabled', 'rssSubscriptions']) {
+      if (req.body[field] !== undefined) {
+        if (typeof req.body[field] !== 'boolean')
+          throw new InputError('Choose an enabled or disabled subscription setting.', 400, {
+            [field]: 'Choose enabled or disabled.',
+          });
+        data[field] = req.body[field];
+      }
+    }
     if (req.body.emailSubscriptions !== undefined) {
       if (typeof req.body.emailSubscriptions !== 'boolean')
         throw new InputError('Choose whether email subscriptions are enabled.', 400);
@@ -325,7 +341,11 @@ export function installServiceRoutes(app, db) {
         });
       data.subscriptionIntegrationId = req.body.subscriptionIntegrationId;
     }
-    if (data.emailSubscriptions && !(await subscriptionMailer(db, data)))
+    if (
+      data.subscriptionsEnabled !== false &&
+      data.emailSubscriptions &&
+      !(await subscriptionMailer(db, data))
+    )
       throw new InputError('Choose an enabled email integration with SMTP credentials.', 400, {
         subscriptionIntegrationId: 'Choose an enabled email integration with SMTP credentials.',
       });
@@ -340,6 +360,9 @@ export function installServiceRoutes(app, db) {
       hasStatusIcon: !!(await db
         .collection('statusIcons')
         .findOne({ _id: req.workspaceId }, { projection: { _id: 1 } })),
+      subscriptionButtonVisible: data.subscriptionButtonVisible ?? true,
+      subscriptionsEnabled: data.subscriptionsEnabled ?? true,
+      rssSubscriptions: data.rssSubscriptions ?? true,
       emailSubscriptions: data.emailSubscriptions ?? false,
       subscriptionIntegrationId: data.subscriptionIntegrationId ?? '',
       publicOrigin: data.publicOrigin || process.env.APP_ORIGIN || 'http://127.0.0.1:8090',

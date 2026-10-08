@@ -6,7 +6,15 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
  * Mount only while open; keep unsaved inputs on refresh.
  * @param {{title: string, onClose: Function, busy?: boolean, children: React.ReactNode, footer?: React.ReactNode, initialFocusRef?: object}} props
  */
-export function Modal({ title, onClose, busy = false, children, footer, initialFocusRef }) {
+export function Modal({
+  title,
+  onClose,
+  busy = false,
+  children,
+  footer,
+  initialFocusRef,
+  className = '',
+}) {
   const ref = useRef(null);
   const titleId = useId();
   useEffect(() => {
@@ -26,7 +34,7 @@ export function Modal({ title, onClose, busy = false, children, footer, initialF
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      className="modal-frame overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-800 shadow-xl backdrop:bg-slate-950/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+      className={`modal-frame overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-800 shadow-xl backdrop:bg-slate-950/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 ${className}`}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onClose();

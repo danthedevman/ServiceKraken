@@ -1,3 +1,6 @@
+import { AttachmentDropzone } from './attachment-dropzone.jsx';
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
+import { DateTime } from '../../preferences/date-time.jsx';
 import { ActionMenu } from '../../components/action-menu.jsx';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { PaperClipIcon, ArrowDownTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
@@ -71,25 +74,12 @@ export function AttachmentPicker({ draft, imageIds = [] }) {
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-medium">Attachments</h2>
-      <label className="field-label inline-flex cursor-pointer items-center gap-2">
-        <PaperClipIcon className="h-5 w-5" />
-        Choose file
-        <input
-          type="file"
-          accept={fileAccept}
-          disabled={draft.busy}
-          onChange={async (event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file)
-              try {
-                await draft.upload(file);
-              } catch (error) {
-                draft.setError(error.message);
-              }
-          }}
-        />
-      </label>
+      <AttachmentDropzone
+        accept={fileAccept}
+        disabled={draft.busy}
+        onUpload={draft.upload}
+        onError={draft.setError}
+      />
       <p className="text-xs text-slate-500">
         Up to 20 files including embedded images, 5 MB each. Files are attached when you save the
         record.
@@ -104,15 +94,17 @@ export function AttachmentPicker({ draft, imageIds = [] }) {
             return (
               <li key={id} className="flex items-center justify-between gap-3 text-sm">
                 <span className="break-all">{file?.name ?? 'Attached file'}</span>
-                <button
+                <ConfirmDeleteButton
+                  confirmation="Remove this attachment from the draft?"
+                  confirmLabel="Remove"
                   type="button"
-                  className="btn-secondary"
+                  className="btn-danger"
                   disabled={draft.busy}
                   title="Remove attachment"
-                  onClick={() => draft.setIds(draft.ids.filter((value) => value !== id))}
+                  onConfirm={() => draft.setIds(draft.ids.filter((value) => value !== id))}
                 >
                   Remove
-                </button>
+                </ConfirmDeleteButton>
               </li>
             );
           })}
@@ -142,6 +134,7 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
       draft.setIds([]);
     } catch (error) {
       setError(error.message);
+      throw error;
     } finally {
       setBusy(false);
     }
@@ -151,30 +144,22 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
       <Notice error={resource.error || draft.error || error} />
       {canEdit && (
         <div className="flex flex-wrap items-center gap-3">
-          <label className="field-label">
-            Add attachment
-            <input
-              type="file"
-              accept={fileAccept}
-              disabled={busy || draft.busy}
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                event.target.value = '';
-                if (!file) return;
-                try {
-                  const item = await draft.upload(file);
-                  await attach([...draft.ids, item.id]);
-                } catch (error) {
-                  setError(error.message);
-                }
-              }}
-            />
-          </label>
-          <p className="text-xs text-slate-500">
-            5 MB per file · 20 per record, including embedded images
-          </p>
+          <AttachmentDropzone
+            accept={fileAccept}
+            disabled={busy || draft.busy}
+            onError={setError}
+            onUpload={async (file) => {
+              const item = await draft.upload(file);
+              await attach([item.id]);
+            }}
+          />
           {draft.ids.length > 0 && !draft.busy && !busy && (
-            <button className="btn-secondary" onClick={() => attach(draft.ids)}>
+            <button
+              className="btn-secondary"
+              onClick={() => {
+                void attach(draft.ids).catch(() => {});
+              }}
+            >
               Retry attaching uploaded files
             </button>
           )}
@@ -188,7 +173,7 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
             Cancel
           </button>
           <button
-            className="btn-primary"
+            className="btn-danger"
             disabled={busy}
             onClick={async () => {
               setBusy(true);
@@ -228,7 +213,7 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
                   </a>
                   <p className="mt-1 text-xs text-slate-500">
                     {Math.max(1, Math.ceil(file.size / 1024)).toLocaleString()} KB ·{' '}
-                    {new Date(file.createdAt).toLocaleDateString()}
+                    {<DateTime value={file.createdAt} />}
                   </p>
                 </div>
                 <ActionMenu label={`Actions for ${file.name}`}>
@@ -236,7 +221,12 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
                     Download
                   </a>
                   {canEdit && (
-                    <button type="button" disabled={busy} onClick={() => setConfirm(file)}>
+                    <button
+                      className="btn-danger"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setConfirm(file)}
+                    >
                       Remove attachment
                     </button>
                   )}
@@ -271,7 +261,7 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
                   </a>
                   {canEdit && (
                     <button
-                      className="btn-secondary"
+                      className="btn-danger"
                       disabled={busy}
                       aria-label={`Remove ${row.name}`}
                       onClick={() => setConfirm(row)}

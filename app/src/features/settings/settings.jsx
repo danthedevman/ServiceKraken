@@ -1,3 +1,5 @@
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
+import { DateTime } from '../../preferences/date-time.jsx';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useResource } from '../../data/use-resource.js';
@@ -41,11 +43,7 @@ export function SettingsPage() {
     }
     save.run('/settings/demo-data', action === 'add' ? 'POST' : 'DELETE', body, () => {
       setConfirm(false);
-      setMessage(
-        action === 'add'
-          ? 'Demo data added.'
-          : 'Demo data deleted. Your other records were retained.',
-      );
+      setMessage(action === 'add' ? '' : 'Demo data deleted. Your other records were retained.');
     });
   }
   return (
@@ -73,15 +71,6 @@ export function SettingsPage() {
       </section>
       <section className="panel space-y-4 p-6">
         <h2 className="text-lg font-semibold">Demo data</h2>
-        <p>
-          Add 50 records of each supported type. Only one demo dataset can exist in a workspace;
-          delete it before adding another.
-        </p>
-        <p className="text-sm text-slate-500">
-          Demo users cannot sign in, monitors remain paused, and integrations cannot send messages.
-          No real emails or requests are sent. Demo records do not consume normal record quotas. New
-          comments and files attached to demo incidents are also demo data.
-        </p>
         <Notice error={resource.error || save.error || clientError} />
         {message && <p role="status">{message}</p>}
         {!resource.data ? (
@@ -99,7 +88,7 @@ export function SettingsPage() {
             </p>
             {batch && (
               <p className="text-sm text-slate-500">
-                Added by {batch.createdBy} · {new Date(batch.createdAt).toLocaleString()}
+                Added by {batch.createdBy} · {<DateTime value={batch.createdAt} />}
               </p>
             )}
             <div className="flex flex-wrap gap-3">
@@ -111,7 +100,7 @@ export function SettingsPage() {
                 {save.busy && !confirm ? 'Adding…' : 'Add demo data'}
               </button>
               <button
-                className="btn-secondary"
+                className="btn-danger"
                 disabled={save.busy || working || !batch}
                 onClick={() => setConfirm(true)}
               >
@@ -152,15 +141,18 @@ export function SettingsPage() {
                 sortable: false,
                 value: () => '',
                 render: (row) => (
-                  <button
+                  <ConfirmDeleteButton
+                    confirmation="Delete this inquiry permanently?"
+                    confirmLabel="Remove"
+                    className="btn-danger"
                     type="button"
                     disabled={save.busy}
-                    onClick={() =>
+                    onConfirm={() =>
                       save.run(`/settings/marketing/inquiries/${row.id}`, 'DELETE', {})
                     }
                   >
                     Delete inquiry
-                  </button>
+                  </ConfirmDeleteButton>
                 ),
               },
             ]}
@@ -182,7 +174,7 @@ export function SettingsPage() {
                 Cancel
               </button>
               <button
-                className="btn-primary"
+                className="btn-danger"
                 disabled={save.busy || working || !batch}
                 onClick={() => run('delete')}
               >

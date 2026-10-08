@@ -1,7 +1,31 @@
+import { notify } from './toast.js';
 /** Make same-origin JSON requests; session tokens stay in HttpOnly cookies.
  * @param {string} path @param {RequestInit & {body?: any}} [options] @returns {Promise<any>}
  */
 export async function api(path, options = {}) {
+  const mutation = !['GET', 'HEAD', 'OPTIONS'].includes((options.method ?? 'GET').toUpperCase());
+  const announce = mutation && options.toast !== false && path !== '/auth/preferences';
+  try {
+    const result = await request(path, options);
+    if (announce)
+      notify(
+        result?.message ||
+          (options.method?.toUpperCase() === 'DELETE'
+            ? 'Deleted successfully.'
+            : 'Changes saved successfully.'),
+      );
+    return result;
+  } catch (error) {
+    if (announce && error.name !== 'AbortError') {
+      notify(error.message || 'The action could not be completed.', 'error');
+      error.notified = true;
+    }
+    throw error;
+  }
+}
+
+/** Execute the request while preserving server field validation and authentication handling. */
+async function request(path, options) {
   // Express requires an actual JSON body for write requests, including bodyless deletes.
   const method = (options.method ?? 'GET').toUpperCase();
   const body =

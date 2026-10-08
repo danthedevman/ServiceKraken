@@ -27,6 +27,7 @@ export function incidentQuery(query, req) {
     tableSearch(query, {
       title: '$title',
       serviceName: '$serviceName',
+      assignmentGroupName: { $ifNull: ['$assignmentGroupName', 'Unassigned'] },
       severity: { $ifNull: ['$severityLabel', '$severity'] },
       status: { $ifNull: ['$statusLabel', '$status'] },
       createdAt: '$createdAt',
@@ -37,7 +38,7 @@ export function incidentQuery(query, req) {
   if (query.serviceId) filter.serviceId = identifier(query.serviceId, 'serviceId');
   const sortBy = choice(
     query.sortBy ?? 'createdAt',
-    ['createdAt', 'updatedAt', 'title', 'severity', 'status', 'serviceName'],
+    ['createdAt', 'updatedAt', 'title', 'severity', 'status', 'serviceName', 'assignmentGroupName'],
     'sortBy',
   );
   const order = choice(query.order ?? 'desc', ['asc', 'desc'], 'order');

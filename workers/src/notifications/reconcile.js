@@ -39,7 +39,7 @@ export async function reconcileOperations(db, queue) {
         const existing = await db
           .collection('incidents')
           .findOne({ workspaceId: catalog._id, serviceId: service.id, activeAutomatic: true });
-        if (state === 'down' && !existing && preferences.automaticIncidents) {
+        if (['down', 'degraded'].includes(state) && !existing && preferences.automaticIncidents) {
           try {
             const created = await db.collection('incidents').insertOne({
               _id: new ObjectId(),
@@ -47,8 +47,11 @@ export async function reconcileOperations(db, queue) {
               serviceId: service.id,
               serviceName: service.name,
               title: `${service.name} is impacted`,
-              description: 'One or more monitors or service dependencies are down.',
-              severity: 'high',
+              description:
+                state === 'degraded'
+                  ? 'The service or a dependency is degraded by a manual flag or health threshold.'
+                  : 'The service is flagged Down, or a monitor or dependency has confirmed an outage.',
+              severity: state === 'degraded' ? 'medium' : 'high',
               status: 'open',
               source: 'monitor',
               createdBy: 'ServiceKraken',
@@ -65,7 +68,10 @@ export async function reconcileOperations(db, queue) {
                   at: now,
                   by: 'ServiceKraken',
                   status: 'open',
-                  note: 'Confirmed failing monitor or dependency.',
+                  note:
+                    state === 'degraded'
+                      ? 'Service degradation detected.'
+                      : 'Manual Down flag or confirmed monitor/dependency outage.',
                 },
               ],
             });

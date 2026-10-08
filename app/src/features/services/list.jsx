@@ -61,15 +61,22 @@ export function CatalogPage({ kind = 'services' }) {
         deletePath={`/${kind}`}
         fullPage
         secondaryActions={
-          <Link className="btn-secondary" to={isService ? '/collections' : '/services'}>
-            {isService ? 'Collections' : 'Services'}
-          </Link>
+          <>
+            {isService && (
+              <Link className="btn-secondary" to="/monitors">
+                Monitors
+              </Link>
+            )}
+            <Link className="btn-secondary" to={isService ? '/collections' : '/services'}>
+              {isService ? 'Collections' : 'Services'}
+            </Link>
+          </>
         }
         actions={
           <AdminOnly>
             <Link className="btn-primary" to={`/${kind}/new`}>
               <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-              Add {isService ? 'service' : 'collection'}
+              Create
             </Link>
           </AdminOnly>
         }

@@ -6,6 +6,7 @@ import { GlobalSearch } from '../features/search/global-search.jsx';
 import { prefetchRoute } from '../data/query-client.js';
 import {
   Cog6ToothIcon,
+  QuestionMarkCircleIcon,
   MagnifyingGlassIcon,
   ClipboardDocumentListIcon,
   BookOpenIcon,
@@ -100,7 +101,7 @@ function ProfileMenu({ user, compact, logout, busy, onNavigate, dropdown = false
         </summary>
       </Tooltip>
       <div
-        className={`panel absolute z-50 w-60 max-w-[calc(100vw-2rem)] space-y-1 p-2 shadow-xl ${dropdown ? 'right-0 top-full mt-2 max-h-[calc(100dvh-6rem)] overflow-y-auto' : 'bottom-full left-0 mb-3'}`}
+        className={`panel profile-dropup absolute z-50 w-60 max-w-[calc(100vw-2rem)] space-y-1 p-2 shadow-xl ${dropdown ? 'right-0 top-full mt-2 max-h-[calc(100dvh-6rem)] overflow-y-auto' : 'bottom-full left-0 mb-3'}`}
       >
         <Link
           to="/profile"
@@ -112,6 +113,17 @@ function ProfileMenu({ user, compact, logout, busy, onNavigate, dropdown = false
         >
           <UserCircleIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
           Profile settings
+        </Link>
+        <Link
+          to="/help"
+          className="profile-menu-item"
+          onClick={() => {
+            ref.current.open = false;
+            onNavigate();
+          }}
+        >
+          <QuestionMarkCircleIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+          Help
         </Link>
         <ThemeToggle menu />
         <RolePreview />

@@ -61,6 +61,19 @@ export function installRecordDeletionRoutes(app, db) {
           .findOne({ _id: req.workspaceId, 'services.ownerGroupIds': req.params.id }))
       )
         throw new InputError('Remove this group from service ownership before deleting it.', 409);
+      if (
+        kind === 'groups' &&
+        ((await db
+          .collection('incidents')
+          .findOne({ workspaceId: req.workspaceId, assignmentGroupId: req.params.id })) ||
+          (await db
+            .collection('tasks')
+            .findOne({ workspaceId: req.workspaceId, assignmentGroupId: req.params.id })))
+      )
+        throw new InputError(
+          'Remove this group from incident and task assignments before deleting it.',
+          409,
+        );
       await save(db, data, data.revision, {
         [field]: data[field].filter((record) => record.id !== req.params.id),
       });

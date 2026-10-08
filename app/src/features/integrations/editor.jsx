@@ -1,3 +1,5 @@
+import { notify } from '../../data/toast.js';
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
 import { RecordActions } from '../../components/record-actions.jsx';
@@ -54,7 +56,10 @@ export function IntegrationEditor({ initial, services, close, onSaved, onDeleted
             smtpConfigured: initial.smtpConfigured,
           });
           setErrors(next);
-          if (Object.keys(next).length) return;
+          if (Object.keys(next).length) {
+            notify('Please correct the highlighted fields.', 'error');
+            return;
+          }
           save.run(`/integrations/${value.id}`, 'PUT', value, () => onSaved(value.id));
         }}
       >
@@ -167,16 +172,14 @@ export function IntegrationEditor({ initial, services, close, onSaved, onDeleted
         </label>
         <Notice error={fields.enabled} />
         <RecordActions>
-          <button className="btn-primary" disabled={save.busy}>
-            {save.busy ? 'Saving…' : 'Save integration'}
-          </button>
-          <CancelButton onCancel={close} to="/integrations" disabled={save.busy} />
           {initial.existing && (
-            <button
+            <ConfirmDeleteButton
+              confirmation="Delete this integration? Future notifications will no longer use it."
+              confirmLabel="Remove"
               type="button"
-              className="btn-secondary"
+              className="btn-danger"
               disabled={save.busy}
-              onClick={() =>
+              onConfirm={() =>
                 save.run(
                   `/integrations/${value.id}`,
                   'DELETE',
@@ -186,8 +189,12 @@ export function IntegrationEditor({ initial, services, close, onSaved, onDeleted
               }
             >
               Remove integration
-            </button>
+            </ConfirmDeleteButton>
           )}
+          <CancelButton onCancel={close} to="/integrations" disabled={save.busy} />
+          <button className="btn-primary" disabled={save.busy}>
+            {save.busy ? 'Saving…' : 'Save integration'}
+          </button>
         </RecordActions>
       </form>
     </FormPage>

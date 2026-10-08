@@ -3,6 +3,7 @@ import { InputError } from '../validation/input-error.js';
 export const DEFAULT_UI_PREFERENCES = Object.freeze({
   leftCollapsed: false,
   rightCollapsed: false,
+  filtersOpen: false,
 });
 
 /** Only layout booleans may enter preferences or the browser's first-paint cache. */
@@ -26,7 +27,7 @@ export function preferencePatch(value) {
       ([key, entry]) => !Object.hasOwn(DEFAULT_UI_PREFERENCES, key) || typeof entry !== 'boolean',
     )
   ) {
-    throw new InputError('Choose a valid sidebar preference.');
+    throw new InputError('Choose a valid layout preference.');
   }
   return value;
 }

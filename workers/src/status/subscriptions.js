@@ -68,12 +68,10 @@ async function publish(db, page) {
     await db
       .collection('publicStatusUpdates')
       .updateOne({ _id: update._id }, { $setOnInsert: update }, { upsert: true });
-    await db
-      .collection('publicStatusState')
-      .updateOne(filter, {
-        $set: { snapshot, version: update.sequence, publicToken: update.publicToken },
-        $unset: { pending: '' },
-      });
+    await db.collection('publicStatusState').updateOne(filter, {
+      $set: { snapshot, version: update.sequence, publicToken: update.publicToken },
+      $unset: { pending: '' },
+    });
   } finally {
     await db
       .collection('publicStatusState')
@@ -133,14 +131,13 @@ export async function reconcileStatusSubscriptions(db, queue) {
     .limit(20)
     .toArray();
   for (const update of updates) {
-    const page = await db
-      .collection('catalogs')
-      .findOne({
-        _id: update.workspaceId,
-        publicToken: update.publicToken,
-        visibility: 'public',
-        emailSubscriptions: true,
-      });
+    const page = await db.collection('catalogs').findOne({
+      _id: update.workspaceId,
+      publicToken: update.publicToken,
+      visibility: 'public',
+      emailSubscriptions: true,
+      subscriptionsEnabled: { $ne: false },
+    });
     if (!page) {
       await db
         .collection('publicStatusUpdates')
@@ -160,22 +157,20 @@ export async function reconcileStatusSubscriptions(db, queue) {
       .limit(200)
       .toArray();
     for (const subscriber of subscribers) await mailRecord(db, subscriber, 'update', update._id);
-    await db
-      .collection('publicStatusUpdates')
-      .updateOne(
-        {
-          _id: update._id,
-          ...(update.fanoutAfter
-            ? { fanoutAfter: update.fanoutAfter }
-            : { fanoutAfter: { $exists: false } }),
+    await db.collection('publicStatusUpdates').updateOne(
+      {
+        _id: update._id,
+        ...(update.fanoutAfter
+          ? { fanoutAfter: update.fanoutAfter }
+          : { fanoutAfter: { $exists: false } }),
+      },
+      {
+        $set: {
+          fanoutDone: subscribers.length < 200,
+          ...(subscribers.length ? { fanoutAfter: subscribers.at(-1)._id } : {}),
         },
-        {
-          $set: {
-            fanoutDone: subscribers.length < 200,
-            ...(subscribers.length ? { fanoutAfter: subscribers.at(-1)._id } : {}),
-          },
-        },
-      );
+      },
+    );
   }
   for (const row of await db
     .collection('statusMail')
@@ -200,62 +195,52 @@ export async function reconcileStatusSubscriptions(db, queue) {
 export async function processStatusMail(db, id, send = sendEmail) {
   const now = new Date(),
     owner = randomUUID();
-  const row = await db
-    .collection('statusMail')
-    .findOneAndUpdate(
-      {
-        _id: id,
-        status: 'pending',
-        expiresAt: { $gt: now },
-        nextAttemptAt: { $lte: now },
-        $or: [{ leaseUntil: { $exists: false } }, { leaseUntil: { $lte: now } }],
-      },
-      { $set: { leaseUntil: new Date(+now + 60000), leaseOwner: owner }, $inc: { attempts: 1 } },
-      { returnDocument: 'after' },
-    );
+  const row = await db.collection('statusMail').findOneAndUpdate(
+    {
+      _id: id,
+      status: 'pending',
+      expiresAt: { $gt: now },
+      nextAttemptAt: { $lte: now },
+      $or: [{ leaseUntil: { $exists: false } }, { leaseUntil: { $lte: now } }],
+    },
+    { $set: { leaseUntil: new Date(+now + 60000), leaseOwner: owner }, $inc: { attempts: 1 } },
+    { returnDocument: 'after' },
+  );
   if (!row) return;
   const filter = { _id: id, leaseOwner: owner };
   try {
-    const subscriber = await db
-      .collection('statusSubscribers')
-      .findOne({
-        _id: row.subscriberId,
-        workspaceId: row.workspaceId,
-        generation: row.generation,
-        state: row.kind === 'confirmation' ? 'pending' : 'active',
-        ...(row.kind === 'confirmation' ? { expiresAt: { $gt: now } } : {}),
-      });
+    const subscriber = await db.collection('statusSubscribers').findOne({
+      _id: row.subscriberId,
+      workspaceId: row.workspaceId,
+      generation: row.generation,
+      state: row.kind === 'confirmation' ? 'pending' : 'active',
+      ...(row.kind === 'confirmation' ? { expiresAt: { $gt: now } } : {}),
+    });
     const page =
       subscriber &&
-      (await db
-        .collection('catalogs')
-        .findOne({
-          _id: row.workspaceId,
-          publicToken: subscriber.publicToken,
-          visibility: 'public',
-        }));
+      (await db.collection('catalogs').findOne({
+        _id: row.workspaceId,
+        publicToken: subscriber.publicToken,
+        visibility: 'public',
+      }));
     const integration = page && (await subscriptionMailer(db, page));
     const update =
       row.kind === 'update' && page
-        ? await db
-            .collection('publicStatusUpdates')
-            .findOne({
-              _id: row.updateId,
-              workspaceId: page._id,
-              publicToken: page.publicToken,
-              expiresAt: { $gt: now },
-            })
+        ? await db.collection('publicStatusUpdates').findOne({
+            _id: row.updateId,
+            workspaceId: page._id,
+            publicToken: page.publicToken,
+            expiresAt: { $gt: now },
+          })
         : null;
     if (!subscriber || !page || !integration || (row.kind === 'update' && !update)) {
-      await db
-        .collection('statusMail')
-        .updateOne(filter, {
-          $set: {
-            status: 'skipped',
-            error: 'Subscription or public email delivery is no longer available.',
-          },
-          $unset: { leaseUntil: '', leaseOwner: '' },
-        });
+      await db.collection('statusMail').updateOne(filter, {
+        $set: {
+          status: 'skipped',
+          error: 'Subscription or public email delivery is no longer available.',
+        },
+        $unset: { leaseUntil: '', leaseOwner: '' },
+      });
       return;
     }
     const url = `${publicOrigin(page.publicOrigin || process.env.APP_ORIGIN || 'http://127.0.0.1:8090')}/status/public/${page.publicToken}`;
@@ -273,22 +258,18 @@ export async function processStatusMail(db, id, send = sendEmail) {
       text,
       id: row._id,
     });
-    await db
-      .collection('statusMail')
-      .updateOne(filter, {
-        $set: { status: 'sent', sentAt: new Date(), error: '' },
-        $unset: { leaseUntil: '', leaseOwner: '' },
-      });
+    await db.collection('statusMail').updateOne(filter, {
+      $set: { status: 'sent', sentAt: new Date(), error: '' },
+      $unset: { leaseUntil: '', leaseOwner: '' },
+    });
   } catch {
-    await db
-      .collection('statusMail')
-      .updateOne(filter, {
-        $set: {
-          status: row.attempts >= 5 ? 'failed' : 'pending',
-          error: 'Email delivery failed. Check the configured SMTP integration.',
-          nextAttemptAt: new Date(Date.now() + 30000 * 2 ** (row.attempts - 1)),
-        },
-        $unset: { leaseUntil: '', leaseOwner: '' },
-      });
+    await db.collection('statusMail').updateOne(filter, {
+      $set: {
+        status: row.attempts >= 5 ? 'failed' : 'pending',
+        error: 'Email delivery failed. Check the configured SMTP integration.',
+        nextAttemptAt: new Date(Date.now() + 30000 * 2 ** (row.attempts - 1)),
+      },
+      $unset: { leaseUntil: '', leaseOwner: '' },
+    });
   }
 }

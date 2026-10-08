@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+import { notify } from '../../data/toast.js';
+import { timeZoneOptions } from '../../lib/time-zones.js';
 import { Select } from '../../components/forms/select.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
 import React, { useContext, useState } from 'react';
@@ -23,6 +26,13 @@ export function UserRecord({ member }) {
       kind="workspace"
       onEdit={!editing && (own || user?.role === 'admin') ? () => setEditing(true) : undefined}
       sidebar={<RecordMetadata item={member} />}
+      secondaryActions={
+        user?.role === 'admin' && !own && !member.owner && !member.demoBatchId ? (
+          <Link className="btn-secondary" to={`/workspace/${member.id}/password`}>
+            Reset password
+          </Link>
+        ) : null
+      }
     >
       {editing ? (
         <UserDetailsForm member={member} own={own} onClose={() => setEditing(false)} />
@@ -32,7 +42,10 @@ export function UserRecord({ member }) {
             {USER_DETAIL_FIELDS.map((field) => (
               <div key={field.key}>
                 <dt>{field.label}</dt>
-                <dd>{member[field.key] || 'Not set'}</dd>
+                <dd>
+                  {member[field.key] ||
+                    (field.key === 'timeZone' ? 'Use browser time zone' : 'Not set')}
+                </dd>
               </div>
             ))}
             <div>
@@ -53,8 +66,9 @@ export function UserRecord({ member }) {
         </section>
       )}
       <p className="text-sm text-slate-500">
-        On-call phone and time zone help teammates coordinate coverage. Schedules remain in UTC;
-        adding a phone number does not enable SMS or voice notifications.
+        Your time zone controls personal timestamp displays and helps coordinate coverage. Schedules
+        and status-history days remain in UTC; adding a phone number does not enable SMS or voice
+        notifications.
       </p>
       {own && !editing && (
         <section className="mt-8 space-y-5 border-t border-slate-200 pt-6 dark:border-slate-700">
@@ -90,6 +104,7 @@ function UserDetailsForm({ member, own, onClose }) {
           );
         } catch (error) {
           setErrors(error.fields ?? {});
+          notify(error.message, 'error');
         }
       }}
     >
@@ -101,20 +116,36 @@ function UserDetailsForm({ member, own, onClose }) {
           label={`${field.label}${field.required ? ' *' : ''}`}
           errors={{ ...save.fields, ...errors }}
         >
-          <input
-            name={field.key}
-            type={field.type || 'text'}
-            required={field.required}
-            maxLength={field.max}
-            placeholder={field.placeholder}
-            value={value[field.key] ?? ''}
-            onChange={(event) => setValue({ ...value, [field.key]: event.target.value })}
-          />
+          {field.key === 'timeZone' ? (
+            <Select
+              searchLabel="Search time zones"
+              name="timeZone"
+              value={value.timeZone ?? ''}
+              onChange={(event) => setValue({ ...value, timeZone: event.target.value })}
+            >
+              <option value="">Use browser time zone</option>
+              {timeZoneOptions(value.timeZone).map((zone) => (
+                <option key={zone.value} value={zone.value}>
+                  {zone.label}
+                </option>
+              ))}
+            </Select>
+          ) : (
+            <input
+              name={field.key}
+              type={field.type || 'text'}
+              required={field.required}
+              maxLength={field.max}
+              placeholder={field.placeholder}
+              value={value[field.key] ?? ''}
+              onChange={(event) => setValue({ ...value, [field.key]: event.target.value })}
+            />
+          )}
         </Field>
       ))}
-      <div className="field-label">
-        Email<span className="text-sm font-normal">{member.email}</span>
-      </div>
+      <Field name="email" label="Email">
+        <input type="email" value={member.email} readOnly />
+      </Field>
       {!own && (
         <>
           <label className="field-label">

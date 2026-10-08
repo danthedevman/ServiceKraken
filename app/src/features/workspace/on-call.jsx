@@ -1,4 +1,4 @@
-import { Select } from '../../components/forms/select.jsx';
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
 import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
 import { FormPage } from '../../components/forms/form-page.jsx';
@@ -26,7 +26,7 @@ export function OnCallPage({ form = false }) {
     services = useResource('/services');
   return (
     <div className="space-y-6">
-      {!form && !id && <h1 className="page-title">On-call schedule</h1>}
+      {!form && !id && <h1 className="page-title">On call</h1>}
       <Notice error={schedule.error || members.error || services.error} />
       {schedule.data && members.data && services.data ? (
         <Calendar
@@ -177,8 +177,6 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
       added[0].id,
     );
   };
-  const now = new Date().toISOString(),
-    current = filtered.filter((s) => s.start <= now && s.end > now);
   if (id && !editor)
     return existing ? (
       <RecordWorkspace
@@ -237,22 +235,23 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
     );
   const editorActions = editor ? (
     <div className="flex flex-wrap justify-end gap-3">
-      <button type="submit" form={formId} className="btn-primary" disabled={save.busy}>
-        {save.busy ? 'Saving…' : 'Save coverage'}
-      </button>
+      {schedule.shifts.some((s) => s.id === editor.id) && (
+        <ConfirmDeleteButton
+          disabled={save.busy}
+          className="btn-danger"
+          confirmation={`Remove the on-call shift for ${name(editor.userId)}? This removes their coverage for this time period.`}
+          confirmLabel="Remove shift"
+          onConfirm={() => apply(schedule.shifts.filter((s) => s.id !== editor.id))}
+        >
+          Remove shift
+        </ConfirmDeleteButton>
+      )}
       <button type="button" disabled={save.busy} className="btn-secondary" onClick={closeEditor}>
         Cancel
       </button>
-      {schedule.shifts.some((s) => s.id === editor.id) && (
-        <button
-          type="button"
-          disabled={save.busy}
-          className="btn-secondary"
-          onClick={() => apply(schedule.shifts.filter((s) => s.id !== editor.id))}
-        >
-          Remove shift
-        </button>
-      )}
+      <button type="submit" form={formId} className="btn-primary" disabled={save.busy}>
+        {save.busy ? 'Saving…' : 'Save coverage'}
+      </button>
     </div>
   ) : null;
   const editorForm = editor ? (
@@ -366,29 +365,23 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
         </Modal>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="field-label w-full sm:w-80">
-          Service
-          <Select value={serviceId} onChange={(e) => setService(e.target.value)}>
-            <option value="">All services</option>
-            {services.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
-        </label>
+        <div className="w-full sm:w-80">
+          <ReferenceField
+            referenceType="services"
+            label="Service"
+            hideLabel
+            placeholder="All services"
+            value={serviceId}
+            onChange={setService}
+          />
+        </div>
         {admin && (
           <button className="btn-primary gap-2" onClick={() => fresh()}>
             <PlusIcon className="h-5 w-5" />
-            Add coverage
+            Add Coverage
           </button>
         )}
       </div>
-      <p className="text-sm">
-        On call now:{' '}
-        {current.length ? current.map((s) => name(s.userId)).join(', ') : 'No coverage'} · All times
-        are UTC. {serviceId ? '' : 'Select a service to inspect its coverage.'}
-      </p>
       <Notice error={!editor ? save.error || error : ''} />
       <section className="panel p-4">
         <div className="mb-4 flex items-center justify-between">

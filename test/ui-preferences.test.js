@@ -7,6 +7,7 @@ test('layout preferences accept only boolean changes and exclude unrelated user 
   assert.deepEqual(uiPreferences({ leftCollapsed: true, rightCollapsed: 'true', role: 'admin' }), {
     leftCollapsed: true,
     rightCollapsed: false,
+    filtersOpen: false,
   });
   for (const value of [
     null,
@@ -16,7 +17,7 @@ test('layout preferences accept only boolean changes and exclude unrelated user 
     { role: 'admin' },
     { 'uiPreferences.leftCollapsed': true },
   ])
-    assert.throws(() => preferencePatch(value), /valid sidebar preference/);
+    assert.throws(() => preferencePatch(value), /valid layout preference/);
   assert.deepEqual(preferencePatch({ rightCollapsed: true }), { rightCollapsed: true });
 });
 test('audit stamps preserve original authors without inventing legacy creation history', () => {

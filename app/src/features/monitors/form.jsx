@@ -1,3 +1,4 @@
+import { FormPage } from '../../components/forms/form-page.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
 import { RecordActions } from '../../components/record-actions.jsx';
@@ -29,7 +30,7 @@ export function MonitorForm({ monitor, onReset }) {
   if (!monitor && !preferences.data)
     return (
       <div className="form-page">
-        <h1 className="page-title">Add a monitor</h1>
+        <h1 className="page-title">Create monitor</h1>
         <ErrorNotice>{preferences.error}</ErrorNotice>
         {!preferences.error && <p role="status">Loading monitor defaults…</p>}
       </div>
@@ -77,17 +78,15 @@ function MonitorEditor({ monitor, onReset, defaults }) {
     }
   };
   return (
-    <div className="form-page">
-      {!monitor && <h1 className="page-title">Add a monitor</h1>}
-
+    <FormPage title={monitor ? 'Monitor' : 'Create monitor'}>
       <ValidatedForm
         kind={monitor ? 'monitor' : 'monitor-create'}
         onSubmit={submit}
-        className="panel form-body p-6"
+        className="form-body"
       >
         <ErrorNotice>{error}</ErrorNotice>
         <label className="field-label">
-          Monitor name
+          Monitor name *
           <input
             name="name"
             required
@@ -127,7 +126,7 @@ function MonitorEditor({ monitor, onReset, defaults }) {
           </label>
         )}
         <label className="field-label">
-          Endpoint URL
+          Endpoint URL *
           <input
             name="url"
             type="url"
@@ -142,11 +141,7 @@ function MonitorEditor({ monitor, onReset, defaults }) {
         </label>
         <label className="field-label">
           Request type
-          <Select
-            name="method"
-            defaultValue={monitor?.method ?? defaults?.defaultMethod ?? 'GET'}
-            className="mt-2 block w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-3 text-sm font-normal text-slate-900 dark:text-slate-100 focus:border-blue-600 dark:focus:border-blue-400 focus:outline-blue-600 dark:focus:outline-blue-400"
-          >
+          <Select name="method" defaultValue={monitor?.method ?? defaults?.defaultMethod ?? 'GET'}>
             <option value="HEAD">HEAD — headers only</option>
             <option value="GET">GET — headers and response body</option>
           </Select>
@@ -174,7 +169,7 @@ function MonitorEditor({ monitor, onReset, defaults }) {
           </span>
         </label>
         <label className="field-label">
-          Check every
+          Check every *
           <div className="flex items-center gap-3">
             <input
               className="max-w-32"
@@ -202,6 +197,6 @@ function MonitorEditor({ monitor, onReset, defaults }) {
           </button>
         </RecordActions>
       </ValidatedForm>
-    </div>
+    </FormPage>
   );
 }

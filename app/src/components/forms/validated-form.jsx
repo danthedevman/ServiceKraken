@@ -1,3 +1,4 @@
+import { notify } from '../../data/toast.js';
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { fieldErrors } from '../../../../shared/validation/form-validation.js';
 
@@ -52,6 +53,7 @@ export function ValidatedForm({ kind, onSubmit, children, ...props }) {
       input[field] = form.getAll(field);
     const found = fieldErrors(kind, input);
     setErrors(found);
+    if (Object.keys(found).length) notify('Please correct the highlighted fields.', 'error');
     if (!Object.keys(found).length)
       onSubmit(event, (serverErrors) => setErrors(serverErrors ?? {}));
   }

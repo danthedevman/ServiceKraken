@@ -52,6 +52,7 @@ test(
     for (const body of [
       { role: 'admin' },
       { leftCollapsed: 'true' },
+      { filtersOpen: 'true' },
       { leftCollapsed: true, userId: other.data.user.id },
     ])
       assert.equal((await request('/auth/preferences', owner.cookie, 'PATCH', body)).status, 400);
@@ -62,9 +63,17 @@ test(
     const right = await request('/auth/preferences', owner.cookie, 'PATCH', {
       rightCollapsed: true,
     });
-    assert.deepEqual(right.data.preferences, { leftCollapsed: true, rightCollapsed: true });
+    assert.deepEqual(right.data.preferences, {
+      leftCollapsed: true,
+      rightCollapsed: true,
+      filtersOpen: false,
+    });
+    await request('/auth/preferences', owner.cookie, 'PATCH', { filtersOpen: true });
     const anotherSession = await request('/auth/login', null, 'POST', credentials);
-    assert.deepEqual(anotherSession.data.user.uiPreferences, right.data.preferences);
+    assert.deepEqual(anotherSession.data.user.uiPreferences, {
+      ...right.data.preferences,
+      filtersOpen: true,
+    });
     assert.equal((await request('/auth/me', other.cookie)).data.user.uiPreferences, null);
     await request('/auth/role', owner.cookie, 'POST', { role: 'viewer' });
     assert.equal(

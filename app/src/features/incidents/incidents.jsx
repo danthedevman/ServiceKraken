@@ -1,3 +1,4 @@
+import { notify } from '../../data/toast.js';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { FormSkeleton } from '../../components/skeleton.jsx';
 import { Select } from '../../components/forms/select.jsx';
@@ -76,6 +77,11 @@ export function IncidentsPage({ initialServiceId = '', related = false }) {
         </Link>
       ),
     },
+    {
+      key: 'assignmentGroupName',
+      label: 'Assignment group',
+      value: (r) => r.assignmentGroupName || 'Unassigned',
+    },
     { key: 'serviceName', label: 'Service', value: (r) => r.serviceName },
     {
       key: 'severity',
@@ -109,7 +115,7 @@ export function IncidentsPage({ initialServiceId = '', related = false }) {
               to={`/incidents/new${initialServiceId ? `?serviceId=${initialServiceId}` : ''}`}
             >
               <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-              Create incident
+              Create
             </Link>
           )
         }
@@ -222,16 +228,18 @@ export function IncidentPage({ edit = false }) {
   if (edit) return <Navigate replace to={`/incidents/${id}`} />;
   return (
     <div className={id ? 'space-y-6' : 'form-page'}>
-      <div className="flex items-center justify-between gap-3">
-        {!id && <h1 className="page-title">Create incident</h1>}
-        {!id && user?.role === 'admin' && (
-          <ActionMenu label="Form actions">
-            <Link className="btn-secondary" to="/incidents/fields">
-              Form builder
-            </Link>
-          </ActionMenu>
-        )}
-      </div>
+      {!id && (
+        <div className="flex items-center justify-between gap-3">
+          {!id && <h1 className="page-title">Create incident</h1>}
+          {!id && user?.role === 'admin' && (
+            <ActionMenu label="Form actions">
+              <Link className="btn-secondary" to="/incidents/fields">
+                Form builder
+              </Link>
+            </ActionMenu>
+          )}
+        </div>
+      )}
       <Notice error={error || transition.error} />
       {loading ? (
         <FormSkeleton
@@ -366,6 +374,10 @@ export function IncidentPage({ edit = false }) {
                         <dd>
                           <StateBadge status={item.severity} label={item.severityLabel} />
                         </dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium">Assignment group</dt>
+                        <dd>{item.assignmentGroupName || 'Unassigned'}</dd>
                       </div>
                       <div>
                         <dt className="font-medium">Assigned to</dt>
@@ -579,6 +591,7 @@ function IncidentEditor({
     resolutionNotes: incident?.resolutionNotes ?? '',
     knowledgeIds: incident?.knowledgeIds ?? [],
     serviceId: incident?.serviceId ?? initialServiceId,
+    assignmentGroupId: incident?.assignmentGroupId ?? '',
     assigneeId: incident?.assigneeId ?? '',
     openedForId: incident?.openedForId ?? user.id,
     custom: incident?.custom ?? {},
@@ -642,9 +655,23 @@ function IncidentEditor({
         />
       );
     if (name === 'resolutionNotes' && selectedStatus !== 'resolved') return null;
+    if (name === 'assignmentGroupId')
+      return user.role === 'user' ? null : (
+        <ReferenceField
+          key={name}
+          referenceType="groups"
+          label={field.label + (field.required ? ' *' : '')}
+          value={value.assignmentGroupId}
+          onChange={(next) =>
+            setValue((old) => ({ ...old, assignmentGroupId: next, assigneeId: '' }))
+          }
+          error={errors[name]}
+        />
+      );
     if (['serviceId', 'assigneeId', 'openedForId'].includes(name))
       return (
         <ReferenceField
+          groupId={name === 'assigneeId' ? value.assignmentGroupId : undefined}
           referenceType={name === 'serviceId' ? 'services' : 'members'}
           key={name}
           label={field.label + (field.required ? ' *' : '')}
@@ -720,7 +747,10 @@ function IncidentEditor({
           severity: value.severityOption,
         });
         setClientErrors(required);
-        if (Object.keys(required).length) return;
+        if (Object.keys(required).length) {
+          notify('Please correct the highlighted fields.', 'error');
+          return;
+        }
         save.run(
           current ? `/incidents/${current.id}` : '/incidents',
           current ? 'PATCH' : 'POST',

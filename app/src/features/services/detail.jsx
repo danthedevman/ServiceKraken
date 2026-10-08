@@ -5,12 +5,7 @@ import { WorkTable } from '../work/work.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
 import { AuthContext } from '../../auth/auth-context.js';
 
-import {
-  RecordWorkspace,
-  RecordSection,
-  RecordMetadata,
-} from '../../components/record-workspace.jsx';
-import { ActionMenu } from '../../components/action-menu.jsx';
+import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
 
 import { DataTable } from '../../components/data-table.jsx';
 
@@ -50,6 +45,7 @@ export function CatalogDetailPage({ kind = 'services' }) {
     ({
       up: 'Operational',
       down: 'Down',
+      degraded: 'Degraded',
       unknown: 'Unknown',
       paused: 'Paused',
       pending: 'Awaiting check',
@@ -91,38 +87,28 @@ export function CatalogDetailPage({ kind = 'services' }) {
           kind={kind}
           status={state(selected)}
           onEdit={user?.role === 'admin' && !editing ? () => setEditingId(id) : undefined}
+          secondaryActions={
+            (isService || user?.role === 'admin') && (
+              <>
+                {isService && (
+                  <>
+                    <AdminOnly>
+                      <Link to={`/monitors/new?serviceId=${selected.id}`}>Create monitor</Link>
+                    </AdminOnly>
+                    <Link to={`/tasks?serviceId=${selected.id}`}>View tasks</Link>
+                    <Link to={`/knowledge?serviceId=${selected.id}`}>View knowledge</Link>
+                  </>
+                )}
+                <AdminOnly>
+                  <button className="btn-danger" onClick={() => setConfirmDelete(selected)}>
+                    Delete
+                  </button>
+                </AdminOnly>
+              </>
+            )
+          }
           sidebar={
             <>
-              {(isService || user?.role === 'admin') && (
-                <RecordSection title="Actions">
-                  {' '}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <ActionMenu>
-                      {isService && (
-                        <div className="flex flex-wrap gap-3">
-                          <Link className="btn-secondary" to={`/tasks?serviceId=${selected.id}`}>
-                            View tasks
-                          </Link>
-                          <Link
-                            className="btn-secondary"
-                            to={`/knowledge?serviceId=${selected.id}`}
-                          >
-                            View knowledge
-                          </Link>
-                        </div>
-                      )}
-                      <AdminOnly>
-                        <button
-                          className="btn-secondary"
-                          onClick={() => setConfirmDelete(selected)}
-                        >
-                          Delete
-                        </button>
-                      </AdminOnly>
-                    </ActionMenu>
-                  </div>
-                </RecordSection>
-              )}
               <RecordMetadata
                 item={selected}
                 extra={[
@@ -169,6 +155,30 @@ export function CatalogDetailPage({ kind = 'services' }) {
             </dl>
             {isService && (
               <>
+                <dl className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt>Manual health flag</dt>
+                    <dd>
+                      {selected.healthPolicy?.manualDown
+                        ? 'Down'
+                        : selected.healthPolicy?.manualDegraded
+                          ? 'Degraded'
+                          : 'None'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Degraded response time</dt>
+                    <dd>
+                      {selected.healthPolicy?.responseTimeMs
+                        ? `${selected.healthPolicy.responseTimeMs} ms`
+                        : 'Disabled'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Consecutive failures before Down</dt>
+                    <dd>{selected.healthPolicy?.failuresBeforeDown ?? 1}</dd>
+                  </div>
+                </dl>
                 <ServiceOwnership service={selected} members={data.members} groups={data.groups} />
                 <dl>
                   <div>
@@ -231,7 +241,7 @@ export function CatalogDetailPage({ kind = 'services' }) {
               >
                 Cancel
               </button>
-              <button className="btn-primary" disabled={busy} onClick={remove}>
+              <button className="btn-danger" disabled={busy} onClick={remove}>
                 Confirm delete
               </button>
             </div>
@@ -287,7 +297,7 @@ function ServiceMonitors({ serviceId }) {
           <AdminOnly>
             <Link className="btn-primary" to={`/monitors/new?serviceId=${serviceId}`}>
               <PlusIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
-              Add monitor
+              Create
             </Link>
           </AdminOnly>
         }
@@ -308,7 +318,9 @@ function ServiceMonitors({ serviceId }) {
             key: 'status',
             label: 'Health',
             value: (row) =>
-              ({ up: 'Operational', down: 'Down', paused: 'Paused' })[row.status] || 'Unknown',
+              ({ up: 'Operational', down: 'Down', degraded: 'Degraded', paused: 'Paused' })[
+                row.status
+              ] || 'Unknown',
           },
           {
             key: 'component',

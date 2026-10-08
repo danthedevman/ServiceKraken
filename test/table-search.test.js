@@ -12,7 +12,12 @@ test('server column search is allowlisted, literal, and keeps incident visibilit
   const match = filter.$expr.$or[0].$regexMatch;
   assert.equal(match.input.$convert.input, '$serviceName');
   assert.equal(match.regex, 'api\\.\\*');
-  assert.equal(incidentQuery({ search: 'api' }, req).filter.$expr.$or.length, 5);
+  assert.equal(incidentQuery({ search: 'api' }, req).filter.$expr.$or.length, 6);
+  assert.equal(
+    incidentQuery({ search: 'Platform', searchColumn: 'assignmentGroupName' }, req).filter.$expr.$or
+      .length,
+    1,
+  );
   assert.throws(() => incidentQuery({ searchColumn: '$where' }, req));
   assert.equal(
     workQuery({ search: 'Maya', searchColumn: 'assignee' }, 'workspace', 'tasks').filter

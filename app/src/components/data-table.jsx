@@ -1,3 +1,4 @@
+import { useUiPreferences } from '../preferences/ui-preferences.jsx';
 import { Skeleton } from './skeleton.jsx';
 import { RelatedListContext } from './record-tabs.jsx';
 import { Select } from './forms/select.jsx';
@@ -60,7 +61,7 @@ function DataTableView({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [confirmRows, setConfirmRows] = useState(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const { filtersOpen, setPreference } = useUiPreferences();
   const filtersId = useId();
   const Heading = fullPage ? 'h1' : 'h2';
   const [exporting, setExporting] = useState(false);
@@ -158,7 +159,7 @@ function DataTableView({
             title="Filters"
             aria-expanded={filtersOpen}
             aria-controls={filtersId}
-            onClick={() => setFiltersOpen((open) => !open)}
+            onClick={() => setPreference('filtersOpen', !filtersOpen)}
           >
             <FunnelIcon className="h-5 w-5" aria-hidden="true" />
             {filtersActive && (
@@ -232,7 +233,7 @@ function DataTableView({
           {user?.role === 'admin' && (deletePath || onDeleteRow) && (
             <button
               type="button"
-              className="btn-secondary text-rose-700"
+              className="btn-danger"
               disabled={deleting}
               onClick={() => {
                 setDeleteError('');
@@ -442,7 +443,7 @@ function DataTableView({
               </button>
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-danger"
                 disabled={deleting || !confirmRows.length}
                 onClick={deleteSelected}
               >

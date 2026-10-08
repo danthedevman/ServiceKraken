@@ -36,6 +36,7 @@ export const workFields = {
     ['priority', 'Priority', true],
     ['serviceId', 'Service', false],
     ['incidentId', 'Incident', false],
+    ['assignmentGroupId', 'Assignment group', false],
     ['assigneeId', 'Assigned to', false],
     ['dueDate', 'Due date', false],
     ['description', 'Description', false],

@@ -24,7 +24,7 @@ const destinations = {
   services: { href: '/services/new', label: 'Create service', roles: ['admin'] },
   collections: { href: '/collections/new', label: 'Create collection', roles: ['admin'] },
   groups: { href: '/groups/new', label: 'Create group', roles: ['admin'] },
-  members: { href: '/workspace/invite', label: 'Invite teammate', roles: ['admin'] },
+  members: { href: '/workspace/new', label: 'Create user', roles: ['admin'] },
   incidents: {
     href: '/incidents/new',
     label: 'Create incident',
@@ -35,6 +35,8 @@ const destinations = {
 /** Keep selections inside a searchable control; results support keyboard navigation and safe record creation. */
 export function ReferenceField({
   label,
+  hideLabel = false,
+  placeholder,
   options = [],
   value,
   onChange,
@@ -44,6 +46,7 @@ export function ReferenceField({
   error,
   onSearch,
   referenceType,
+  groupId,
   required = false,
 }) {
   const id = useId(),
@@ -69,7 +72,7 @@ export function ReferenceField({
   }, [search]);
   const remote = useInfiniteResource(
     referenceType && open && !disabled
-      ? `/references/${referenceType}?${new URLSearchParams({ q: query })}`
+      ? `/references/${referenceType}?${new URLSearchParams({ q: query, ...(groupId ? { groupId } : {}) })}`
       : null,
   );
   const saved = useResource(
@@ -161,7 +164,7 @@ export function ReferenceField({
         }
       }}
     >
-      <label htmlFor={id} className="field-label">
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'field-label'}>
         {label}
       </label>
       {name &&
@@ -213,7 +216,9 @@ export function ReferenceField({
           }
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-error` : undefined}
-          placeholder={multiple && ids.length ? 'Search to add more…' : 'Search to select…'}
+          placeholder={
+            placeholder ?? (multiple && ids.length ? 'Search to add more…' : 'Search to select…')
+          }
           onFocus={(event) => {
             showResults();
             if (!multiple) event.target.select();

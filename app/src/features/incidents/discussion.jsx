@@ -1,3 +1,4 @@
+import { DateTime } from '../../preferences/date-time.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import React, { useState } from 'react';
 import { ChatBubbleLeftRightIcon, LockClosedIcon } from '@heroicons/react/24/outline';
@@ -162,7 +163,7 @@ export function IncidentDiscussion({ incidentId, comments, role }) {
                         className="text-xs text-slate-500 sm:ml-auto"
                         dateTime={entry.createdAt}
                       >
-                        {new Date(entry.createdAt).toLocaleString()}
+                        {<DateTime value={entry.createdAt} />}
                       </time>
                     </header>
                     <p className="whitespace-pre-wrap text-sm leading-7 [overflow-wrap:anywhere]">

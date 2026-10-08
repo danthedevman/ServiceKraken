@@ -35,7 +35,12 @@ export function GlobalSearch({ role, onClose }) {
           ['users', 'Users'],
         ];
   return (
-    <Modal title="Search workspace" onClose={onClose} initialFocusRef={inputRef}>
+    <Modal
+      className="global-search-modal"
+      title="Search workspace"
+      onClose={onClose}
+      initialFocusRef={inputRef}
+    >
       <div className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
           <label className="field-label">
@@ -62,9 +67,9 @@ export function GlobalSearch({ role, onClose }) {
             </Select>
           </label>
         </div>
-        <div role="status" className="text-sm text-slate-500">
+        <div role="status" className="text-sm text-slate-500" hidden={input.trim().length < 2}>
           {input.trim().length < 2
-            ? 'Enter at least two characters.'
+            ? ''
             : waiting
               ? 'Searching…'
               : resource.error

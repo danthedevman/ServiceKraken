@@ -1,3 +1,4 @@
+import { assignmentGroup } from '../domain/assignment.js';
 import { claimAttachments } from './attachments.js';
 import { recordFields } from '@servicekraken/shared/forms/form-options';
 
@@ -61,6 +62,7 @@ export function installIncidentsRoutes(app, db, appOrigin) {
             'Source',
             'Created UTC',
             'Updated UTC',
+            'Assignment group',
             'Description',
             'Custom fields (JSON)',
           ]);
@@ -74,6 +76,7 @@ export function installIncidentsRoutes(app, db, appOrigin) {
             row.source,
             row.createdAt.toISOString(),
             row.updatedAt.toISOString(),
+            row.assignmentGroupName,
             row.description,
             JSON.stringify(
               row.fields.map((f) => ({
@@ -202,6 +205,14 @@ export function installIncidentsRoutes(app, db, appOrigin) {
         );
         if (!current && status !== 'open') invalid('status', 'New incidents start open.');
         const reopening = current?.status === 'resolved' && status !== 'resolved';
+        if (req.role === 'user' && body.assignmentGroupId)
+          invalid('assignmentGroupId', 'A responder will assign your incident.');
+        const group = await assignmentGroup(
+          db,
+          req.workspaceId,
+          body.assignmentGroupId,
+          body.assigneeId,
+        );
         if (req.role === 'user' && body.assigneeId)
           invalid('assigneeId', 'A responder will assign your incident.');
         const openedForId =
@@ -261,6 +272,7 @@ export function installIncidentsRoutes(app, db, appOrigin) {
         });
         const now = new Date();
         const update = {
+          ...group,
           fields,
           knowledgeIds,
           resolutionNotes,

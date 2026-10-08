@@ -1,3 +1,4 @@
+import { DateTime } from '../../preferences/date-time.jsx';
 import { StatusSubscriptions } from './subscriptions.jsx';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { Select } from '../../components/forms/select.jsx';
@@ -104,9 +105,7 @@ export function StatusPage({ publicView = false }) {
           {!data.services.length && (
             <p className="text-sm text-slate-500">No services have been added yet.</p>
           )}
-          <p className="text-xs text-slate-500">
-            Updated {new Date(data.generatedAt).toLocaleTimeString()}
-          </p>
+          <p className="text-xs text-slate-500">Updated {<DateTime value={data.generatedAt} />}</p>
         </>
       )}
     </section>
@@ -129,10 +128,12 @@ export function PublicStatusPage() {
         ) : (
           <Logo />
         )}
-        <ThemeToggle />
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <ThemeToggle />
+          <StatusSubscriptions token={token} capabilities={data?.subscriptions} />
+        </div>
       </header>
       <main id="main">
-        <StatusSubscriptions token={token} capabilities={data?.subscriptions} />
         <StatusPage publicView />
       </main>
     </div>
