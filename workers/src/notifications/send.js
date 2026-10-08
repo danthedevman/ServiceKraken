@@ -6,10 +6,7 @@ import { unseal } from '@servicekraken/shared/integrations/secrets';
 
 import { providerRequest } from './http.js';
 
-/** Render plain text; provider-specific markup is escaped or disabled. */
-export function message(incident, event) {
-  return `${event === 'impacted' ? 'IMPACTED' : 'RECOVERED'}: ${incident.title}\nService: ${incident.serviceName}\nSeverity: ${incident.severity}\nIncident: ${incident._id}\n${incident.description}`;
-}
+import { message } from './message.js';
 
 /** Deliver a notification; credentials remain encrypted until this boundary. */
 export async function sendNotification(
@@ -20,10 +17,7 @@ export async function sendNotification(
   request = providerRequest,
 ) {
   const secret = integration.secret ? unseal(integration.secret) : {},
-    body =
-      delivery.event === 'comment'
-        ? `New comment on: ${incident.title}\nBy: ${delivery.commentAuthor}\n\n${delivery.commentBody}\n\nIncident: ${incident._id}`
-        : message(incident, delivery.event);
+    body = message(incident, delivery.event, delivery);
   if (integration.type === 'email') {
     const smtp = secret.smtp || {
       host: process.env.SMTP_HOST,
@@ -35,7 +29,18 @@ export async function sendNotification(
     const { host, from, port } = smtp;
     if (!host || !from || ![465, 587].includes(port))
       throw new Error('Configure an email integration before sending.');
-    const target = await resolvePublicTarget(`https://${host}`);
+    let dnsDeadline;
+    let target;
+    try {
+      target = await Promise.race([
+        resolvePublicTarget(new URL(`https://${host}`)),
+        new Promise((_, reject) => {
+          dnsDeadline = setTimeout(() => reject(new Error('SMTP DNS timed out.')), 5000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(dnsDeadline);
+    }
     const transporter = nodemailer.createTransport({
       host: target.address,
       port,

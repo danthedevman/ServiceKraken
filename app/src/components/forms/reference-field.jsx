@@ -1,4 +1,4 @@
-import { useResource } from '../../data/use-resource.js';
+import { useInfiniteResource, useResource } from '../../data/use-resource.js';
 import React, { useContext, useEffect, useId, useRef, useState } from 'react';
 import {
   InformationCircleIcon,
@@ -53,28 +53,59 @@ export function ReferenceField({
     [typing, setTyping] = useState(false);
   const input = useRef(null);
   const labels = useRef(new Map());
+  const results = useRef(null);
+  const sentinel = useRef(null);
   const { user } = useContext(AuthContext),
     client = useQueryClient();
   const destination = destinations[referenceType];
   const canCreate = destination?.roles.includes(user?.role);
   const ids = multiple ? value || [] : value ? [value] : [];
-  const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
   useEffect(() => {
     const timer = setTimeout(() => {
       setQuery(search);
-      setPage(1);
     }, 200);
     return () => clearTimeout(timer);
   }, [search]);
-  const remote = useResource(
-    referenceType && (open || ids.length)
-      ? `/references/${referenceType}?${new URLSearchParams({ q: query, page, selected: ids.join(',') })}`
+  const remote = useInfiniteResource(
+    referenceType && open && !disabled
+      ? `/references/${referenceType}?${new URLSearchParams({ q: query })}`
       : null,
   );
-  const available = referenceType
-    ? [...(remote.data?.selected ?? []), ...(remote.data?.options ?? [])]
-    : options;
+  const saved = useResource(
+    referenceType && ids.length
+      ? `/references/${referenceType}?${new URLSearchParams({ selected: ids.join(',') })}`
+      : null,
+  );
+  // A record can move between server pages while someone edits it; show each ID once.
+  const choices = [
+    ...new Map(
+      (remote.data?.pages ?? [])
+        .flatMap((page) => page.options)
+        .map((option) => [option.id, option]),
+    ).values(),
+  ];
+  const available = referenceType ? [...(saved.data?.selected ?? []), ...choices] : options;
+  useEffect(() => {
+    if (
+      !open ||
+      disabled ||
+      !referenceType ||
+      remote.pending ||
+      remote.error ||
+      query !== search ||
+      !remote.hasMore
+    )
+      return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) void remote.loadMore();
+      },
+      { root: results.current, rootMargin: '0px 0px 64px 0px' },
+    );
+    if (sentinel.current) observer.observe(sentinel.current);
+    return () => observer.disconnect();
+  }, [open, disabled, referenceType, remote, query, search]);
   for (const selected of ids) {
     const option = [...available, ...options].find((row) => row.id === selected);
     if (option) labels.current.set(selected, option.label);
@@ -95,9 +126,7 @@ export function ReferenceField({
         <InformationCircleIcon className="h-5 w-5" aria-hidden="true" />
       </a>
     ) : null;
-  const matches = (referenceType ? (remote.data?.options ?? []) : options).filter(
-    (option) => !ids.includes(option.id),
-  );
+  const matches = (referenceType ? choices : options).filter((option) => !ids.includes(option.id));
   const select = (option) => {
     onChange(multiple ? [...ids, option.id] : option.id);
     setSearch('');
@@ -205,6 +234,13 @@ export function ReferenceField({
                 event.key === 'ArrowDown'
                   ? Math.min(active + 1, matches.length - 1)
                   : Math.max(active - 1, 0);
+              if (
+                event.key === 'ArrowDown' &&
+                active >= matches.length - 1 &&
+                query === search &&
+                !remote.error
+              )
+                void remote.loadMore();
               setActive(next);
               document.getElementById(`${id}-option-${next}`)?.scrollIntoView({ block: 'nearest' });
             }
@@ -244,7 +280,10 @@ export function ReferenceField({
       {open && !disabled && (
         <div className="rounded-lg border border-slate-200 dark:border-slate-700">
           <div
+            ref={results}
             id={`${id}-results`}
+            aria-busy={remote.pending}
+
             role="listbox"
             aria-label={label}
             aria-multiselectable={multiple || undefined}
@@ -270,39 +309,30 @@ export function ReferenceField({
                 </button>
               ))
             ) : (
-              <p className="p-2 text-sm text-slate-500">No matching records.</p>
+              <p className="p-2 text-sm text-slate-500">
+                {remote.pending || query !== search
+                  ? 'Searching…'
+                  : remote.error
+                    ? 'Results unavailable.'
+                    : 'No matching records.'}
+              </p>
             )}
+            <div ref={sentinel} role="presentation" className="h-px" />
           </div>
+          <p role="status" className="px-2 text-sm text-slate-500">
+            {remote.pending && matches.length > 0 ? 'Loading more results…' : ''}
+          </p>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 p-2 dark:border-slate-700">
-            {referenceType && (page > 1 || remote.data?.hasMore) && (
-              <div className="flex justify-between gap-2 p-2">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  disabled={page === 1 || remote.pending}
-                  onClick={() => {
-                    setPage(page - 1);
-                    setActive(-1);
-                  }}
-                >
-                  Previous results
-                </button>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  disabled={!remote.data?.hasMore || remote.pending}
-                  onClick={() => {
-                    setPage(page + 1);
-                    setActive(-1);
-                  }}
-                >
-                  More results
-                </button>
-              </div>
-            )}
             {remote.error && (
               <p role="alert" className="p-2 text-sm text-rose-700 dark:text-rose-400">
                 {remote.error}
+                <button
+                  type="button"
+                  className="ml-2 underline"
+                  onClick={() => (remote.hasMore ? remote.loadMore() : remote.refresh())}
+                >
+                  Retry
+                </button>
               </p>
             )}
             {canCreate && (

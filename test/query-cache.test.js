@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { QueryObserver } from '@tanstack/react-query';
+import { InfiniteQueryObserver, QueryObserver } from '@tanstack/react-query';
 import {
+  infiniteResourceOptions,
   queryClient,
   resourceKey,
   setSessionUser,
@@ -167,4 +168,48 @@ test('switching roles clears private data and ignores late writes from the previ
   await pending;
   assert.equal(queryClient.getQueryCache().findAll({ queryKey: ['private'] }).length, 0);
   assert.equal(queryClient.getQueryData(['session']).user.role, 'user');
+});
+
+test('reference scrolling appends pages, retains results after failure, and resets for a new search', async (t) => {
+  setup(t);
+  let fail = true;
+  const requests = [];
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    requests.push(url);
+    const page = Number(new URL(url, 'https://example.test').searchParams.get('page'));
+    if (page === 2 && fail) return json({ error: 'Try again' }, 503);
+    return json({ options: [{ id: String(page), label: `Record ${page}` }], hasMore: page < 2 });
+  });
+  const observer = new InfiniteQueryObserver(queryClient, {
+    ...infiniteResourceOptions('/references/services?q=', 'owner@example.com'),
+    enabled: false,
+  });
+  const unsubscribe = observer.subscribe(() => {});
+  t.after(unsubscribe);
+  await observer.refetch();
+  await observer.fetchNextPage();
+  assert.equal(observer.getCurrentResult().data.pages.length, 1);
+  assert.equal(observer.getCurrentResult().isFetchNextPageError, true);
+  fail = false;
+  await observer.fetchNextPage();
+  assert.deepEqual(
+    observer.getCurrentResult().data.pages.flatMap((page) => page.options.map((row) => row.id)),
+    ['1', '2'],
+  );
+  assert.equal(observer.getCurrentResult().hasNextPage, false);
+  const count = requests.length;
+  await observer.fetchNextPage();
+  assert.equal(requests.length, count);
+  observer.setOptions({
+    ...infiniteResourceOptions('/references/services?q=new', 'owner@example.com'),
+    enabled: false,
+  });
+  assert.equal(observer.getCurrentResult().data, undefined);
+  await observer.refetch();
+  assert.deepEqual(observer.getCurrentResult().data.pageParams, [1]);
+  setSessionUser({ email: 'other@example.com' });
+  assert.equal(
+    queryClient.getQueryCache().findAll({ queryKey: ['private', 'owner@example.com'] }).length,
+    0,
+  );
 });

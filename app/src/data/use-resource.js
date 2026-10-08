@@ -1,7 +1,7 @@
 import { useContext } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { AuthContext } from '../auth/auth-context.js';
-import { resourceOptions } from './query-client.js';
+import { infiniteResourceOptions, resourceOptions } from './query-client.js';
 
 /** Share authenticated reads across every consumer; retain data while refreshing in the background.
  * Query keys include the full path, including pagination/filter parameters. No placeholder data
@@ -26,5 +26,26 @@ export function useResource(path, pollMs = 0) {
     pending: !!path && (query.isPending || query.isFetching),
     refreshing: !!data && query.isFetching,
     refresh: () => (enabled ? query.refetch() : Promise.resolve()),
+  };
+}
+
+/** Load additional server pages without replacing already visible results. */
+export function useInfiniteResource(path) {
+  const { user, loading } = useContext(AuthContext);
+  const enabled = !!path && !loading && !!user;
+  const query = useInfiniteQuery({
+    ...infiniteResourceOptions(path, user?.email ?? null),
+    enabled,
+  });
+  return {
+    data: query.data,
+    error: query.error?.message ?? '',
+    pending: enabled && query.isFetching,
+    hasMore: query.hasNextPage,
+    refresh: () => (enabled ? query.refetch() : Promise.resolve()),
+    loadMore: () =>
+      enabled && query.hasNextPage && !query.isFetching
+        ? query.fetchNextPage({ cancelRefetch: false })
+        : Promise.resolve(),
   };
 }

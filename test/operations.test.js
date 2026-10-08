@@ -137,7 +137,7 @@ test('ServiceNow retries reuse the correlation ID, and recovery updates the same
   assert.equal(calls.length, 1);
   await sendNotification(integration, incident, { event: 'recovered' }, null, request);
   assert.equal(calls.at(-1).method, 'PATCH');
-  assert.match(calls.at(-1).body.work_notes, /RECOVERED/);
+  assert.match(calls.at(-1).body.work_notes, /Event: Recovered/);
 });
 
 test('required text errors distinguish missing values from invalid types and excessive length', async () => {

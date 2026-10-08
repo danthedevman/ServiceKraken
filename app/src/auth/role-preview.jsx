@@ -1,3 +1,4 @@
+import { EyeIcon } from '@heroicons/react/24/outline';
 import { Select } from '../components/forms/select.jsx';
 import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -36,7 +37,7 @@ export function RolePreview({ banner = false }) {
       className={
         banner
           ? 'role-preview flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-blue-200 bg-blue-50 p-3 text-sm dark:border-blue-900 dark:bg-blue-950'
-          : 'space-y-2 px-3 py-2'
+          : 'space-y-2 px-3 py-2 text-sm'
       }
     >
       {banner ? (
@@ -48,21 +49,28 @@ export function RolePreview({ banner = false }) {
         </>
       ) : (
         <>
-          <label className="field-label">
-            View as role
-            <Select
-              value={user.role}
-              disabled={busy}
-              onChange={(event) => change(event.target.value)}
-            >
-              {['admin', 'responder', 'viewer', 'user'].map((role) => (
-                <option key={role} value={role}>
-                  {displayValue(role)}
-                </option>
-              ))}
-            </Select>
+          <label className="block text-sm font-medium">
+            <span className="flex items-center gap-3">
+              <EyeIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              View as role
+            </span>
+            <span className="ml-8 block">
+              <Select
+                value={user.role}
+                disabled={busy}
+                onChange={(event) => change(event.target.value)}
+              >
+                {['admin', 'responder', 'viewer', 'user'].map((role) => (
+                  <option key={role} value={role}>
+                    {displayValue(role)}
+                  </option>
+                ))}
+              </Select>
+            </span>
           </label>
-          <p className="text-xs text-slate-500">Actions are real and use your account.</p>
+          <p className="ml-8 text-xs text-slate-500 dark:text-slate-400">
+            Actions are real and use your account.
+          </p>
         </>
       )}
       {error && (

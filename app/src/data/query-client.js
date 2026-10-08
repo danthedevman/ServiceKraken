@@ -31,6 +31,19 @@ export function resourceOptions(path, account) {
   };
 }
 
+/** Keep infinite lists in the private cache and request one bounded server page at a time. */
+export function infiniteResourceOptions(path, account) {
+  return {
+    ...resourceOptions(path, account),
+    queryKey: [...resourceKey(path, account), 'infinite'],
+    initialPageParam: 1,
+    queryFn: ({ signal, pageParam }) =>
+      api(`${path}${path.includes('?') ? '&' : '?'}page=${pageParam}`, { signal }),
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.hasMore ? lastPageParam + 1 : undefined,
+  };
+}
+
 /** Warm likely navigation destinations on hover/focus without persisting responses. */
 export function prefetchRoute(route, user) {
   if (!user) return;

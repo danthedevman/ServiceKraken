@@ -34,21 +34,31 @@ export function ThemeProvider({ children }) {
 }
 
 /** Keyboard-accessible appearance switch available before and after sign-in. */
-export function ThemeToggle() {
+export function ThemeToggle({ menu = false }) {
   const { theme, toggleTheme } = useContext(ThemeContext);
   return (
     <button
       type="button"
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+      className={
+        menu
+          ? 'profile-menu-item'
+          : 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+      }
       onClick={toggleTheme}
-      aria-label="Dark mode"
+      aria-label={menu ? undefined : 'Dark mode'}
       aria-pressed={theme === 'dark'}
       title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
     >
       {theme === 'dark' ? (
-        <MoonIcon className="h-4 w-4" aria-hidden="true" />
+        <MoonIcon className={menu ? 'h-5 w-5 shrink-0' : 'h-4 w-4'} aria-hidden="true" />
       ) : (
-        <SunIcon className="h-4 w-4" aria-hidden="true" />
+        <SunIcon className={menu ? 'h-5 w-5 shrink-0' : 'h-4 w-4'} aria-hidden="true" />
+      )}
+      {menu && <span>Dark mode</span>}
+      {menu && (
+        <span className="ml-auto text-xs text-slate-500 dark:text-slate-400">
+          {theme === 'dark' ? 'On' : 'Off'}
+        </span>
       )}
     </button>
   );

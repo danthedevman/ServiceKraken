@@ -100,31 +100,23 @@ function ProfileMenu({ user, compact, logout, busy, onNavigate, dropdown = false
         </summary>
       </Tooltip>
       <div
-        className={`panel absolute z-50 w-60 max-w-[calc(100vw-2rem)] space-y-2 p-3 shadow-xl ${dropdown ? 'right-0 top-full mt-2 max-h-[calc(100dvh-6rem)] overflow-y-auto' : 'bottom-full left-0 mb-3'}`}
+        className={`panel absolute z-50 w-60 max-w-[calc(100vw-2rem)] space-y-1 p-2 shadow-xl ${dropdown ? 'right-0 top-full mt-2 max-h-[calc(100dvh-6rem)] overflow-y-auto' : 'bottom-full left-0 mb-3'}`}
       >
         <Link
           to="/profile"
-          className="nav-link flex items-center gap-3"
+          className="profile-menu-item"
           onClick={() => {
             ref.current.open = false;
             onNavigate();
           }}
         >
-          <UserCircleIcon className="h-5 w-5" aria-hidden="true" />
+          <UserCircleIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
           Profile settings
         </Link>
-        <div className="flex items-center justify-between gap-2 px-3 py-2">
-          <span className="text-sm">Appearance</span>
-          <ThemeToggle />
-        </div>
+        <ThemeToggle menu />
         <RolePreview />
-        <button
-          type="button"
-          className="nav-link flex w-full items-center gap-3 text-left"
-          disabled={busy}
-          onClick={logout}
-        >
-          <ArrowRightStartOnRectangleIcon className="h-5 w-5" aria-hidden="true" />
+        <button type="button" className="profile-menu-item" disabled={busy} onClick={logout}>
+          <ArrowRightStartOnRectangleIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
           {busy ? 'Signing out…' : 'Sign out'}
         </button>
       </div>
