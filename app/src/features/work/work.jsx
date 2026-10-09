@@ -323,7 +323,9 @@ export function WorkDetail({ kind = 'tasks' }) {
     <div className="space-y-6">
       <Notice error={resource.error} />
       {!item ? (
-        <p role="status">{resource.error ? 'Record unavailable.' : 'Loading details…'}</p>
+        <p role="status" className={resource.error ? undefined : 'sr-only'}>
+          {resource.error ? 'Record unavailable.' : 'Loading details…'}
+        </p>
       ) : (
         <>
           <RecordWorkspace
@@ -452,7 +454,13 @@ export function WorkDetail({ kind = 'tasks' }) {
                 ) : (
                   <section aria-label="Content">
                     <h2 className="field-label">Content</h2>
-                    <Suspense fallback={<p role="status">Loading article…</p>}>
+                    <Suspense
+                      fallback={
+                        <p role="status" className="sr-only">
+                          Loading article…
+                        </p>
+                      }
+                    >
                       <ArticleContent document={item.contentDocument} text={item.content} />
                     </Suspense>
                   </section>

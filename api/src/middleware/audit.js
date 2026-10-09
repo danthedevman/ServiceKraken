@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { writeAudit } from '@servicekraken/shared/domain/audit';
+import { writeAudit } from '@servicetrident/shared/domain/audit';
 
 const safeFields = new Set([
   'title',

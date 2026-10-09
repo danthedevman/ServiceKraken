@@ -1,4 +1,4 @@
-import { validateFields } from '@servicekraken/shared/forms/schema';
+import { validateFields } from '@servicetrident/shared/forms/schema';
 
 import { requireAdmin } from '../auth/auth.js';
 import { settings } from '../repositories/settings.js';

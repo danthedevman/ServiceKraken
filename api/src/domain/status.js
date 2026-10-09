@@ -1,6 +1,6 @@
-import { serviceHealth, rollupHealth } from '@servicekraken/shared/domain/service-health';
-import { subscriptionInfo } from '@servicekraken/shared/status/subscriptions';
-import { statusRange } from '@servicekraken/shared/domain/status-range';
+import { serviceHealth, rollupHealth } from '@servicetrident/shared/domain/service-health';
+import { subscriptionInfo } from '@servicetrident/shared/status/subscriptions';
+import { statusRange } from '@servicetrident/shared/domain/status-range';
 import { catalog } from '../routes/services.js';
 
 /** Summarize operational state without treating absent or paused checks as healthy. */

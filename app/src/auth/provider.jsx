@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const expire = () => setSessionUser(null);
     const synchronize = (event) => {
-      if (event.key !== 'servicekraken-role-change') return;
+      if (event.key !== 'servicetrident-role-change') return;
       // Remove the old view before any new-role requests can finish.
       window.location.reload();
     };

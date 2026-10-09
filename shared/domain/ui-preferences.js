@@ -5,6 +5,7 @@ export const DEFAULT_UI_PREFERENCES = Object.freeze({
   rightCollapsed: false,
   filtersOpen: false,
   tableLayouts: {},
+  dashboardTab: 'incidents',
 });
 
 /** Store only bounded column identifiers, never row data or arbitrary user properties. */
@@ -35,18 +36,19 @@ function validTableLayouts(value) {
   );
 }
 
-/** Allow only layout booleans and bounded table column layouts in the first-paint cache. */
+/** Validate the small allowlist of supported preference values. */
+function validPreference(key, value) {
+  if (key === 'tableLayouts') return validTableLayouts(value);
+  if (key === 'dashboardTab') return ['incidents', 'tasks', 'services'].includes(value);
+  return typeof value === 'boolean';
+}
+
+/** Cache only non-sensitive, validated layout preferences for the first paint. */
 export function uiPreferences(value) {
   return Object.fromEntries(
     Object.entries(DEFAULT_UI_PREFERENCES).map(([key, fallback]) => [
       key,
-      key === 'tableLayouts'
-        ? validTableLayouts(value?.[key])
-          ? value[key]
-          : {}
-        : typeof value?.[key] === 'boolean'
-          ? value[key]
-          : fallback,
+      validPreference(key, value?.[key]) ? value[key] : fallback,
     ]),
   );
 }
@@ -59,9 +61,7 @@ export function preferencePatch(value) {
     Array.isArray(value) ||
     !Object.keys(value).length ||
     Object.entries(value).some(
-      ([key, entry]) =>
-        !Object.hasOwn(DEFAULT_UI_PREFERENCES, key) ||
-        (key === 'tableLayouts' ? !validTableLayouts(entry) : typeof entry !== 'boolean'),
+      ([key, entry]) => !Object.hasOwn(DEFAULT_UI_PREFERENCES, key) || !validPreference(key, entry),
     )
   ) {
     throw new InputError('Choose a valid layout preference.');

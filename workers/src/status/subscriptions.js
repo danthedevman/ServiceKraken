@@ -3,9 +3,9 @@ import {
   digest,
   publicOrigin,
   subscriptionMailer,
-} from '@servicekraken/shared/status/subscriptions';
-import { publicSnapshot, updateText } from '@servicekraken/shared/status/updates';
-import { unseal } from '@servicekraken/shared/integrations/secrets';
+} from '@servicetrident/shared/status/subscriptions';
+import { publicSnapshot, updateText } from '@servicetrident/shared/status/updates';
+import { unseal } from '@servicetrident/shared/integrations/secrets';
 import { sendEmail } from '../notifications/email.js';
 
 /** Record an update through a recoverable pending snapshot; a crash cannot silently drop a transition. */

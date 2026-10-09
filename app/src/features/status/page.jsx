@@ -79,7 +79,9 @@ export function StatusPage({ publicView = false }) {
       </header>
       <ErrorNotice>{error}</ErrorNotice>
       {!data ? (
-        <p role="status">{error ? 'Service status is unavailable.' : 'Loading service status…'}</p>
+        <p role="status" className={error ? undefined : 'sr-only'}>
+          {error ? 'Service status is unavailable.' : 'Loading service status…'}
+        </p>
       ) : (
         <>
           <StatusMessage message={data.banner} />

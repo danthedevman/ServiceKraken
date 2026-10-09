@@ -1,10 +1,10 @@
 import { reconcileStatusSubscriptions, processStatusMail } from './status/subscriptions.js';
-import { summarizeStatusHistory } from '@servicekraken/shared/domain/status-history';
-import { ensureIntegrationKey } from '@servicekraken/shared/integrations/integration-key';
-import { cleanupAttachments } from '@servicekraken/shared/files/attachment-cleanup';
+import { summarizeStatusHistory } from '@servicetrident/shared/domain/status-history';
+import { ensureIntegrationKey } from '@servicetrident/shared/integrations/integration-key';
+import { cleanupAttachments } from '@servicetrident/shared/files/attachment-cleanup';
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
-import { connectDatabase } from '@servicekraken/shared/persistence/database';
+import { connectDatabase } from '@servicetrident/shared/persistence/database';
 import { reconcileOperations } from './notifications/reconcile.js';
 import { processDelivery } from './notifications/delivery.js';
 import { positiveSetting } from './runtime/config.js';

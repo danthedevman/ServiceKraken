@@ -58,6 +58,7 @@ export function CatalogPage({ kind = 'services' }) {
     <div className="list-page">
       <DataTable
         source={kind}
+
         deletePath={`/${kind}`}
         fullPage
         secondaryActions={

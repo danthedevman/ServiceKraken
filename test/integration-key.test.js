@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { ensureIntegrationKey } from '../shared/integrations/integration-key.js';
 
 test('API and workers share one atomically initialized durable encryption key', async (t) => {
-  const dir = await mkdtemp(join(tmpdir(), 'servicekraken-key-')),
+  const dir = await mkdtemp(join(tmpdir(), 'servicetrident-key-')),
     path = join(dir, 'integration.key'),
     previous = process.env.INTEGRATION_ENCRYPTION_KEY;
   delete process.env.INTEGRATION_ENCRYPTION_KEY;

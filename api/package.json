@@ -1,5 +1,5 @@
 {
-  "name": "@servicekraken/api",
+  "name": "@servicetrident/api",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "dev": "node --env-file-if-exists=../.env --watch src/server.js"
   },
   "dependencies": {
-    "@servicekraken/shared": "1.0.0",
+    "@servicetrident/shared": "1.0.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",

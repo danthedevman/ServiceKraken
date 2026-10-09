@@ -15,7 +15,9 @@ export function ProfilePage() {
       {member ? (
         <UserRecord key={member.id} member={member} />
       ) : (
-        <p role="status">Loading profile…</p>
+        <p role="status" className="sr-only">
+          Loading profile…
+        </p>
       )}
     </div>
   );

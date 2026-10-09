@@ -1,9 +1,9 @@
-import { auditStamp } from '@servicekraken/shared/domain/audit';
+import { auditStamp } from '@servicetrident/shared/domain/audit';
 
 import { ObjectId } from 'mongodb';
 
-import { InputError } from '@servicekraken/shared/validation/validation';
-import { text, invalid } from '@servicekraken/shared/validation/fields';
+import { InputError } from '@servicetrident/shared/validation/validation';
+import { text, invalid } from '@servicetrident/shared/validation/fields';
 
 import { requireAdmin } from '../auth/auth.js';
 import { settings } from '../repositories/settings.js';

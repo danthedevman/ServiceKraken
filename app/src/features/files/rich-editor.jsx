@@ -75,7 +75,12 @@ export function RichEditor({
     },
     onUpdate: ({ editor }) => onChange(editor.getJSON()),
   });
-  if (!editor) return <p role="status">Loading editor…</p>;
+  if (!editor)
+    return (
+      <p role="status" className="sr-only">
+        Loading editor…
+      </p>
+    );
   const action = (title, run, active, icon) => (
     <button
       type="button"

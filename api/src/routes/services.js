@@ -1,12 +1,12 @@
-import { healthPolicy } from '@servicekraken/shared/domain/service-health';
-import { publicOrigin, subscriptionMailer } from '@servicekraken/shared/status/subscriptions';
+import { healthPolicy } from '@servicetrident/shared/domain/service-health';
+import { publicOrigin, subscriptionMailer } from '@servicetrident/shared/status/subscriptions';
 import { installStatusIconRoutes } from './status-icon.js';
-import { statusMessage } from '@servicekraken/shared/domain/status-messages';
-import { auditStamp } from '@servicekraken/shared/domain/audit';
+import { statusMessage } from '@servicetrident/shared/domain/status-messages';
+import { auditStamp } from '@servicetrident/shared/domain/audit';
 import { ObjectId } from 'mongodb';
 import { randomBytes } from 'node:crypto';
-import { fieldErrors } from '@servicekraken/shared/validation/form-validation';
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { fieldErrors } from '@servicetrident/shared/validation/form-validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
 /** Parse a client-supplied identifier without accepting query operators. */
 export function id(value) {

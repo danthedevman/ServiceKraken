@@ -235,7 +235,9 @@ export function IncidentBuilderPage({ kind = 'incidents' }) {
               onCancel={() => setVersion((value) => value + 1)}
             />
           ) : (
-            <p role="status">Loading form settings…</p>
+            <p role="status" className="sr-only">
+              Loading form settings…
+            </p>
           )}
         </>
       )}

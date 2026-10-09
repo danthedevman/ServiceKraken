@@ -1,6 +1,7 @@
+import { sendTicket } from './tickets.js';
 import { sendEmail } from './email.js';
-import { integrationUrl } from '@servicekraken/shared/integrations/provider-url';
-import { unseal } from '@servicekraken/shared/integrations/secrets';
+import { integrationUrl } from '@servicetrident/shared/integrations/provider-url';
+import { unseal } from '@servicetrident/shared/integrations/secrets';
 
 import { providerRequest } from './http.js';
 
@@ -24,6 +25,53 @@ export async function sendNotification(
       id: delivery._id,
     });
   integrationUrl(secret.url, integration.type);
+  if (integration.type === 'discord')
+    return request(`${secret.url}?wait=true`, 'POST', {
+      content: body.slice(0, 2000),
+      allowed_mentions: { parse: [] },
+    });
+  if (integration.type === 'pagerduty') {
+    const result = await request(secret.url, 'POST', {
+      routing_key: secret.token,
+      dedup_key: `servicetrident:${incident.workspaceId}:${incident._id}`,
+      event_action: delivery.event === 'recovered' ? 'resolve' : 'trigger',
+      ...(delivery.event === 'recovered'
+        ? {}
+        : {
+            payload: {
+              summary: incident.title.slice(0, 1024),
+              source: incident.serviceName || 'ServiceTrident',
+              severity:
+                { critical: 'critical', high: 'error', medium: 'warning', low: 'info' }[
+                  incident.severity
+                ] || 'warning',
+              custom_details: { Description: body },
+            },
+          }),
+    });
+    if (result.status !== 'success') throw new Error('PagerDuty did not accept the event.');
+    return { externalId: result.dedup_key };
+  }
+  if (integration.type === 'webhook')
+    return request(
+      secret.url,
+      'POST',
+      {
+        deliveryId: String(delivery._id),
+        event: delivery.event,
+        fields: [
+          { label: 'Title', value: incident.title },
+          { label: 'Service', value: incident.serviceName },
+          { label: 'Severity', value: incident.severity },
+          { label: 'Incident', value: String(incident._id) },
+          { label: 'Description', value: incident.description || '' },
+        ],
+        message: body,
+      },
+      secret.token ? { Authorization: `Bearer ${secret.token}` } : {},
+    );
+  if (['github', 'jira'].includes(integration.type))
+    return sendTicket(integration.type, secret, incident, delivery, body, request);
   if (integration.type === 'slack')
     return request(secret.url, 'POST', {
       text: body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
@@ -45,8 +93,9 @@ export async function sendNotification(
         },
       ],
     });
+  if (integration.type !== 'servicenow') throw new Error('Unsupported integration provider.');
   const root = secret.url.replace(/\/$/, ''),
-    correlation = `servicekraken:${incident._id}`;
+    correlation = `servicetrident:${incident._id}`;
   const headers = {
     Authorization: `Basic ${Buffer.from(`${secret.username}:${secret.password}`).toString('base64')}`,
   };

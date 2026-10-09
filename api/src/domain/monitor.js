@@ -1,4 +1,4 @@
-import { auditFields } from '@servicekraken/shared/domain/audit';
+import { auditFields } from '@servicetrident/shared/domain/audit';
 
 /** @param {object} monitor @returns {object} Client-safe monitor representation. */
 export function serializeMonitor(monitor) {

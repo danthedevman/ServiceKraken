@@ -1,5 +1,5 @@
-import { ensureIntegrationKey } from '@servicekraken/shared/integrations/integration-key';
-import { connectDatabase } from '@servicekraken/shared/persistence/database';
+import { ensureIntegrationKey } from '@servicetrident/shared/integrations/integration-key';
+import { connectDatabase } from '@servicetrident/shared/persistence/database';
 import { createApp } from './app.js';
 
 await ensureIntegrationKey();

@@ -1,4 +1,4 @@
-name: servicekraken
+name: servicetrident
 services:
   app:
     build:
@@ -30,11 +30,11 @@ services:
       PORT: 3000
       DATABASE_PROVIDER: ${DATABASE_PROVIDER:-mongodb}
       DATABASE_URL: ${DATABASE_URL:-}
-      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicekraken}
+      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicetrident}
       DATABASE_SSL: ${DATABASE_SSL:-false}
       DATABASE_CA_FILE: ${DATABASE_CA_FILE:-}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
-      MONGODB_DB: ${MONGODB_DB:-servicekraken}
+      MONGODB_DB: ${MONGODB_DB:-servicetrident}
       APP_ORIGIN: ${APP_ORIGIN:-http://127.0.0.1:8090}
       MARKETING_OWNER_EMAIL: ${MARKETING_OWNER_EMAIL:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
@@ -79,11 +79,11 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       DATABASE_PROVIDER: ${DATABASE_PROVIDER:-mongodb}
       DATABASE_URL: ${DATABASE_URL:-}
-      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicekraken}
+      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicetrident}
       DATABASE_SSL: ${DATABASE_SSL:-false}
       DATABASE_CA_FILE: ${DATABASE_CA_FILE:-}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
-      MONGODB_DB: ${MONGODB_DB:-servicekraken}
+      MONGODB_DB: ${MONGODB_DB:-servicetrident}
       REDIS_URL: redis://redis:6379
     depends_on:
       mongo:
@@ -109,11 +109,11 @@ services:
       SCHEDULER_INTERVAL_MS: ${SCHEDULER_INTERVAL_MS:-1000}
       DATABASE_PROVIDER: ${DATABASE_PROVIDER:-mongodb}
       DATABASE_URL: ${DATABASE_URL:-}
-      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicekraken}
+      DATABASE_SCHEMA: ${DATABASE_SCHEMA:-servicetrident}
       DATABASE_SSL: ${DATABASE_SSL:-false}
       DATABASE_CA_FILE: ${DATABASE_CA_FILE:-}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
-      MONGODB_DB: ${MONGODB_DB:-servicekraken}
+      MONGODB_DB: ${MONGODB_DB:-servicetrident}
       REDIS_URL: redis://redis:6379
     depends_on:
       mongo:
@@ -159,8 +159,8 @@ networks:
 
 volumes:
   integration-keys:
-    name: ${INTEGRATION_KEYS_VOLUME_NAME:-servicekraken-integration-keys}
+    name: ${INTEGRATION_KEYS_VOLUME_NAME:-servicetrident-integration-keys}
   mongo-data:
-    name: ${MONGO_VOLUME_NAME:-servicekraken-mongo-data}
+    name: ${MONGO_VOLUME_NAME:-servicetrident-mongo-data}
   redis-data:
-    name: ${REDIS_VOLUME_NAME:-servicekraken-redis-data}
+    name: ${REDIS_VOLUME_NAME:-servicetrident-redis-data}

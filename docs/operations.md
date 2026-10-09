@@ -7,10 +7,10 @@
 | `APP_PORT`                     | `8090`                                 | Local Docker frontend port.                                                   |
 | `APP_ORIGIN`                   | `http://127.0.0.1:8090`                | Allowed application browser origin.                                           |
 | `COOKIE_SECURE`                | `false`                                | Set `true` behind HTTPS.                                                      |
-| `MONGODB_DB`                   | `servicekraken`                        | Database name; retain the current value during upgrades.                      |
-| `MONGO_VOLUME_NAME`            | `servicekraken-mongo-data`             | Override to reuse an existing deployment volume.                              |
-| `REDIS_VOLUME_NAME`            | `servicekraken-redis-data`             | Override to reuse an existing queue volume.                                   |
-| `INTEGRATION_KEYS_VOLUME_NAME` | `servicekraken-integration-keys`       | Persistent credential-encryption key volume.                                  |
+| `MONGODB_DB`                   | `servicetrident`                        | Database name; retain the current value during upgrades.                      |
+| `MONGO_VOLUME_NAME`            | `servicetrident-mongo-data`             | Override to reuse an existing deployment volume.                              |
+| `REDIS_VOLUME_NAME`            | `servicetrident-redis-data`             | Override to reuse an existing queue volume.                                   |
+| `INTEGRATION_KEYS_VOLUME_NAME` | `servicetrident-integration-keys`       | Persistent credential-encryption key volume.                                  |
 | `INTEGRATION_KEY_FILE`         | Docker: `/srv/secrets/integration.key` | Shared key location; use one absolute path for local API/workers.             |
 | `INTEGRATION_ENCRYPTION_KEY`   | automatic                              | Optional legacy/operator 64-hex override; must match the persisted key.       |
 | `CHECK_CONCURRENCY`            | `10`                                   | Concurrent check jobs; range 1–50.                                            |
@@ -40,3 +40,11 @@ Local Compose binds ports to loopback. Put a TLS reverse proxy in front of the a
 - **Notification failed:** inspect Recent deliveries, verify credentials/provider permissions, and retry after fixing configuration. Do not assume an email was delivered solely because it was queued.
 - **Slow check start:** inspect queue delay and schedule delay. Increase worker capacity only after checking database and network bottlenecks.
 - **Partial demo batch:** use Delete demo data to remove the interrupted batch before trying again.
+
+### Branding identifier migration
+
+The application uses `servicetrident` for package scopes, session cookies, browser preference keys, default database names, Compose resources, and the local integration-key directory.
+
+Before upgrading an existing deployment, preserve its database, data volumes, and integration encryption key. Explicitly set `MONGODB_DB` or `DATABASE_SCHEMA`, `INTEGRATION_KEYS_VOLUME_NAME`, `MONGO_VOLUME_NAME`, and `REDIS_VOLUME_NAME` to the existing resources, or migrate them to the new names before starting the renamed Compose project. For PostgreSQL, also preserve the connection database and user through `DATABASE_URL`, `POSTGRES_DB`, and `POSTGRES_USER`. Do not start the new defaults against empty volumes when retaining an existing installation. Preserve `INTEGRATION_KEY_FILE` or `INTEGRATION_ENCRYPTION_KEY`; changing this key makes existing integration credentials unreadable.
+
+Rebuild and redeploy all services together so workspace package imports agree. Existing browser sessions require a fresh sign-in, and locally cached theme and layout preferences use the new keys. Renaming the repository configuration does not rename or migrate running infrastructure.

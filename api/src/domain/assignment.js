@@ -1,4 +1,4 @@
-import { identifier, invalid } from '@servicekraken/shared/validation/fields';
+import { identifier, invalid } from '@servicetrident/shared/validation/fields';
 
 /** Resolve groups inside the workspace and prevent assigning a nonmember to grouped work. */
 export async function assignmentGroup(db, workspaceId, groupId, assigneeId) {

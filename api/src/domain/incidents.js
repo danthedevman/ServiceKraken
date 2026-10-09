@@ -1,6 +1,6 @@
-import { tableSearch } from '@servicekraken/shared/domain/table-search';
-import { InputError } from '@servicekraken/shared/validation/validation';
-import { choice, identifier, invalid } from '@servicekraken/shared/validation/fields';
+import { tableSearch } from '@servicetrident/shared/domain/table-search';
+import { InputError } from '@servicetrident/shared/validation/validation';
+import { choice, identifier, invalid } from '@servicetrident/shared/validation/fields';
 
 /** End-user visibility is the same for lists, detail reads, and exports. */
 export function incidentAccess(req) {

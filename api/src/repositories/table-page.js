@@ -1,6 +1,6 @@
-import { InputError } from '@servicekraken/shared/validation/input-error';
-import { tableSearch } from '@servicekraken/shared/domain/table-search';
-import { dateRangeErrors } from '@servicekraken/shared/validation/form-validation';
+import { InputError } from '@servicetrident/shared/validation/input-error';
+import { tableSearch } from '@servicetrident/shared/domain/table-search';
+import { dateRangeErrors } from '@servicetrident/shared/validation/form-validation';
 
 /** Validate all table parameters before applying them to an allowlisted server-owned source. */
 export function tableQuery(query, columns, dateColumn) {

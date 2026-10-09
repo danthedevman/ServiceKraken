@@ -12,7 +12,7 @@ import { USER_AGENTS } from '../../workers/src/monitoring/user-agents.js';
 
 test('API, MongoDB persistence, and BullMQ scheduling', { timeout: 30000 }, async (t) => {
   process.env.DATABASE_SCHEMA =
-    process.env.MONGODB_DB = `servicekraken_test_${randomUUID().replaceAll('-', '')}`;
+    process.env.MONGODB_DB = `servicetrident_test_${randomUUID().replaceAll('-', '')}`;
   const { db, client } = await connectDatabase();
   const server = createApp(db).listen(0, '0.0.0.0');
   await new Promise((resolve) => server.once('listening', resolve));

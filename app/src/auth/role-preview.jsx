@@ -22,7 +22,7 @@ export function RolePreview({ banner = false }) {
       setSessionUser(result.user);
       // Other tabs discard their old role's data before loading the updated session.
       try {
-        localStorage.setItem('servicekraken-role-change', String(Date.now()));
+        localStorage.setItem('servicetrident-role-change', String(Date.now()));
       } catch {
         /* Storage may be disabled. */
       }

@@ -1,4 +1,5 @@
 import { HelpPage } from './features/help/help.jsx';
+import { Toasts } from './components/toasts.jsx';
 import { AuditPage } from './features/settings/audit.jsx';
 import { SettingsPage } from './features/settings/settings.jsx';
 
@@ -22,6 +23,7 @@ import React, { useContext } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
 
 import { Dashboard } from './features/dashboard/dashboard.jsx';
+import { DashboardReport } from './features/dashboard/report.jsx';
 
 import { CatalogPage } from './features/services/list.jsx';
 import { CatalogFormPage } from './features/services/form.jsx';
@@ -61,6 +63,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
+          <Toasts />
           <ScrollToTop />
           <AuthProvider>
             <a className="skip-link" href="#main">
@@ -73,6 +76,7 @@ export function App() {
               <Route path="/join/:token" element={<JoinPage />} />
               <Route element={<Layout />}>
                 <Route index element={<HomePage />} />
+                <Route path="dashboard/reports" element={<DashboardReport />} />
                 <Route path="help" element={<HelpPage />} />
                 <Route path="tasks" element={<WorkPage key="tasks" />} />
                 <Route
@@ -248,14 +252,7 @@ export function App() {
                     </AdminOnly>
                   }
                 />
-                <Route
-                  path="settings"
-                  element={
-                    <AdminOnly page>
-                      <SettingsPage />
-                    </AdminOnly>
-                  }
-                />
+                <Route path="settings" element={<SettingsPage />} />
                 <Route path="dashboard" element={<Navigate to="/" replace />} />
                 <Route
                   path="monitors/new"

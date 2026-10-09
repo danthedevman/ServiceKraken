@@ -27,10 +27,12 @@ export function ErrorNotice({ children }) {
   ) : null;
 }
 
-/** @param {{label?: string, variant?: string}} props Layout-shaped loading feedback. */
+/** Announce initial loading without adding visible text or shifting page content.
+ * @param {{label?: string}} props
+ */
 export function Loading({ label = 'Loading…' }) {
   return (
-    <p role="status" className="text-sm text-slate-500 dark:text-slate-400">
+    <p role="status" className="sr-only">
       {label}
     </p>
   );

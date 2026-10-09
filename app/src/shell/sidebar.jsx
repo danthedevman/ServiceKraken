@@ -14,8 +14,6 @@ import {
   PlusIcon,
   ExclamationTriangleIcon,
   CalendarDaysIcon,
-  PuzzlePieceIcon,
-  UsersIcon,
   Squares2X2Icon,
   SignalIcon,
   ServerStackIcon,
@@ -25,7 +23,6 @@ import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   XMarkIcon,
-  Bars3Icon,
   UserCircleIcon,
   ArrowRightStartOnRectangleIcon,
 } from '@heroicons/react/24/outline';
@@ -40,9 +37,6 @@ const links = [
   ['/tasks', 'Tasks', ClipboardDocumentListIcon],
   ['/on-call', 'On Call', CalendarDaysIcon],
   ['/knowledge', 'Knowledge', BookOpenIcon],
-  ['/groups', 'Groups', UserGroupIcon],
-  ['/integrations', 'Integrations', PuzzlePieceIcon],
-  ['/workspace', 'Users', UsersIcon],
   ['/status', 'Status Page', ChartBarSquareIcon],
   ['/settings', 'Settings', Cog6ToothIcon],
 ];
@@ -61,7 +55,7 @@ function ProfileMenu({ user, compact, logout, busy, onNavigate, dropdown = false
     return (
       <div role="status" aria-label="Loading profile" className="flex items-center gap-3 p-2">
         <UserCircleIcon className="h-10 w-10 shrink-0 text-slate-400" aria-hidden="true" />
-        {!compact && <span className="text-sm text-slate-500">Loading profile…</span>}
+        {!compact && <span className="sr-only">Loading profile…</span>}
       </div>
     );
   return (
@@ -180,11 +174,7 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
   };
   const primaryPaths = ['/', '/incidents', '/services', '/tasks', '/on-call'];
   const visibleLinks = user
-    ? links.filter(([to]) =>
-        user.role === 'user'
-          ? to === '/incidents'
-          : !['/integrations', '/workspace', '/settings'].includes(to) || user.role === 'admin',
-      )
+    ? links.filter(([to]) => user.role !== 'user' || to === '/incidents')
     : [];
   const secondaryLinks = visibleLinks.filter(([to]) => !primaryPaths.includes(to));
   const content = (compact, mobile = false) => (
@@ -294,7 +284,7 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
                 end={to === '/'}
                 onClick={close}
                 title={compact ? label : undefined}
-                className={`nav-link ${to === '/services' && pathname.startsWith('/monitors/') ? 'active' : ''} flex items-center gap-3 ${compact ? 'mx-auto h-11 w-11 justify-center !gap-0 !p-0' : ''}`}
+                className={`nav-link ${(to === '/services' && pathname.startsWith('/monitors/')) || (to === '/settings' && /^\/(groups|workspace)(\/|$)/.test(pathname)) ? 'active' : ''} flex items-center gap-3 ${compact ? 'mx-auto h-11 w-11 justify-center !gap-0 !p-0' : ''}`}
               >
                 <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                 <span className={compact ? 'sr-only' : ''}>
@@ -309,7 +299,12 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
               <span>
                 <ActionMenu label="More" borderless>
                   {secondaryLinks.map(([to, label]) => (
-                    <NavLink key={to} to={to} className="nav-link" onClick={close}>
+                    <NavLink
+                      key={to}
+                      to={to}
+                      className={`nav-link ${to === '/settings' && /^\/(groups|workspace)(\/|$)/.test(pathname) ? 'active' : ''}`}
+                      onClick={close}
+                    >
                       {label}
                     </NavLink>
                   ))}
@@ -343,7 +338,7 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
       >
         <button
           type="button"
-          className="btn-secondary"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[4px] hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 dark:hover:bg-slate-800"
           aria-label="Open navigation"
           aria-haspopup="dialog"
           aria-expanded={mobileOpen}
@@ -352,7 +347,9 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
             setMobileOpen(true);
           }}
         >
-          <Bars3Icon className="h-5 w-5" aria-hidden="true" />
+          <span className="inline-flex" aria-hidden="true">
+            {renderBrand(true)}
+          </span>
         </button>
         <ProfileMenu user={user} compact dropdown logout={logout} busy={busy} onNavigate={close} />
       </header>

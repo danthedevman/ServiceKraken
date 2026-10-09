@@ -78,7 +78,9 @@ export function CatalogDetailPage({ kind = 'services' }) {
         </p>
       )}
       {!data ? (
-        <p role="status">Loading record…</p>
+        <p role="status" className="sr-only">
+          Loading record…
+        </p>
       ) : !selected ? (
         <p role="alert">This record no longer exists or is unavailable.</p>
       ) : (

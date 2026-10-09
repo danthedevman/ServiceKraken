@@ -1,15 +1,15 @@
 import { randomBytes } from 'node:crypto';
 import { ObjectId } from 'mongodb';
-import { DEMO_COUNT } from '@servicekraken/shared/domain/demo-data';
-import { auditStamp } from '@servicekraken/shared/domain/audit';
-import { validateMonitor } from '@servicekraken/shared/validation/validation';
-import { fieldErrors } from '@servicekraken/shared/validation/form-validation';
-import { validateWork } from '@servicekraken/shared/domain/work';
-import { validateFile } from '@servicekraken/shared/files/attachment-files';
-import { textDocument, validateRichContent } from '@servicekraken/shared/files/rich-content';
-import { fieldChoices, workBuiltinFields } from '@servicekraken/shared/forms/form-options';
-import { BUILTIN_FIELDS, validateValues } from '@servicekraken/shared/forms/schema';
-import { validateShifts } from '@servicekraken/shared/domain/on-call';
+import { DEMO_COUNT } from '@servicetrident/shared/domain/demo-data';
+import { auditStamp } from '@servicetrident/shared/domain/audit';
+import { validateMonitor } from '@servicetrident/shared/validation/validation';
+import { fieldErrors } from '@servicetrident/shared/validation/form-validation';
+import { validateWork } from '@servicetrident/shared/domain/work';
+import { validateFile } from '@servicetrident/shared/files/attachment-files';
+import { textDocument, validateRichContent } from '@servicetrident/shared/files/rich-content';
+import { fieldChoices, workBuiltinFields } from '@servicetrident/shared/forms/form-options';
+import { BUILTIN_FIELDS, validateValues } from '@servicetrident/shared/forms/schema';
+import { validateShifts } from '@servicetrident/shared/domain/on-call';
 
 const topics = [
   'Checkout',

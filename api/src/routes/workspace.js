@@ -1,12 +1,12 @@
-import { userDetails, userDetailView } from '@servicekraken/shared/domain/user-details';
-import { auditStamp, auditFields } from '@servicekraken/shared/domain/audit';
+import { userDetails, userDetailView } from '@servicetrident/shared/domain/user-details';
+import { auditStamp, auditFields } from '@servicetrident/shared/domain/audit';
 
 import { rateLimit } from 'express-rate-limit';
 import { randomBytes } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 
-import { InputError } from '@servicekraken/shared/validation/validation';
-import { text, choice, identifier, invalid } from '@servicekraken/shared/validation/fields';
+import { InputError } from '@servicetrident/shared/validation/validation';
+import { text, choice, identifier, invalid } from '@servicetrident/shared/validation/fields';
 
 import { id } from './services.js';
 import {

@@ -8,7 +8,7 @@ import {
   isPublicAddress,
   parseTarget,
   validateMethod,
-} from '@servicekraken/shared/validation/validation';
+} from '@servicetrident/shared/validation/validation';
 import { captureBody, redactHeaders } from './response.js';
 import { userAgentForCheck } from './user-agents.js';
 

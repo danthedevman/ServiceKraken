@@ -23,7 +23,7 @@ export function ThemeProvider({ children }) {
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark';
     try {
-      localStorage.setItem('servicekraken-theme', next);
+      localStorage.setItem('servicetrident-theme', next);
     } catch {
       /* Keep this session's choice. */
     }

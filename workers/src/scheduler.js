@@ -1,6 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
-import { connectDatabase } from '@servicekraken/shared/persistence/database';
+import { connectDatabase } from '@servicetrident/shared/persistence/database';
 import { dispatchDue } from './monitoring/processor.js';
 import { positiveSetting } from './runtime/config.js';
 

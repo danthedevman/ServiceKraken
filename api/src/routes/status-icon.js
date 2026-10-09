@@ -1,4 +1,4 @@
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
 /** Serve only normalized raster branding, rechecking public visibility on every request. */
 export async function sendStatusIcon(db, workspaceId, res) {

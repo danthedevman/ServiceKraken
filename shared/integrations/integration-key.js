@@ -6,7 +6,7 @@ import { randomBytes } from 'node:crypto';
 /** Share one durable key across API/workers. Atomic linking never exposes a partial key file. */
 export async function ensureIntegrationKey(
   path = process.env.INTEGRATION_KEY_FILE ||
-    fileURLToPath(new URL('../../.servicekraken/integration.key', import.meta.url)),
+    fileURLToPath(new URL('../../.servicetrident/integration.key', import.meta.url)),
 ) {
   const configured = process.env.INTEGRATION_ENCRYPTION_KEY;
   if (configured && !/^[a-f\d]{64}$/i.test(configured))

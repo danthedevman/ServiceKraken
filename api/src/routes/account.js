@@ -1,10 +1,10 @@
-import { userDetails } from '@servicekraken/shared/domain/user-details';
-import { auditStamp } from '@servicekraken/shared/domain/audit';
-import { uiPreferences, preferencePatch } from '@servicekraken/shared/domain/ui-preferences';
+import { userDetails } from '@servicetrident/shared/domain/user-details';
+import { auditStamp } from '@servicetrident/shared/domain/audit';
+import { uiPreferences, preferencePatch } from '@servicetrident/shared/domain/ui-preferences';
 
-import { fieldErrors } from '@servicekraken/shared/validation/form-validation';
+import { fieldErrors } from '@servicetrident/shared/validation/form-validation';
 
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 import {
   clearSessionCookie,
   createSession,

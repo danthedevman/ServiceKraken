@@ -13,6 +13,8 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './sidebar.jsx';
 import { Breadcrumbs } from './breadcrumbs.jsx';
 
+import { RecordHeaderContext } from '../components/record-actions.jsx';
+
 import { Logo } from '../components/brand.jsx';
 
 import { ErrorNotice } from '../components/feedback.jsx';
@@ -26,6 +28,7 @@ export function Layout() {
       location.pathname,
     );
   const listPage = [
+    '/dashboard/reports',
     '/settings/audit',
     '/services',
     '/collections',
@@ -38,6 +41,7 @@ export function Layout() {
     '/integrations',
   ].includes(location.pathname.replace(/\/$/, ''));
   const { user, setUser, loading: sessionLoading } = useContext(AuthContext);
+  const [recordHeader, setRecordHeader] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const { leftCollapsed: collapsed, rightCollapsed, setPreference } = useUiPreferences();
@@ -74,14 +78,33 @@ export function Layout() {
         className={
           listPage
             ? 'list-main'
-            : `mx-auto min-h-[calc(100dvh-5rem)] ${recordPage ? 'record-main max-w-none space-y-3' : 'max-w-6xl space-y-6'} p-4 lg:p-6`
+            : recordPage
+              ? 'record-main mx-auto max-w-none'
+              : 'mx-auto min-h-[calc(100dvh-5rem)] max-w-6xl space-y-6 p-4 lg:p-6'
         }
       >
         <RolePreview banner />
-        <Breadcrumbs resolveNames={!sessionLoading} />
+        {recordPage ? (
+          <div className="record-sticky-header space-y-3">
+            <Breadcrumbs resolveNames={!sessionLoading} />
+            <div ref={setRecordHeader} />
+          </div>
+        ) : (
+          <Breadcrumbs resolveNames={!sessionLoading} />
+        )}
         <ErrorNotice>{error}</ErrorNotice>
-        <div key={location.pathname} className={listPage ? 'list-outlet' : 'space-y-6'}>
-          <Outlet />
+        <div
+          key={location.pathname}
+          className={
+            listPage ? 'list-outlet' : recordPage ? 'record-scroll-area space-y-6' : 'space-y-6'
+          }
+          tabIndex={recordPage ? 0 : undefined}
+          role={recordPage ? 'region' : undefined}
+          aria-label={recordPage ? 'Record content' : undefined}
+        >
+          <RecordHeaderContext.Provider value={recordPage ? recordHeader : null}>
+            <Outlet />
+          </RecordHeaderContext.Provider>
         </div>
       </main>
     </div>

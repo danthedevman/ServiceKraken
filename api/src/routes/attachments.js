@@ -1,13 +1,13 @@
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { ObjectId } from 'mongodb';
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 import {
   MAX_FILE_BYTES,
   MAX_ATTACHMENTS,
   validateFile,
-} from '@servicekraken/shared/files/attachment-files';
-import { validateRichContent } from '@servicekraken/shared/files/rich-content';
+} from '@servicetrident/shared/files/attachment-files';
+import { validateRichContent } from '@servicetrident/shared/files/rich-content';
 import { id } from './services.js';
 
 const collections = { incidents: 'incidents', tasks: 'tasks', knowledge: 'articles' };

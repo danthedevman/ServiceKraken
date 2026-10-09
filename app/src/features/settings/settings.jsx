@@ -1,6 +1,8 @@
+import { UsersIcon, UserGroupIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { AuthContext } from '../../auth/auth-context.js';
 import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { DateTime } from '../../preferences/date-time.jsx';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useResource } from '../../data/use-resource.js';
 import { Notice } from '../../components/forms/fields.jsx';
@@ -10,7 +12,7 @@ import { Modal } from '../../components/modal.jsx';
 import { validateDemoAction } from '../../../../shared/domain/demo-data.js';
 
 /** Admin-only dataset lifecycle. The API independently validates access, batch identity, and single-add state. */
-export function SettingsPage() {
+function AdminSettings() {
   const resource = useResource('/settings/demo-data', 3000),
     save = useSave();
   const marketing = useResource('/settings/marketing');
@@ -48,7 +50,6 @@ export function SettingsPage() {
   }
   return (
     <div className="space-y-6">
-      <h1 className="page-title">Settings</h1>
       <section className="panel space-y-4 p-6">
         <h2 className="text-lg font-semibold">Audit Log</h2>
         <p>
@@ -60,7 +61,7 @@ export function SettingsPage() {
         </Link>
       </section>
       <section className="panel space-y-4 p-6">
-        <h2 className="text-lg font-semibold">Communication Apps</h2>
+        <h2 className="text-lg font-semibold">Integrations</h2>
         <p>
           Connect email, Slack, Microsoft Teams, or ServiceNow and choose where service-impact
           notifications go.
@@ -74,7 +75,9 @@ export function SettingsPage() {
         <Notice error={resource.error || save.error || clientError} />
         {message && <p role="status">{message}</p>}
         {!resource.data ? (
-          <p role="status">Loading demo-data settings…</p>
+          <p role="status" className="sr-only">
+            Loading demo-data settings…
+          </p>
         ) : (
           <>
             <p role="status">
@@ -191,6 +194,59 @@ export function SettingsPage() {
           <Notice error={save.error} />
         </Modal>
       )}
+    </div>
+  );
+}
+
+/** Directory entry points retain existing role permissions while sharing Settings navigation. */
+export function SettingsPage() {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return null;
+  if (!user || user.role === 'user') return <p>Workspace access is required.</p>;
+  const admin = user.role === 'admin';
+  const panels = [
+    ...(admin
+      ? [
+          {
+            title: 'Users',
+            to: '/workspace',
+            Icon: UsersIcon,
+            description: 'Manage user profiles, roles, and account access.',
+          },
+        ]
+      : []),
+    {
+      title: 'Groups',
+      to: '/groups',
+      Icon: UserGroupIcon,
+      description: admin
+        ? 'Organize members into groups for ownership and assignments.'
+        : 'View groups and their members.',
+    },
+  ];
+  return (
+    <div className="space-y-6">
+      <h1 className="page-title">Settings</h1>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {panels.map(({ title, to, Icon, description }) => (
+          <Link
+            key={to}
+            to={to}
+            className="panel flex items-start gap-4 p-6 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 dark:hover:bg-slate-800"
+          >
+            <Icon
+              className="h-6 w-6 shrink-0 text-blue-700 dark:text-blue-400"
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1 space-y-2">
+              <h2 className="text-lg font-semibold">{title}</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+            </div>
+            <ChevronRightIcon className="h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" />
+          </Link>
+        ))}
+      </div>
+      {admin && <AdminSettings />}
     </div>
   );
 }

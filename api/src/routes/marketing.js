@@ -1,5 +1,5 @@
 import { requireAdmin } from '../auth/auth.js';
-import { InputError } from '@servicekraken/shared/validation/input-error';
+import { InputError } from '@servicetrident/shared/validation/input-error';
 
 /** Marketing inquiries belong to the deployment operator, never to every tenant's administrator. */
 export function installMarketingInbox(app, db) {

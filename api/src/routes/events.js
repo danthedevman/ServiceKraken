@@ -1,8 +1,8 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { csvRow } from '@servicekraken/shared/files/csv';
+import { csvRow } from '@servicetrident/shared/files/csv';
 
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
 import { requireMonitor } from './services.js';
 

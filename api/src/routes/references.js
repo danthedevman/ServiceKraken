@@ -1,5 +1,5 @@
-import { InputError } from '@servicekraken/shared/validation/input-error';
-import { tableSearch } from '@servicekraken/shared/domain/table-search';
+import { InputError } from '@servicetrident/shared/validation/input-error';
+import { tableSearch } from '@servicetrident/shared/domain/table-search';
 import { catalog, id } from './services.js';
 import { settings } from '../repositories/settings.js';
 import { memberFilter } from '../repositories/members.js';

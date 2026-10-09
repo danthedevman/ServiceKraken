@@ -1,4 +1,4 @@
-import { text, choice, invalid } from '@servicekraken/shared/validation/fields';
+import { text, choice, invalid } from '@servicetrident/shared/validation/fields';
 import { memberFilter } from '../repositories/members.js';
 
 /** Search only authorized workspace records, using literal text and bounded result projections. */

@@ -1,20 +1,20 @@
 import { assignmentGroup } from '../domain/assignment.js';
 import { claimAttachments } from './attachments.js';
-import { validateRichContent } from '@servicekraken/shared/files/rich-content';
+import { validateRichContent } from '@servicetrident/shared/files/rich-content';
 import { ObjectId } from 'mongodb';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { InputError } from '@servicekraken/shared/validation/validation';
-import { workBuiltinFields, recordFields } from '@servicekraken/shared/forms/form-options';
-import { invalid } from '@servicekraken/shared/validation/fields';
+import { InputError } from '@servicetrident/shared/validation/validation';
+import { workBuiltinFields, recordFields } from '@servicetrident/shared/forms/form-options';
+import { invalid } from '@servicetrident/shared/validation/fields';
 import {
   validateFields,
   validateValues,
   resolveChoices,
   validateMandatory,
-} from '@servicekraken/shared/forms/schema';
-import { validateWork, workQuery } from '@servicekraken/shared/domain/work';
-import { csvRow } from '@servicekraken/shared/files/csv';
+} from '@servicetrident/shared/forms/schema';
+import { validateWork, workQuery } from '@servicetrident/shared/domain/work';
+import { csvRow } from '@servicetrident/shared/files/csv';
 import { catalog, id } from './services.js';
 import { requireResponder, requireAdmin } from '../auth/auth.js';
 import { memberFilter } from '../repositories/members.js';

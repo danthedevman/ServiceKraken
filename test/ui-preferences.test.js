@@ -9,6 +9,7 @@ test('layout preferences accept only boolean changes and exclude unrelated user 
     rightCollapsed: false,
     filtersOpen: false,
     tableLayouts: {},
+    dashboardTab: 'incidents',
   });
   for (const value of [
     null,
@@ -40,4 +41,16 @@ test('audit stamps preserve original authors without inventing legacy creation h
     auditFields({ ...updated, passwordHash: 'private', secret: 'private' }).secret,
     undefined,
   );
+});
+
+test('dashboard tab preferences accept supported tabs and safely fall back for old or invalid values', () => {
+  for (const dashboardTab of ['incidents', 'tasks', 'services']) {
+    assert.deepEqual(preferencePatch({ dashboardTab }), { dashboardTab });
+    assert.equal(uiPreferences({ dashboardTab }).dashboardTab, dashboardTab);
+  }
+  for (const dashboardTab of [null, true, 'unknown', {}, ['tasks']]) {
+    assert.throws(() => preferencePatch({ dashboardTab }));
+    assert.equal(uiPreferences({ dashboardTab }).dashboardTab, 'incidents');
+  }
+  assert.equal(uiPreferences().dashboardTab, 'incidents');
 });

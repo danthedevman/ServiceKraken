@@ -77,7 +77,7 @@ export function AuthPage({ register = false }) {
           key={register ? 'register' : 'login'}
           kind={register ? 'register' : 'auth'}
           onSubmit={submit}
-          className="mt-7 space-y-5"
+          className="auth-form mt-7 space-y-5"
         >
           <ErrorNotice>{error}</ErrorNotice>
           {register && (

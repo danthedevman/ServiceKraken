@@ -6,8 +6,8 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-servicekraken}
-      POSTGRES_USER: ${POSTGRES_USER:-servicekraken}
+      POSTGRES_DB: ${POSTGRES_DB:-servicetrident}
+      POSTGRES_USER: ${POSTGRES_USER:-servicetrident}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes: [postgres-data:/var/lib/postgresql/data]
     networks: [backend]

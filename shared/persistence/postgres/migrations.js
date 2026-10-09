@@ -36,7 +36,7 @@ export async function migrate(pool, schema) {
   try {
     await client.query('BEGIN');
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
-      `servicekraken:migrate:${schema}`,
+      `servicetrident:migrate:${schema}`,
     ]);
     await client.query(`CREATE SCHEMA IF NOT EXISTS ${identifier(schema)}`);
     await client.query(

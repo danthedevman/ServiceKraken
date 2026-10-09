@@ -12,6 +12,6 @@ export async function connectMongo() {
     },
   );
   await client.connect();
-  const db = client.db(process.env.MONGODB_DB ?? 'servicekraken');
+  const db = client.db(process.env.MONGODB_DB ?? 'servicetrident');
   return { client, db };
 }

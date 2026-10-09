@@ -32,7 +32,11 @@ export function MonitorForm({ monitor, onReset }) {
       <div className="form-page">
         <h1 className="page-title">Create Monitor</h1>
         <ErrorNotice>{preferences.error}</ErrorNotice>
-        {!preferences.error && <p role="status">Loading monitor defaults…</p>}
+        {!preferences.error && (
+          <p role="status" className="sr-only">
+            Loading monitor defaults…
+          </p>
+        )}
       </div>
     );
   return (

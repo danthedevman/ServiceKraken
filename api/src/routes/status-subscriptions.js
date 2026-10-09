@@ -1,14 +1,14 @@
 import { randomBytes } from 'node:crypto';
 import { rateLimit } from 'express-rate-limit';
-import { InputError } from '@servicekraken/shared/validation/input-error';
+import { InputError } from '@servicetrident/shared/validation/input-error';
 import {
   digest,
   publicOrigin,
   subscriberEmail,
   subscriptionMailer,
-} from '@servicekraken/shared/status/subscriptions';
-import { rssFeed } from '@servicekraken/shared/status/updates';
-import { seal } from '@servicekraken/shared/integrations/secrets';
+} from '@servicetrident/shared/status/subscriptions';
+import { rssFeed } from '@servicetrident/shared/status/updates';
+import { seal } from '@servicetrident/shared/integrations/secrets';
 import { isAllowedOrigin } from '../middleware/origin.js';
 
 /** Public subscription endpoints have their own strict origin policy for a configured status domain. */

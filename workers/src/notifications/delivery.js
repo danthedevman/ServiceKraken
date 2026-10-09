@@ -91,6 +91,16 @@ export async function processDelivery(db, key, send = sendNotification) {
           $or: [{ _id: delivery.workspaceId }, { workspaceId: delivery.workspaceId }],
         })
       : null;
+    if (['github', 'jira'].includes(integration.type)) {
+      const previous = await db.collection('deliveries').findOne({
+        workspaceId: delivery.workspaceId,
+        integrationId: delivery.integrationId,
+        incidentId: delivery.incidentId,
+        status: 'sent',
+        externalId: { $ne: null },
+      });
+      if (previous?.externalId) delivery.externalId = previous.externalId;
+    }
     const result = await send(integration, incident, delivery, person?.email);
     await db.collection('deliveries').updateOne(
       { _id: key },

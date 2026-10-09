@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { resolvePublicTarget } from '../monitoring/check.js';
-import { unseal } from '@servicekraken/shared/integrations/secrets';
+import { unseal } from '@servicetrident/shared/integrations/secrets';
 
 /** Send plain-text email through the same pinned, verified SMTP connection for all mail jobs. */
 export async function sendEmail(integration, { to, subject, text, id }) {
@@ -47,7 +47,7 @@ export async function sendEmail(integration, { to, subject, text, id }) {
         to,
         subject,
         text,
-        messageId: `<${id}@servicekraken.local>`,
+        messageId: `<${id}@servicetrident.local>`,
         disableFileAccess: true,
         disableUrlAccess: true,
       }),

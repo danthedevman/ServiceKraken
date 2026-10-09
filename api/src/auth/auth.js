@@ -1,12 +1,12 @@
-import { uiPreferences } from '@servicekraken/shared/domain/ui-preferences';
+import { uiPreferences } from '@servicetrident/shared/domain/ui-preferences';
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { fieldErrors } from '@servicekraken/shared/validation/form-validation';
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { fieldErrors } from '@servicetrident/shared/validation/form-validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
 const scrypt = promisify(scryptCallback);
 const sessionLifetime = 7 * 86400 * 1000;
-const cookieName = 'servicekraken_session';
+const cookieName = 'servicetrident_session';
 
 /** @param {string} value @returns {string} One-way digest of a session token. */
 export function digestToken(value) {

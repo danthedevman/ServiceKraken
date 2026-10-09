@@ -16,17 +16,17 @@ test('scheduling timing separates dispatch and queue wait without inventing old 
 });
 
 test('worker tuning rejects invalid and unsafe bounds', (t) => {
-  const previous = process.env.SERVICEKRAKEN_TEST_SETTING;
+  const previous = process.env.SERVICETRIDENT_TEST_SETTING;
   t.after(() => {
-    if (previous === undefined) delete process.env.SERVICEKRAKEN_TEST_SETTING;
-    else process.env.SERVICEKRAKEN_TEST_SETTING = previous;
+    if (previous === undefined) delete process.env.SERVICETRIDENT_TEST_SETTING;
+    else process.env.SERVICETRIDENT_TEST_SETTING = previous;
   });
-  process.env.SERVICEKRAKEN_TEST_SETTING = '10';
-  assert.equal(positiveSetting('SERVICEKRAKEN_TEST_SETTING', 5, 50), 10);
+  process.env.SERVICETRIDENT_TEST_SETTING = '10';
+  assert.equal(positiveSetting('SERVICETRIDENT_TEST_SETTING', 5, 50), 10);
   for (const value of ['0', '51', '1.5', '', 'abc']) {
-    process.env.SERVICEKRAKEN_TEST_SETTING = value;
-    assert.throws(() => positiveSetting('SERVICEKRAKEN_TEST_SETTING', 5, 50));
+    process.env.SERVICETRIDENT_TEST_SETTING = value;
+    assert.throws(() => positiveSetting('SERVICETRIDENT_TEST_SETTING', 5, 50));
   }
-  process.env.SERVICEKRAKEN_TEST_SETTING = '100';
-  assert.throws(() => positiveSetting('SERVICEKRAKEN_TEST_SETTING', 1000, 5000, 250));
+  process.env.SERVICETRIDENT_TEST_SETTING = '100';
+  assert.throws(() => positiveSetting('SERVICETRIDENT_TEST_SETTING', 1000, 5000, 250));
 });

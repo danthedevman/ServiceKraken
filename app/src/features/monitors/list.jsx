@@ -24,6 +24,7 @@ export function MonitorList() {
       {
         <DataTable
           source="monitors"
+
           deletePath="/monitors"
           fullPage
           actions={

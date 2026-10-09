@@ -1,4 +1,4 @@
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
 /** Parse an optional UTC calendar date without accepting rollover dates or arrays.
  * @param {unknown} value @returns {Date | null}

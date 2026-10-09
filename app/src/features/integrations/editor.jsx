@@ -1,3 +1,4 @@
+import { providerFields } from '../../../../shared/integrations/provider-fields.js';
 import { notify } from '../../data/toast.js';
 import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { Select } from '../../components/forms/select.jsx';
@@ -12,6 +13,18 @@ import { integrationErrors } from '../../../../shared/integrations/integration-v
 import { providers } from '../../../../shared/integrations/providers.js';
 
 const help = {
+  sendgrid:
+    'Use smtp.sendgrid.net, username apikey, and your SendGrid API key as the SMTP password. Verify the sender in SendGrid.',
+  ses: 'Set the SMTP host for your AWS region and use region-specific SES SMTP credentials, not AWS access keys. Verify your sender; sandbox accounts can only send to verified recipients.',
+  discord:
+    'Paste a Discord channel webhook URL. Messages suppress mentions to avoid unintended pings.',
+  pagerduty:
+    'Use an Events API v2 routing key. Impact triggers an alert; recovery resolves the matching alert.',
+  github:
+    'Use https://api.github.com/repos/OWNER/REPO and a fine-grained token with Issues read/write access. Recovery adds a comment; it does not close the issue.',
+  jira: 'Use your https://TEAM.atlassian.net root URL, account email and API token, project key and issue type ID. Grant browse, create issue and comment permissions. Recovery adds a comment.',
+  webhook:
+    'Send labeled JSON to a public HTTPS endpoint. An optional bearer token authenticates delivery. Receivers should deduplicate using the delivery ID.',
   email:
     'Use SMTP credentials from your email provider. Port 465 uses TLS; port 587 requires STARTTLS.',
   slack: 'Create a Slack incoming webhook and paste its hooks.slack.com URL.',
@@ -36,7 +49,7 @@ export function IntegrationEditor({ initial, services, close, onSaved, onDeleted
         maxLength={maxLength}
         value={value[key] ?? ''}
         placeholder={
-          initial.configured && ['url', 'password', 'username', 'smtpPassword'].includes(key)
+          initial.configured && key !== 'name' && key !== 'recipients'
             ? 'Saved — leave blank to retain'
             : ''
         }
@@ -69,7 +82,25 @@ export function IntegrationEditor({ initial, services, close, onSaved, onDeleted
           <Select
             disabled={initial.existing}
             value={value.type}
-            onChange={(event) => set('type', event.target.value)}
+            onChange={(event) =>
+              setValue((current) => ({
+                ...current,
+                type: event.target.value,
+                preset: undefined,
+                url:
+                  event.target.value === 'pagerduty'
+                    ? 'https://events.pagerduty.com/v2/enqueue'
+                    : '',
+                token: '',
+                username: '',
+                password: '',
+                projectKey: '',
+                issueTypeId: '',
+                smtpHost: '',
+                smtpUser: '',
+                smtpPassword: '',
+              }))
+            }
           >
             {providers.map((p) => (
               <option key={p.id} value={p.id}>
@@ -78,7 +109,7 @@ export function IntegrationEditor({ initial, services, close, onSaved, onDeleted
             ))}
           </Select>
         </Field>
-        <p className="text-sm text-slate-500">{help[value.type]}</p>
+        <p className="text-sm text-slate-500">{help[value.preset || value.type]}</p>
         {value.type === 'email' ? (
           <>
             {initial.smtpConfigured && (
@@ -138,9 +169,18 @@ export function IntegrationEditor({ initial, services, close, onSaved, onDeleted
           <>
             {input(
               'url',
-              value.type === 'servicenow' ? 'Instance root URL' : 'Webhook URL',
+              ['servicenow', 'jira'].includes(value.type)
+                ? 'Instance Root URL'
+                : value.type === 'github'
+                  ? 'Repository API URL'
+                  : value.type === 'pagerduty'
+                    ? 'Events API URL'
+                    : 'Webhook URL',
               'password',
               4096,
+            )}
+            {(providerFields[value.type] || []).map((field) =>
+              input(field.key, field.label, field.secret ? 'password' : 'text', field.max),
             )}
             {value.type === 'servicenow' && (
               <>

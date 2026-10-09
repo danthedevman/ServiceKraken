@@ -1,4 +1,4 @@
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 import { requireAdmin } from '../auth/auth.js';
 import { id } from './services.js';
 import { settings, save } from '../repositories/settings.js';

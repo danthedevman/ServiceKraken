@@ -1,24 +1,24 @@
 import { assignmentGroup } from '../domain/assignment.js';
 import { claimAttachments } from './attachments.js';
-import { recordFields } from '@servicekraken/shared/forms/form-options';
+import { recordFields } from '@servicetrident/shared/forms/form-options';
 
 import { ObjectId } from 'mongodb';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { csvRow } from '@servicekraken/shared/files/csv';
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { csvRow } from '@servicetrident/shared/files/csv';
+import { InputError } from '@servicetrident/shared/validation/validation';
 import {
   text,
   choice,
   identifier,
   invalid,
   references,
-} from '@servicekraken/shared/validation/fields';
+} from '@servicetrident/shared/validation/fields';
 import {
   validateValues,
   resolveChoices,
   validateMandatory,
-} from '@servicekraken/shared/forms/schema';
+} from '@servicetrident/shared/forms/schema';
 
 import { catalog, id } from './services.js';
 import { requireResponder } from '../auth/auth.js';

@@ -1,7 +1,7 @@
-import { writeAudit } from '@servicekraken/shared/domain/audit';
+import { writeAudit } from '@servicetrident/shared/domain/audit';
 import { ObjectId } from 'mongodb';
 
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
 import {
   credentials,

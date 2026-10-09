@@ -1,9 +1,9 @@
 import { requireAdmin } from '../auth/auth.js';
-import { InputError } from '@servicekraken/shared/validation/input-error';
+import { InputError } from '@servicetrident/shared/validation/input-error';
 import {
   workspaceSettings,
   workspaceSettingsErrors,
-} from '@servicekraken/shared/domain/workspace-settings';
+} from '@servicetrident/shared/domain/workspace-settings';
 
 /** Settings live on the quota owner's document so monitor creation and limit changes are atomic. */
 export function installWorkspaceSettings(app, db) {

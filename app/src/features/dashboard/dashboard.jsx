@@ -1,3 +1,4 @@
+import { useUiPreferences } from '../../preferences/ui-preferences.jsx';
 import { DateTime } from '../../preferences/date-time.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
 import React from 'react';
@@ -8,13 +9,14 @@ import { RecordTabs } from '../../components/record-tabs.jsx';
 import { useResource } from '../../data/use-resource.js';
 import { RefreshButton } from '../../components/icon-button.jsx';
 import { displayValue } from '../../lib/display-value.js';
+import { dashboardReportHref as reportHref } from '../../../../shared/domain/dashboard-reports.js';
 import { dashboardData } from './dashboard-data.js';
 
 const number = format(',d'),
   palette = ['#2563eb', '#d97706', '#e11d48', '#7c3aed', '#64748b'];
 const severityColors = { critical: '#e11d48', high: '#e11d48', medium: '#d97706', low: '#2563eb' };
 /** Scores show complete workspace aggregates, never just a paginated list's counts. */
-function Score({ label, value, note }) {
+function Score({ label, value, note, href }) {
   return (
     <section className="panel p-5">
       <h2 className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</h2>
@@ -22,11 +24,18 @@ function Score({ label, value, note }) {
         {typeof value === 'number' ? number(value) : value}
       </p>
       <p className="mt-2 text-xs text-slate-500">{note}</p>
+      <Link
+        className="mt-3 inline-block text-sm text-blue-700 dark:text-blue-300"
+        to={href}
+        aria-label={`View data: ${label}`}
+      >
+        View data
+      </Link>
     </section>
   );
 }
 /** D3 donut geometry, with exact accessible values and an explicit empty state. */
-function PieChart({ title, rows, note }) {
+function PieChart({ title, rows, note, href }) {
   const total = rows.reduce((sum, row) => sum + row.value, 0),
     shape = arc().innerRadius(65).outerRadius(100).padAngle(0.02).cornerRadius(3);
   const slices = pie()
@@ -34,7 +43,16 @@ function PieChart({ title, rows, note }) {
     .sort(null)(rows);
   return (
     <section className="panel min-w-0 p-6">
-      <h2 className="font-semibold">{title}</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-semibold">{title}</h2>
+        <Link
+          className="shrink-0 text-sm text-blue-700 dark:text-blue-300"
+          to={href}
+          aria-label={`View data: ${title}`}
+        >
+          View data
+        </Link>
+      </div>
       <p className="mt-1 text-xs text-slate-500">{note}</p>
       <svg
         viewBox="-120 -120 240 240"
@@ -77,7 +95,13 @@ function PieChart({ title, rows, note }) {
               <svg width="10" height="10" aria-hidden="true">
                 <circle cx="5" cy="5" r="5" fill={row.color ?? palette[index % palette.length]} />
               </svg>
-              {row.label}
+              <Link
+                className="text-blue-700 dark:text-blue-300"
+                to={row.href}
+                aria-label={`View ${row.label} data: ${title}`}
+              >
+                {row.label}
+              </Link>
             </span>
             <strong>{number(row.value)}</strong>
           </li>
@@ -88,19 +112,34 @@ function PieChart({ title, rows, note }) {
   );
 }
 /** D3 horizontal bars make differences comparable; labels remain readable on narrow screens. */
-function BarChart({ title, rows, note }) {
+function BarChart({ title, rows, note, href }) {
   const width = scaleLinear()
     .domain([0, Math.max(1, ...rows.map((row) => row.value))])
     .range([0, 360]);
   return (
     <section className="panel min-w-0 p-6">
-      <h2 className="font-semibold">{title}</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-semibold">{title}</h2>
+        <Link
+          className="shrink-0 text-sm text-blue-700 dark:text-blue-300"
+          to={href}
+          aria-label={`View data: ${title}`}
+        >
+          View data
+        </Link>
+      </div>
       <p className="mt-1 text-xs text-slate-500">{note}</p>
       <ul className="mt-6 space-y-5">
         {rows.map((row, index) => (
           <li key={row.label}>
             <div className="flex justify-between gap-4 text-sm">
-              <span className="min-w-0 break-words">{row.label}</span>
+              <Link
+                className="min-w-0 break-words text-blue-700 dark:text-blue-300"
+                to={row.href}
+                aria-label={`View ${row.label} data: ${title}`}
+              >
+                {row.label}
+              </Link>
               <strong>{number(row.value)}</strong>
             </div>
             <svg
@@ -126,19 +165,21 @@ function BarChart({ title, rows, note }) {
 }
 /** Separate response, workload, and health views without clearing charts during refreshes. */
 export function Dashboard() {
+  const { dashboardTab, setPreference, ready: preferencesReady } = useUiPreferences();
   const response = useResource('/response-dashboard', 30000),
     health = useResource('/status', 30000),
     data = response.data;
   const chart = health.data ? dashboardData(health.data, 30) : null;
   const total = (values) => Object.values(values ?? {}).reduce((sum, value) => sum + value, 0);
-  const rows = (values, keys) =>
+  const rows = (values, keys, report) =>
     keys.map((key) => ({
       label: displayValue(key),
       value: values?.[key] ?? 0,
       color: severityColors[key],
+      href: reportHref(report, key),
     }));
   const link = (kind, row) => (
-    <Link className="text-blue-700 hover:underline dark:text-blue-300" to={`/${kind}/${row.id}`}>
+    <Link className="text-blue-700 dark:text-blue-300" to={`/${kind}/${row.id}`}>
       {row.title}
     </Link>
   );
@@ -158,27 +199,31 @@ export function Dashboard() {
     pending: '#d97706',
     paused: '#64748b',
   };
-  const healthRows = (counts) =>
+  const healthRows = (counts, report) =>
     Object.entries(counts).map(([key, value]) => ({
       label: healthLabels[key],
       value,
       color: healthColors[key],
+      href: reportHref(report, key),
     }));
   const incidents = data ? (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
         <Score
           label="Unresolved incidents"
+          href={reportHref('incidents')}
           value={total(data.severity)}
           note="Open and acknowledged"
         />
         <Score
           label="Critical / high"
+          href={reportHref('urgent')}
           value={(data.severity.critical ?? 0) + (data.severity.high ?? 0)}
           note={`${data.severity.critical ?? 0} critical · ${data.severity.high ?? 0} high`}
         />
         <Score
           label="Unassigned"
+          href={reportHref('unassigned')}
           value={data.unassigned}
           note="Unresolved incidents without an assignee"
         />
@@ -186,12 +231,14 @@ export function Dashboard() {
       <div className="grid gap-5 lg:grid-cols-2">
         <BarChart
           title="Unresolved Incidents by Severity"
-          rows={rows(data.severity, ['critical', 'high', 'medium', 'low'])}
+          href={reportHref('incidents')}
+          rows={rows(data.severity, ['critical', 'high', 'medium', 'low'], 'severity')}
           note="All unresolved incidents · custom labels use their workflow mapping"
         />
         <PieChart
           title="Response Status"
-          rows={rows(data.incidentStatus, ['open', 'acknowledged'])}
+          href={reportHref('incidents')}
+          rows={rows(data.incidentStatus, ['open', 'acknowledged'], 'incidentStatus')}
           note="How much active work has been acknowledged"
         />
       </div>
@@ -227,7 +274,7 @@ export function Dashboard() {
       />
     </div>
   ) : (
-    <p role="status">
+    <p role="status" className={response.error ? undefined : 'sr-only'}>
       {response.error ? 'Incident reporting unavailable.' : 'Loading incident reporting…'}
     </p>
   );
@@ -236,16 +283,19 @@ export function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Score
           label="Outstanding tasks"
+          href={reportHref('tasks')}
           value={total(data.taskStatus)}
           note="To do, in progress, and blocked"
         />
         <Score
           label="Blocked tasks"
+          href={reportHref('taskStatus', 'blocked')}
           value={data.taskStatus.blocked ?? 0}
           note="Work requiring intervention"
         />
         <Score
           label="Overdue tasks"
+          href={reportHref('overdue')}
           value={data.overdue}
           note="Outstanding tasks due before today (UTC)"
         />
@@ -253,12 +303,14 @@ export function Dashboard() {
       <div className="grid gap-5 lg:grid-cols-2">
         <PieChart
           title="Task Workload by Status"
-          rows={rows(data.taskStatus, ['todo', 'in_progress', 'blocked'])}
+          href={reportHref('tasks')}
+          rows={rows(data.taskStatus, ['todo', 'in_progress', 'blocked'], 'taskStatus')}
           note="Outstanding tasks only"
         />
         <BarChart
           title="Outstanding Tasks by Priority"
-          rows={rows(data.taskPriority, ['high', 'medium', 'low'])}
+          href={reportHref('tasks')}
+          rows={rows(data.taskPriority, ['high', 'medium', 'low'], 'taskPriority')}
           note="All outstanding tasks, including overdue work"
         />
       </div>
@@ -294,7 +346,7 @@ export function Dashboard() {
       />
     </div>
   ) : (
-    <p role="status">
+    <p role="status" className={response.error ? undefined : 'sr-only'}>
       {response.error ? 'Task reporting unavailable.' : 'Loading task reporting…'}
     </p>
   );
@@ -304,16 +356,19 @@ export function Dashboard() {
         <div className="grid gap-4 sm:grid-cols-3">
           <Score
             label="Services with incidents"
+            href={reportHref('impacted')}
             value={data.services.length}
             note="Distinct services with unresolved incidents"
           />
           <Score
             label="Services down"
+            href={reportHref('serviceHealth', 'down')}
             value={health.data.services.filter((service) => service.status === 'down').length}
             note="Current checks and dependencies"
           />
           <Score
             label="Recorded monitor uptime"
+            href={reportHref('uptime')}
             value={chart.uptime === null ? '—' : format('.2%')(chart.uptime)}
             note="30 UTC days · weighted by recorded checks"
           />
@@ -321,6 +376,7 @@ export function Dashboard() {
         <div className="grid gap-5 lg:grid-cols-2">
           <PieChart
             title="Service Health"
+            href={reportHref('services')}
             rows={healthRows(
               Object.fromEntries(
                 ['up', 'degraded', 'down', 'unknown'].map((status) => [
@@ -328,11 +384,13 @@ export function Dashboard() {
                   health.data.services.filter((service) => service.status === status).length,
                 ]),
               ),
+              'serviceHealth',
             )}
             note="Missing and stale checks are not treated as healthy"
           />
           <BarChart
             title="Services with the Most Active Incidents"
+            href={reportHref('impacted')}
             rows={[...data.services]
               .sort((a, b) => b.count - a.count)
               .slice(0, 8)
@@ -340,6 +398,7 @@ export function Dashboard() {
                 label: service.name,
                 value: service.count,
                 color: service.critical ? '#e11d48' : '#2563eb',
+                href: reportHref('serviceIncidents', service.id || 'none'),
               }))}
             note="Top 8 by unresolved incident count · rose indicates critical incidents"
           />
@@ -369,12 +428,13 @@ export function Dashboard() {
         />
         <PieChart
           title="Monitor Health"
-          rows={healthRows(chart.counts)}
+          href={reportHref('monitors')}
+          rows={healthRows(chart.counts, 'monitorHealth')}
           note="Current state including paused and unverified monitors"
         />
       </div>
     ) : (
-      <p role="status">
+      <p role="status" className={health.error || response.error ? undefined : 'sr-only'}>
         {health.error || response.error
           ? 'Service reporting unavailable.'
           : 'Loading service health…'}
@@ -395,14 +455,20 @@ export function Dashboard() {
           {response.error || health.error}
         </p>
       )}
-      <RecordTabs
-        label="Dashboard reports"
-        tabs={[
-          { id: 'incidents', label: 'Incidents', content: incidents },
-          { id: 'tasks', label: 'Tasks', content: tasks },
-          { id: 'services', label: 'Service Health', content: services },
-        ]}
-      />
+      {preferencesReady ? (
+        <RecordTabs
+          selectedId={dashboardTab}
+          onSelect={(id) => setPreference('dashboardTab', id)}
+          label="Dashboard reports"
+          tabs={[
+            { id: 'incidents', label: 'Incidents', content: incidents },
+            { id: 'tasks', label: 'Tasks', content: tasks },
+            { id: 'services', label: 'Service Health', content: services },
+          ]}
+        />
+      ) : (
+        <div className="h-[49px]" aria-hidden="true" />
+      )}
       {data && (
         <p className="text-xs text-slate-500">
           Updated {<DateTime value={data.generatedAt} />} · Refreshes every 30 seconds

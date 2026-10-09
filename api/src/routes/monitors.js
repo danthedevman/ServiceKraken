@@ -1,7 +1,7 @@
-import { workspaceSettings } from '@servicekraken/shared/domain/workspace-settings';
-import { auditStamp } from '@servicekraken/shared/domain/audit';
+import { workspaceSettings } from '@servicetrident/shared/domain/workspace-settings';
+import { auditStamp } from '@servicetrident/shared/domain/audit';
 
-import { InputError, validateMonitor } from '@servicekraken/shared/validation/validation';
+import { InputError, validateMonitor } from '@servicetrident/shared/validation/validation';
 
 import { monitorPlacement, requireMonitor } from './services.js';
 

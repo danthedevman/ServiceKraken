@@ -85,7 +85,9 @@ export function WorkspacePage({ form }) {
         {member ? (
           <UserRecord key={member.id} member={member} />
         ) : (
-          <p role="status">{members.data ? 'Member not found.' : 'Loading member…'}</p>
+          <p role="status" className={members.data ? undefined : 'sr-only'}>
+            {members.data ? 'Member not found.' : 'Loading member…'}
+          </p>
         )}
       </div>
     );

@@ -67,7 +67,7 @@ You do not need to install Node.js, npm, MongoDB, or Redis separately for this s
 Clone the repository and enter its directory:
 
 ```sh
-git clone https://github.com/danthedevman/ServiceKraken.git ServiceTrident
+git clone https://github.com/danthedevman/ServiceTrident.git ServiceTrident
 cd ServiceTrident
 cp .env.example .env
 docker compose up -d --build
@@ -126,6 +126,18 @@ My recommendation is to start with the communication tools your team already use
 | Microsoft Teams | A supported Workflow webhook that accepts requests from ServiceTrident and posts to a channel.                                                          | When the team already uses Microsoft 365. Give the workflow a co-owner so it does not depend on one person's account.                                |
 | ServiceNow      | Your instance root URL and a dedicated integration account with appropriate incident permissions.                                                       | When an existing organization needs incidents in ServiceNow as well. I would not buy an enterprise platform solely to receive ServiceTrident alerts. |
 
+The **App Catalog** groups adapters into Email, Chat, On-call, Ticketing, and Webhooks. Pick a category and select **Configure**. SendGrid and Amazon SES are SMTP setup presets; they appear as Email (SMTP) in configured records and support the same email features.
+
+| Additional adapter | Setup and behavior                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Discord            | Use a channel webhook. Messages suppress mentions and are limited to 2,000 characters.                                                                                                                                                                                                                                                                                           |
+| PagerDuty          | Use an Events API v2 routing key. Impact triggers an alert and recovery resolves the matching alert. See [PagerDuty Events API](https://docs.pagerduty.com/developer/send-alert-event).                                                                                                                                                                                          |
+| Jira Cloud         | Supply the instance root URL, account email, API token, project key and issue type ID. The account needs browse, create and comment permissions. The issue type must allow creation without additional required fields. Recovery adds a comment, not a workflow transition. See [Jira issue API](https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/). |
+| GitHub Issues      | Use `https://api.github.com/repos/OWNER/REPO` and a fine-grained access token with Issues read/write permission for that repository. Recovery adds a comment and leaves issue closure to your team. See [GitHub issue API](https://docs.github.com/en/rest/issues/issues).                                                                                                       |
+| Generic Webhook    | Use a public HTTPS endpoint and optional bearer token. The JSON body includes `deliveryId`, `event`, a `fields` array of `{ label, value }` entries (including Description), and a labeled text `message`. Deduplicate requests using `deliveryId`.                                                                                                                              |
+
+Jira and GitHub deliveries reuse stored ticket identifiers and search for correlation markers before creating a ticket. Delivery remains at least once: a crash after creation but before saving the identifier, combined with provider search indexing delays, can cause duplicate tickets or comments. Credentials are encrypted; webhook destinations are checked for public addresses at delivery, redirects are rejected, and provider responses have size and time limits. Check **Logs** for failures. These are outbound adapters, not two-way record synchronization.
+
 For **SendGrid**, use `smtp.sendgrid.net`, port `587`, the literal username `apikey`, and a SendGrid API key as the password. Set up your sender identity and sending permissions with the provider. See [SendGrid's SMTP instructions](https://www.twilio.com/docs/sendgrid/for-developers/sending-email/integrating-with-the-smtp-api).
 
 If you already operate in AWS, **Amazon SES** is worth comparing for usage-based email delivery. It connects through the generic SMTP integration using a regional endpoint and SES SMTP credentials, which are different from AWS access keys. Check [SES setup requirements](https://docs.aws.amazon.com/ses/latest/dg/send-email-smtp.html) and [current pricing](https://aws.amazon.com/ses/pricing/) against your expected volume before choosing it.
@@ -134,7 +146,7 @@ For channel setup, follow the official [Slack incoming webhook guide](https://do
 
 Messages use labeled fields, including **Description**, across email, Slack, Teams, and ServiceNow. ServiceNow uses a correlation ID to find an existing incident and adds recovery work notes; it does not automatically close the external incident. Email can notify end users about incident comments. Internal work notes are not included in those notifications.
 
-Integration credentials are encrypted with a persistent key generated for the API and workers. Blank secret inputs retain existing credentials. Back up that key with the database. Review **Recent deliveries** for failures: a queued job is not proof that a provider accepted a message. Retries can occasionally deliver a duplicate if a process stops after provider acceptance.
+Integration credentials are encrypted with a persistent key generated for the API and workers. Blank secret inputs retain existing credentials. Back up that key with the database. Review **Logs** for failures: a queued job is not proof that a provider accepted a message. Retries can occasionally deliver a duplicate if a process stops after provider acceptance.
 
 ### Keep the running costs predictable
 
@@ -240,8 +252,8 @@ Choose one database configuration and apply it to all three Node services:
 
 | Database                             | Environment variables                                                                                                         |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| Render Postgres, internal connection | `DATABASE_PROVIDER=postgres`, `DATABASE_URL=<internal connection URL>`, `DATABASE_SCHEMA=servicekraken`, `DATABASE_SSL=false` |
-| MongoDB                              | `DATABASE_PROVIDER=mongodb`, `MONGODB_URI=<authenticated connection URL>`, `MONGODB_DB=servicekraken`                         |
+| Render Postgres, internal connection | `DATABASE_PROVIDER=postgres`, `DATABASE_URL=<internal connection URL>`, `DATABASE_SCHEMA=servicetrident`, `DATABASE_SSL=false` |
+| MongoDB                              | `DATABASE_PROVIDER=mongodb`, `MONGODB_URI=<authenticated connection URL>`, `MONGODB_DB=servicetrident`                         |
 
 The PostgreSQL internal example uses an unencrypted connection on Render's private network. Render's internal TLS uses self-signed certificates, which do not work with this app's default certificate verification. If you require verified TLS, use the full external database hostname with `DATABASE_SSL=true` and restrict database access to the services' outbound IP ranges. Do not disable certificate verification. See [Render's connection and TLS guidance](https://render.com/docs/postgresql-creating-connecting) and the [database setup guide](docs/database-backends.md).
 
@@ -393,7 +405,7 @@ npm run dev:scheduler
 
 Open <http://localhost:5173>. Vite proxies `/api` to port 3000 and reloads frontend changes during development. Do not run local and Docker workers/schedulers against the same queue unintentionally.
 
-Local API and workers share `.servicekraken/integration.key` automatically. If overriding its location, give both processes the same absolute `INTEGRATION_KEY_FILE`. Never commit that key, `.env`, database backups, or real provider credentials.
+Local API and workers share `.servicetrident/integration.key` automatically. If overriding its location, give both processes the same absolute `INTEGRATION_KEY_FILE`. Never commit that key, `.env`, database backups, or real provider credentials.
 
 ### Repository layout
 

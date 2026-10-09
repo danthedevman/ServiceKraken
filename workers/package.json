@@ -1,5 +1,5 @@
 {
-  "name": "@servicekraken/workers",
+  "name": "@servicetrident/workers",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "dev": "node --env-file-if-exists=../.env --watch src/index.js"
   },
   "dependencies": {
-    "@servicekraken/shared": "1.0.0",
+    "@servicetrident/shared": "1.0.0",
     "bullmq": "^5.61.0",
     "ioredis": "^5.8.0",
     "mongodb": "^6.20.0",

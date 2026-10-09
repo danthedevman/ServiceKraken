@@ -40,7 +40,9 @@ export function OnCallPage({ form = false }) {
           admin={user?.role === 'admin'}
         />
       ) : (
-        <p role="status">Loading coverage…</p>
+        <p role="status" className="sr-only">
+          Loading coverage…
+        </p>
       )}
     </div>
   );

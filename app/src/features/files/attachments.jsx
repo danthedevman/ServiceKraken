@@ -217,7 +217,9 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
         </div>
       )}
       {!resource.data ? (
-        <p role="status">{resource.error ? 'Attachments unavailable.' : 'Loading attachments…'}</p>
+        <p role="status" className={resource.error ? undefined : 'sr-only'}>
+          {resource.error ? 'Attachments unavailable.' : 'Loading attachments…'}
+        </p>
       ) : compact ? (
         <ul className="divide-y divide-slate-200 dark:divide-slate-700">
           {attachments.length ? (

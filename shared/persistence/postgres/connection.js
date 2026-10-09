@@ -15,7 +15,7 @@ export async function connectPostgres() {
       url.searchParams.delete(parameter);
     connectionString = url.toString();
   }
-  const schema = process.env.DATABASE_SCHEMA || 'servicekraken';
+  const schema = process.env.DATABASE_SCHEMA || 'servicetrident';
   identifier(schema);
   const ssl =
     process.env.DATABASE_SSL === 'true'

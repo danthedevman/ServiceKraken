@@ -11,8 +11,8 @@ import { api } from '../data/api.js';
 import { uiPreferences, preferencePatch } from '../../../shared/domain/ui-preferences.js';
 
 const PreferencesContext = createContext(null);
-const previewKey = 'servicekraken-layout';
-const accountKey = (id) => `servicekraken-layout:${id}`;
+const previewKey = 'servicetrident-layout';
+const accountKey = (id) => `servicetrident-layout:${id}`;
 /** Cache only non-sensitive layout preferences; blocked storage falls back to memory. */
 function read(key) {
   try {
@@ -41,7 +41,7 @@ function initialLayout() {
   if (cached) return cached;
   try {
     return uiPreferences({
-      leftCollapsed: localStorage.getItem('servicekraken-sidebar') === 'collapsed',
+      leftCollapsed: localStorage.getItem('servicetrident-sidebar') === 'collapsed',
     });
   } catch {
     return uiPreferences();
@@ -51,6 +51,7 @@ function initialLayout() {
 /** Restore layout before paint and serialize authenticated preference writes to preserve toggle order. */
 export function PreferencesProvider({ children }) {
   const { user } = useContext(AuthContext);
+  const [resolvedAccount, setResolvedAccount] = useState(null);
   const [values, setValues] = useState(initialLayout),
     [error, setError] = useState('');
   const current = useRef(values),
@@ -61,7 +62,10 @@ export function PreferencesProvider({ children }) {
   useLayoutEffect(() => {
     controller.current?.abort();
     controller.current = new AbortController();
-    if (!user) return;
+    if (!user) {
+      setResolvedAccount(null);
+      return;
+    }
     const unsynced = pending(accountKey(user.id));
     const next = unsynced
       ? read(accountKey(user.id)) || initialLayout()
@@ -70,6 +74,7 @@ export function PreferencesProvider({ children }) {
         : read(accountKey(user.id)) || initialLayout();
     current.current = next;
     setValues(next);
+    setResolvedAccount(user.id);
     setError('');
     persist(accountKey(user.id), next, unsynced);
     persist(previewKey, next);
@@ -133,7 +138,15 @@ export function PreferencesProvider({ children }) {
     setPreference('tableLayouts', layouts);
   }
   return (
-    <PreferencesContext.Provider value={{ ...values, setPreference, setTableLayout, error }}>
+    <PreferencesContext.Provider
+      value={{
+        ...values,
+        ready: !!user && resolvedAccount === user.id,
+        setPreference,
+        setTableLayout,
+        error,
+      }}
+    >
       {children}
     </PreferencesContext.Provider>
   );

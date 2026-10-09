@@ -14,10 +14,10 @@ export async function connectDatabase() {
     if (connection.db.pool) {
       const lock = await connection.db.pool.connect();
       try {
-        await lock.query("SELECT pg_advisory_lock(hashtext('servicekraken:indexes'))");
+        await lock.query("SELECT pg_advisory_lock(hashtext('servicetrident:indexes'))");
         await initializeDatabase(connection.db);
       } finally {
-        await lock.query("SELECT pg_advisory_unlock(hashtext('servicekraken:indexes'))");
+        await lock.query("SELECT pg_advisory_unlock(hashtext('servicetrident:indexes'))");
         lock.release();
       }
     } else await initializeDatabase(connection.db);

@@ -1,7 +1,7 @@
-import { workBuiltinFields } from '@servicekraken/shared/forms/form-options';
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { workBuiltinFields } from '@servicetrident/shared/forms/form-options';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
-import { BUILTIN_FIELDS } from '@servicekraken/shared/forms/schema';
+import { BUILTIN_FIELDS } from '@servicetrident/shared/forms/schema';
 
 /** A bounded settings document gives schedules and form edits optimistic concurrency. */
 export async function settings(db, workspaceId) {

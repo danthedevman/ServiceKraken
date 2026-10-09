@@ -53,6 +53,7 @@ test(
       { role: 'admin' },
       { leftCollapsed: 'true' },
       { filtersOpen: 'true' },
+      { dashboardTab: 'unknown' },
       { leftCollapsed: true, userId: other.data.user.id },
     ])
       assert.equal((await request('/auth/preferences', owner.cookie, 'PATCH', body)).status, 400);
@@ -68,6 +69,7 @@ test(
       rightCollapsed: true,
       filtersOpen: false,
       tableLayouts: {},
+      dashboardTab: 'incidents',
     });
     await request('/auth/preferences', owner.cookie, 'PATCH', { filtersOpen: true });
     const tableLayouts = {
@@ -78,10 +80,15 @@ test(
       (await request('/auth/preferences', owner.cookie, 'PATCH', { tableLayouts })).status,
       200,
     );
+    assert.equal(
+      (await request('/auth/preferences', owner.cookie, 'PATCH', { dashboardTab: 'tasks' })).status,
+      200,
+    );
     const anotherSession = await request('/auth/login', null, 'POST', credentials);
     assert.deepEqual(anotherSession.data.user.uiPreferences, {
       ...right.data.preferences,
       filtersOpen: true,
+      dashboardTab: 'tasks',
       tableLayouts,
     });
     assert.equal((await request('/auth/me', other.cookie)).data.user.uiPreferences, null);

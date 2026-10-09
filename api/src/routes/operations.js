@@ -1,4 +1,4 @@
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
 import { installGroupsRoutes } from './groups.js';
 import { installWorkspaceRoutes } from './workspace.js';

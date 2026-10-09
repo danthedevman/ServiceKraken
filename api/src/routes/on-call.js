@@ -1,8 +1,8 @@
-import { auditStamp, auditFields } from '@servicekraken/shared/domain/audit';
+import { auditStamp, auditFields } from '@servicetrident/shared/domain/audit';
 
-import { invalid } from '@servicekraken/shared/validation/fields';
+import { invalid } from '@servicetrident/shared/validation/fields';
 
-import { validateShifts } from '@servicekraken/shared/domain/on-call';
+import { validateShifts } from '@servicetrident/shared/domain/on-call';
 
 import { catalog } from './services.js';
 import { requireAdmin } from '../auth/auth.js';

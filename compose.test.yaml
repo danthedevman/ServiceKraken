@@ -17,13 +17,13 @@ services:
   test-postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: servicekraken_test
+      POSTGRES_DB: servicetrident_test
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test-only
     networks: [backend]
     tmpfs: [/var/lib/postgresql/data]
     healthcheck:
-      test: [CMD-SHELL, pg_isready -U test -d servicekraken_test]
+      test: [CMD-SHELL, pg_isready -U test -d servicetrident_test]
       interval: 2s
       timeout: 5s
       retries: 30

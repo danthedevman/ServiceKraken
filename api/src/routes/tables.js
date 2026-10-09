@@ -1,10 +1,11 @@
-import { embeddedImageIds } from '@servicekraken/shared/files/rich-content';
+import { embeddedImageIds } from '@servicetrident/shared/files/rich-content';
+import { dashboardReportTable } from '../repositories/dashboard-report.js';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { InputError } from '@servicekraken/shared/validation/input-error';
-import { csvRow } from '@servicekraken/shared/files/csv';
-import { DEMO_COUNT, DEMO_TYPES } from '@servicekraken/shared/domain/demo-data';
-import { serviceHealth, rollupHealth } from '@servicekraken/shared/domain/service-health';
+import { InputError } from '@servicetrident/shared/validation/input-error';
+import { csvRow } from '@servicetrident/shared/files/csv';
+import { DEMO_COUNT, DEMO_TYPES } from '@servicetrident/shared/domain/demo-data';
+import { serviceHealth, rollupHealth } from '@servicetrident/shared/domain/service-health';
 import { tableQuery, databaseTable, embeddedTable } from '../repositories/table-page.js';
 import { members, memberFilter } from '../repositories/members.js';
 import { settings } from '../repositories/settings.js';
@@ -36,6 +37,7 @@ async function source(db, req) {
     req.role !== 'admin'
   )
     throw new InputError('Administrator access required.', 403);
+  if (kind === 'dashboard-report') return dashboardReportTable(db, req);
   if (kind === 'audit')
     return databaseTable(
       db,
@@ -297,7 +299,7 @@ async function source(db, req) {
             { $match: filter },
             { $addFields: { status: health, service, method: { $ifNull: ['$method', 'GET'] } } },
           ];
-          const { tableSearch } = await import('@servicekraken/shared/domain/table-search');
+          const { tableSearch } = await import('@servicetrident/shared/domain/table-search');
           pipeline.push({
             $match: tableSearch(
               q,

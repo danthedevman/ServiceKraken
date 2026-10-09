@@ -1,3 +1,7 @@
+import { integrationUrl } from './provider-url.js';
+import { providers } from './providers.js';
+import { providerFields } from './provider-fields.js';
+
 /** Browser/server field validation for UI-managed communication settings; stored secrets may be retained. */
 export function integrationErrors(value, { configured = false, smtpConfigured = false } = {}) {
   const errors = {};
@@ -22,7 +26,7 @@ export function integrationErrors(value, { configured = false, smtpConfigured = 
     else if (value[key].length > max) errors[key] = `${label} must be ${max} characters or fewer.`;
   };
   required('name', 'Name', 80);
-  if (!['email', 'slack', 'teams', 'servicenow'].includes(value.type))
+  if (!providers.some((provider) => provider.id === value.type))
     errors.type = 'Choose a supported app.';
   for (const key of ['enabled', 'recovery', 'onCall'])
     if (typeof value[key] !== 'boolean') errors[key] = 'Choose whether this option is enabled.';
@@ -68,38 +72,31 @@ export function integrationErrors(value, { configured = false, smtpConfigured = 
       if (value.smtpPassword?.length > 1000)
         errors.smtpPassword = 'SMTP password must be 1,000 characters or fewer.';
     }
-  } else if (['slack', 'teams', 'servicenow'].includes(value.type)) {
+  } else if (providers.some((provider) => provider.id === value.type)) {
     if (!configured || value.url) {
-      required('url', value.type === 'servicenow' ? 'Instance URL' : 'Webhook URL', 4096);
       try {
-        const url = new URL(value.url),
-          host = url.hostname.toLowerCase();
-        const allowed =
-          value.type === 'slack'
-            ? host === 'hooks.slack.com' && url.pathname.startsWith('/services/')
-            : value.type === 'teams'
-              ? [
-                  '.environment.api.powerplatform.com',
-                  '.logic.azure.com',
-                  '.webhook.office.com',
-                ].some((suffix) => host.endsWith(suffix))
-              : host.endsWith('.service-now.com') && url.pathname === '/' && !url.search;
-        if (
-          !allowed ||
-          url.protocol !== 'https:' ||
-          (url.port && url.port !== '443') ||
-          url.username ||
-          url.password ||
-          url.hash
-        )
-          errors.url = 'Use an official provider HTTPS URL.';
+        integrationUrl(value.url, value.type);
       } catch {
-        if (!errors.url) errors.url = 'Enter a valid HTTPS URL.';
+        errors.url = 'Enter a valid public HTTPS endpoint for this provider.';
       }
     }
-    if (value.type === 'servicenow' && !configured) {
-      required('username', 'Integration username', 200);
-      required('password', 'Integration password', 1000);
+    const fields =
+      value.type === 'servicenow'
+        ? [
+            { key: 'username', label: 'Integration username', max: 200 },
+            { key: 'password', label: 'Integration password', max: 1000 },
+          ]
+        : providerFields[value.type] || [];
+    for (const field of fields) {
+      const input = value[field.key];
+      if ((!configured && !field.optional) || input) required(field.key, field.label, field.max);
+      if (input !== undefined && typeof input !== 'string')
+        errors[field.key] = 'Enter a text value.';
+      if (
+        input &&
+        (/[\r\n]/.test(input) || (field.pattern && !new RegExp(field.pattern).test(input)))
+      )
+        errors[field.key] = `Enter a valid ${field.label.toLowerCase()}.`;
     }
   }
   return errors;

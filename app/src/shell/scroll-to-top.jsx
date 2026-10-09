@@ -17,6 +17,9 @@ export function ScrollToTop() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     document.querySelector('#main')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     document
+      .querySelector('.record-scroll-area')
+      ?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document
       .querySelector('.record-sidebar-content')
       ?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [key]);

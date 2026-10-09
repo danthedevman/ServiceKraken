@@ -17,7 +17,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 import { requireUser, requireAdmin } from './auth/auth.js';
 import { isAllowedOrigin } from './middleware/origin.js';
 import { installServiceRoutes } from './routes/services.js';

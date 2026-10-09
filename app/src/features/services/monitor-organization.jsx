@@ -41,7 +41,7 @@ export function MonitorOrganization({ monitor }) {
         error ? (
           <p>Organization details unavailable.</p>
         ) : (
-          <p role="status" className="text-sm text-slate-500 dark:text-slate-400">
+          <p role="status" className="sr-only">
             Loading service assignments…
           </p>
         )

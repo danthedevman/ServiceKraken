@@ -25,8 +25,7 @@ export function StatusSettings({ page = false }) {
     return (
       <ActionMenu label="Status page actions">
         <Link to="/status/settings">
-          Status page settings ·{' '}
-          {settings.data ? displayValue(settings.data.visibility) : 'Loading…'}
+          Status page settings · {settings.data ? displayValue(settings.data.visibility) : ''}
         </Link>
       </ActionMenu>
     );
@@ -40,7 +39,9 @@ export function StatusSettings({ page = false }) {
           integrations={integrations.data?.integrations ?? []}
         />
       ) : (
-        <p role="status">Loading status settings…</p>
+        <p role="status" className="sr-only">
+          Loading status settings…
+        </p>
       )}
     </FormPage>
   );

@@ -21,7 +21,8 @@ export function Breadcrumbs({ resolveNames = true }) {
   const { pathname } = useLocation(),
     parts = pathname.split('/').filter(Boolean);
   const [kind, id, action] = parts;
-  const nested = !!sections[kind] && !!id && id !== 'public';
+  const directory = ['groups', 'workspace'].includes(kind);
+  const nested = !!sections[kind] && ((!!id && id !== 'public') || directory);
   const catalog = [
     'services',
     'collections',
@@ -31,7 +32,7 @@ export function Breadcrumbs({ resolveNames = true }) {
     'on-call',
   ].includes(kind);
   const path =
-    resolveNames && nested && !['new', 'fields', 'invite', 'settings'].includes(id)
+    resolveNames && nested && id && !['new', 'fields', 'invite', 'settings'].includes(id)
       ? ['monitors', 'incidents', 'tasks', 'knowledge'].includes(kind)
         ? `/${kind}/${id}`
         : catalog
@@ -63,6 +64,7 @@ export function Breadcrumbs({ resolveNames = true }) {
   };
   const noun = nouns[kind] || 'record',
     crumbs = [{ label: sections[kind], to: `/${kind}` }];
+  if (directory) crumbs.unshift({ label: 'Settings', to: '/settings' });
   if (kind === 'monitors') crumbs.unshift({ label: 'Services', to: '/services' });
   if (id === 'new')
     crumbs.push({ label: `Create ${noun.charAt(0).toUpperCase()}${noun.slice(1)}` });
@@ -70,7 +72,7 @@ export function Breadcrumbs({ resolveNames = true }) {
   else if (id === 'invite') crumbs.push({ label: 'Invite Teammate' });
   else if (kind === 'settings' && id === 'audit') crumbs.push({ label: 'Audit Log' });
   else if (id === 'settings') crumbs.push({ label: 'Settings' });
-  else {
+  else if (id) {
     crumbs.push({
       label: name || `${noun.charAt(0).toUpperCase()}${noun.slice(1)}`,
       to: `/${kind}/${id}`,

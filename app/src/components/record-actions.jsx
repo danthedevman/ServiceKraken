@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+export const RecordHeaderContext = createContext(null);
+
+/** Render record controls inside the shell’s shared sticky breadcrumb header. */
+export function RecordHeader({ children }) {
+  const target = useContext(RecordHeaderContext);
+  return target ? createPortal(children, target) : children;
+}
+
 export const RecordActionContext = createContext(null);
 
 /** Move existing form actions into the record toolbar while preserving native form submission. */

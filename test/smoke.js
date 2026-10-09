@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
-import { connectDatabase } from '@servicekraken/shared/persistence/database';
+import { connectDatabase } from '@servicetrident/shared/persistence/database';
 
 const base = process.env.SMOKE_BASE_URL ?? 'http://127.0.0.1:8090';
 const email = `smoke-${randomUUID()}@example.test`;

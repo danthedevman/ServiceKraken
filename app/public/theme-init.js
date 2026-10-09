@@ -2,7 +2,7 @@
 (() => {
   let theme;
   try {
-    theme = localStorage.getItem('servicekraken-theme');
+    theme = localStorage.getItem('servicetrident-theme');
   } catch {
     /* Use device preference. */
   }

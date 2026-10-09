@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { CheckCircleIcon, ExclamationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-/** Accessible, dismissible outcome messages survive routing; errors remain until dismissed. */
+/** Each navigation clears messages and cancels the previous route's toast timers. */
 export function Toasts() {
+  const location = useLocation();
+  return <ToastMessages key={location.key} />;
+}
+
+/** Accessible outcome messages; errors remain until dismissed or navigation. */
+function ToastMessages() {
   const [messages, setMessages] = useState([]);
   useEffect(() => {
     const timers = new Set();
@@ -18,9 +25,9 @@ export function Toasts() {
         timers.add(timer);
       }
     };
-    window.addEventListener('servicekraken-toast', receive);
+    window.addEventListener('servicetrident-toast', receive);
     return () => {
-      window.removeEventListener('servicekraken-toast', receive);
+      window.removeEventListener('servicetrident-toast', receive);
       timers.forEach(clearTimeout);
     };
   }, []);

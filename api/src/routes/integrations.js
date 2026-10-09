@@ -1,19 +1,21 @@
-import { integrationErrors } from '@servicekraken/shared/integrations/integration-validation';
-import { isPublicAddress } from '@servicekraken/shared/validation/validation';
+import { providers } from '@servicetrident/shared/integrations/providers';
+import { providerFields } from '@servicetrident/shared/integrations/provider-fields';
+import { integrationErrors } from '@servicetrident/shared/integrations/integration-validation';
+import { isPublicAddress } from '@servicetrident/shared/validation/validation';
 import { isIP } from 'node:net';
-import { auditStamp } from '@servicekraken/shared/domain/audit';
+import { auditStamp } from '@servicetrident/shared/domain/audit';
 
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 import {
   text,
   choice,
   identifier,
   references,
   invalid,
-} from '@servicekraken/shared/validation/fields';
+} from '@servicetrident/shared/validation/fields';
 
-import { seal, unseal } from '@servicekraken/shared/integrations/secrets';
-import { integrationUrl } from '@servicekraken/shared/integrations/provider-url';
+import { seal, unseal } from '@servicetrident/shared/integrations/secrets';
+import { integrationUrl } from '@servicetrident/shared/integrations/provider-url';
 import { catalog } from './services.js';
 import { requireAdmin } from '../auth/auth.js';
 import { settings } from '../repositories/settings.js';
@@ -41,7 +43,11 @@ export function installIntegrationsRoutes(app, db, appOrigin) {
     const body = req.body;
     if (previous?.demoBatchId && body.enabled)
       invalid('enabled', 'Demo integrations cannot send messages.');
-    const type = choice(body.type, ['email', 'slack', 'teams', 'servicenow'], 'type');
+    const type = choice(
+      body.type,
+      providers.map((provider) => provider.id),
+      'type',
+    );
     if (previous && previous.type !== type)
       invalid('type', 'Create a new integration to change its type.');
     const serviceIds = references(
@@ -96,6 +102,11 @@ export function installIntegrationsRoutes(app, db, appOrigin) {
     if (type !== 'email') {
       if (body.url) secrets.url = integrationUrl(body.url, type);
       if (!secrets.url) invalid('url', 'Enter a provider URL.');
+      for (const field of providerFields[type] || []) {
+        if (body[field.key]) secrets[field.key] = text(body[field.key], field.key, field.max);
+        if (!field.optional && !secrets[field.key])
+          invalid(field.key, `${field.label} is required.`);
+      }
       if (type === 'servicenow') {
         if (body.username) secrets.username = text(body.username, 'username', 200);
         if (body.password) secrets.password = text(body.password, 'password', 1000);

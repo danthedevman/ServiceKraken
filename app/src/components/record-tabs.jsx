@@ -4,17 +4,26 @@ export const RelatedListContext = createContext(false);
 
 /** Related panels share a grid footprint to avoid scroll jumps while retaining visited data.
  * Accessible related-record tabs keep one section visible without duplicating page-length content. Optional lazy mounting retains visited panels and their state. */
-export function RecordTabs({ tabs, label = 'Related information', lazy = false, related = false }) {
-  const [selected, setSelected] = useState(tabs[0]?.id),
+export function RecordTabs({
+  tabs,
+  label = 'Related information',
+  lazy = false,
+  related = false,
+  selectedId,
+  onSelect,
+}) {
+  const [selected, setSelected] = useState(selectedId ?? tabs[0]?.id),
     prefix = useId();
-  const [visited, setVisited] = useState(() => new Set([tabs[0]?.id]));
+  const [visited, setVisited] = useState(() => new Set([selectedId ?? tabs[0]?.id]));
   const select = (id) => {
     setSelected(id);
+    onSelect?.(id);
     setVisited((current) => new Set([...current, id]));
   };
-  const active = tabs.some((tab) => tab.id === selected) ? selected : tabs[0]?.id;
+  const requested = selectedId ?? selected;
+  const active = tabs.some((tab) => tab.id === requested) ? requested : tabs[0]?.id;
   return (
-    <section className={related ? 'related-lists' : 'space-y-5'}>
+    <section className={related ? 'record-tabs related-lists' : 'record-tabs space-y-5'}>
       <div
         role="tablist"
         aria-label={label}

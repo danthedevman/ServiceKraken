@@ -54,10 +54,10 @@ export const helpTopics = [
     id: 'integrations',
     title: 'Configure Integrations and Notifications',
     paragraphs: [
-      'Admins can configure email, Slack, Microsoft Teams, and ServiceNow under Integrations. Choose the provider, enter its configuration, enable delivery, and select service scopes, recovery notifications, and on-call routing where applicable.',
+      'Admins can configure SMTP email (including SendGrid and Amazon SES presets), Slack, Microsoft Teams, Discord, PagerDuty, ServiceNow, Jira Cloud, GitHub Issues, and generic HTTPS webhooks under Integrations. Browse the catalog by category. Choose the provider, enter its configuration, enable delivery, and select service scopes, recovery notifications, and on-call routing where applicable.',
       'Email requires an authorized sender and a configured SMTP server. Supported SMTP ports are 465 for implicit TLS and 587 for STARTTLS. Use the credentials and sender verification required by your provider. An email address in a user profile alone is not enough to send mail.',
       'Slack and Teams require an appropriate provider webhook. ServiceNow requires your instance and a dedicated account with permission to create incidents. Keep credentials out of incident descriptions, comments, and screenshots.',
-      'Review integration delivery records when messages do not arrive. Check whether the integration is enabled, its service scope matches, and the SMTP/webhook credentials are valid. Workers and Redis must be running to process queued delivery.',
+      'Review Integrations → Logs when messages do not arrive. Check whether the integration is enabled, its service scope matches, and the SMTP/webhook credentials are valid. Workers and Redis must be running to process queued delivery.',
     ],
   },
   {

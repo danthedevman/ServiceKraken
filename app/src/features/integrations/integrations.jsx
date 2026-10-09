@@ -3,7 +3,8 @@ import { api } from '../../data/api.js';
 import { writeApi } from '../../data/query-client.js';
 import { StateBadge } from '../../components/state-badge.jsx';
 import { IntegrationEditor } from './editor.jsx';
-import { providers } from '../../../../shared/integrations/providers.js';
+import { IntegrationCatalog } from './catalog.jsx';
+import { providers, emailPresets } from '../../../../shared/integrations/providers.js';
 import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { displayValue } from '../../lib/display-value.js';
@@ -22,7 +23,7 @@ export function IntegrationsPage({ form = false }) {
   const { id } = useParams(),
     navigate = useNavigate(),
     [params] = useSearchParams();
-  const { user } = useContext(AuthContext),
+  const { user, loading: accountLoading } = useContext(AuthContext),
     admin = user?.role === 'admin';
   const config = useResource(admin ? '/integrations' : null),
     services = useResource('/services'),
@@ -33,6 +34,7 @@ export function IntegrationsPage({ form = false }) {
     setEditingId(null);
     setFormVersion((value) => value + 1);
   };
+  if (accountLoading) return null;
   if (!admin)
     return (
       <div className="space-y-6">
@@ -43,8 +45,14 @@ export function IntegrationsPage({ form = false }) {
   const edit = (item) => navigate(item.id ? `/integrations/${item.id}/edit` : '/integrations/new');
   const item = config.data?.integrations.find((row) => row.id === id);
   if (form || id) {
-    if (!config.data || !services.data) return <p role="status">Loading integration…</p>;
+    if (!config.data || !services.data)
+      return (
+        <p role="status" className="sr-only">
+          Loading integration…
+        </p>
+      );
     if (id && !item) return <p role="alert">Integration not found.</p>;
+    const preset = emailPresets.find((provider) => provider.id === params.get('provider'));
     const initial = {
       ...(item || {
         id: newId(),
@@ -59,12 +67,16 @@ export function IntegrationsPage({ form = false }) {
       }),
       recipients: Array.isArray(item?.recipients) ? item.recipients.join(', ') : '',
       revision: config.data.revision,
-      url: '',
+      url:
+        !item && params.get('provider') === 'pagerduty'
+          ? 'https://events.pagerduty.com/v2/enqueue'
+          : '',
+      preset: !item ? preset?.id : undefined,
       username: '',
       password: '',
-      smtpHost: '',
+      smtpHost: !item && preset ? preset.smtpHost : '',
       smtpFrom: '',
-      smtpUser: '',
+      smtpUser: !item && preset ? preset.smtpUser : '',
       smtpPassword: '',
       smtpPort: 587,
       existing: !!item,
@@ -168,30 +180,7 @@ export function IntegrationsPage({ form = false }) {
             id: 'catalog',
             label: 'App Catalog',
             content: (
-              <section className="min-h-0 flex-1 space-y-6 overflow-y-auto p-6">
-                {['Communication', 'Ticketing'].map((category) => (
-                  <section key={category} className="space-y-3">
-                    <h2 className="text-lg font-semibold">{category}</h2>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {providers
-                        .filter((provider) => provider.category === category)
-                        .map((provider) => (
-                          <article key={provider.id} className="panel flex flex-col gap-3 p-5">
-                            <h3 className="font-semibold">{provider.name}</h3>
-                            <p className="flex-1 text-sm text-slate-500">{provider.description}</p>
-                            <button
-                              type="button"
-                              className="btn-secondary self-start"
-                              onClick={() => navigate(`/integrations/new?provider=${provider.id}`)}
-                            >
-                              Configure
-                            </button>
-                          </article>
-                        ))}
-                    </div>
-                  </section>
-                ))}
-              </section>
+              <IntegrationCatalog integrations={config.data?.integrations} loading={!config.data} />
             ),
           },
           {

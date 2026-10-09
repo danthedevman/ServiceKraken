@@ -5,6 +5,6 @@ app/dist
 .env
 *.log
 
-.servicekraken/
+.servicetrident/
 
 marketing/

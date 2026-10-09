@@ -14,11 +14,11 @@ Use Docker Compose 2.24.4 or newer. In `.env`, configure:
 
 ```dotenv
 DATABASE_PROVIDER=postgres
-POSTGRES_DB=servicekraken
-POSTGRES_USER=servicekraken
+POSTGRES_DB=servicetrident
+POSTGRES_USER=servicetrident
 POSTGRES_PASSWORD=choose-a-long-random-password
-DATABASE_URL=postgresql://servicekraken:choose-a-long-random-password@postgres:5432/servicekraken
-DATABASE_SCHEMA=servicekraken
+DATABASE_URL=postgresql://servicetrident:choose-a-long-random-password@postgres:5432/servicetrident
+DATABASE_SCHEMA=servicetrident
 DATABASE_SSL=false
 ```
 
@@ -64,7 +64,7 @@ The integration suite creates disposable namespaces and exercises the same appli
 ```sh
 docker compose -f compose.yaml -f compose.test.yaml up -d mongo redis test-postgres
 docker compose -f compose.yaml -f compose.test.yaml run --build --rm --no-deps test
-docker compose -f compose.yaml -f compose.test.yaml run --build --rm --no-deps -e DATABASE_PROVIDER=postgres -e DATABASE_URL=postgresql://test:test-only@test-postgres:5432/servicekraken_test test
+docker compose -f compose.yaml -f compose.test.yaml run --build --rm --no-deps -e DATABASE_PROVIDER=postgres -e DATABASE_URL=postgresql://test:test-only@test-postgres:5432/servicetrident_test test
 ```
 
 The PostgreSQL fixture uses an isolated database with a test-only password and temporary storage. These commands do not migrate or change the configured application backend.

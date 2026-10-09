@@ -5,7 +5,7 @@ app/dist/
 .DS_Store
 coverage/
 
-.servicekraken/
+.servicetrident/
 
 # Marketing is maintained separately; retain local files without publishing them.
 /marketing/

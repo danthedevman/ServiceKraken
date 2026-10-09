@@ -43,7 +43,9 @@ export function GroupsPage({ form = false }) {
   if (form && id) return <Navigate replace to={`/groups/${id}`} />;
   if (form)
     return !groups.data || !members.data ? (
-      <p role="status">Loading group…</p>
+      <p role="status" className="sr-only">
+        Loading group…
+      </p>
     ) : !admin ? (
       <p>Admin access is required.</p>
     ) : id && !item ? (
@@ -103,7 +105,9 @@ export function GroupsPage({ form = false }) {
             )}
           </RecordWorkspace>
         ) : (
-          <p role="status">{groups.data ? 'Group not found.' : 'Loading group…'}</p>
+          <p role="status" className={groups.data ? undefined : 'sr-only'}>
+            {groups.data ? 'Group not found.' : 'Loading group…'}
+          </p>
         )}
       </div>
     );

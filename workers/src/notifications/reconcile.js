@@ -1,10 +1,10 @@
-import { workspaceSettings } from '@servicekraken/shared/domain/workspace-settings';
-import { writeAudit } from '@servicekraken/shared/domain/audit';
+import { workspaceSettings } from '@servicetrident/shared/domain/workspace-settings';
+import { writeAudit } from '@servicetrident/shared/domain/audit';
 import { ObjectId } from 'mongodb';
 
-import { onCall } from '@servicekraken/shared/domain/on-call';
-import { serviceHealth } from '@servicekraken/shared/domain/service-health';
-import { BUILTIN_FIELDS } from '@servicekraken/shared/forms/schema';
+import { onCall } from '@servicetrident/shared/domain/on-call';
+import { serviceHealth } from '@servicetrident/shared/domain/service-health';
+import { BUILTIN_FIELDS } from '@servicetrident/shared/forms/schema';
 
 /** Reconcile monitor rollups and write durable, idempotent notification records. */
 export async function reconcileOperations(db, queue) {

@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { InputError } from '@servicekraken/shared/validation/validation';
+import { InputError } from '@servicetrident/shared/validation/validation';
 
 /** @param {string} value @returns {ObjectId} */
 export function objectId(value) {
