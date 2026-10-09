@@ -980,6 +980,28 @@ button,
   border-radius: 4px;
 }
 
+/* Embedded table filters remain distinct from their surrounding panel. */
+.data-table:not(.list-table) .table-filters {
+  --filter-border: #cbd5e1;
+}
+[data-theme='dark'] .data-table:not(.list-table) .table-filters {
+  --filter-border: #64748b;
+}
+.data-table:not(.list-table)
+  .table-filters
+  :is(
+    input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    .select-trigger,
+    .reference-control
+  ) {
+  border: 1px solid var(--filter-border);
+  border-radius: 4px;
+}
+.data-table:not(.list-table) .table-filters .reference-control input {
+  border: 0;
+}
+
 /* Distinguish search controls from the dialog surface without changing other forms. */
 .global-search-modal :is(input[type='search'], .select-trigger, header button, footer button) {
   border: 1px solid #cbd5e1;

@@ -169,204 +169,208 @@ export function ReferenceField({
       </label>
       {name &&
         ids.map((selected) => <input key={selected} type="hidden" name={name} value={selected} />)}
-      <div
-        className={`reference-control ${disabled ? 'reference-disabled' : ''}`}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) input.current?.focus();
-        }}
-      >
-        {multiple &&
-          ids.map((selected) => (
-            <span
-              key={selected}
-              className="inline-flex max-w-full items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200"
-            >
-              <span className="min-w-0 break-words">{selectedLabel(selected)}</span>
-              {recordLink(selected)}
-              <button
-                type="button"
-                disabled={disabled}
-                className="shrink-0 rounded p-1"
-                aria-label={`Remove ${selectedLabel(selected)}`}
-                onClick={() => {
-                  onChange(ids.filter((item) => item !== selected));
-                  input.current?.focus();
-                }}
+      <div className="relative">
+        <div
+          className={`reference-control ${disabled ? 'reference-disabled' : ''}`}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) input.current?.focus();
+          }}
+        >
+          {multiple &&
+            ids.map((selected) => (
+              <span
+                key={selected}
+                className="inline-flex max-w-full items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200"
               >
-                <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </span>
-          ))}
-        <input
-          ref={input}
-          id={id}
-          data-reference-name={name}
-          role="combobox"
-          aria-autocomplete="list"
-          aria-haspopup="listbox"
-          aria-required={required}
-          type="text"
-          autoComplete="off"
-          value={!multiple && !typing && ids.length ? selectedLabel(ids[0]) : search}
-          disabled={disabled}
-          aria-expanded={open && !disabled}
-          aria-controls={open && !disabled ? `${id}-results` : undefined}
-          aria-activedescendant={
-            open && active >= 0 && matches[active] ? `${id}-option-${active}` : undefined
-          }
-          aria-invalid={!!error}
-          aria-describedby={error ? `${id}-error` : undefined}
-          placeholder={
-            placeholder ?? (multiple && ids.length ? 'Search to add more…' : 'Search to select…')
-          }
-          onFocus={(event) => {
-            showResults();
-            if (!multiple) event.target.select();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              event.stopPropagation();
-              setOpen(false);
-              setTyping(false);
-              setSearch('');
-              onSearch?.('');
-              setActive(-1);
-            }
-            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-              event.preventDefault();
-              setOpen(true);
-              const next =
-                event.key === 'ArrowDown'
-                  ? Math.min(active + 1, matches.length - 1)
-                  : Math.max(active - 1, 0);
-              if (
-                event.key === 'ArrowDown' &&
-                active >= matches.length - 1 &&
-                query === search &&
-                !remote.error
-              )
-                void remote.loadMore();
-              setActive(next);
-              document.getElementById(`${id}-option-${next}`)?.scrollIntoView({ block: 'nearest' });
-            }
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              if (open && matches[active]) select(matches[active]);
-              else if (open && matches.length === 1) select(matches[0]);
-            }
-          }}
-          onChange={(event) => {
-            setTyping(true);
-            setSearch(event.target.value);
-            onSearch?.(event.target.value);
-            setOpen(true);
-            setActive(-1);
-          }}
-        />
-        {!multiple && ids.length > 0 && recordLink(ids[0])}
-        {!multiple && ids.length > 0 && (
-          <button
-            type="button"
+                <span className="min-w-0 break-words">{selectedLabel(selected)}</span>
+                {recordLink(selected)}
+                <button
+                  type="button"
+                  disabled={disabled}
+                  className="shrink-0 rounded p-1"
+                  aria-label={`Remove ${selectedLabel(selected)}`}
+                  onClick={() => {
+                    onChange(ids.filter((item) => item !== selected));
+                    input.current?.focus();
+                  }}
+                >
+                  <XMarkIcon className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </span>
+            ))}
+          <input
+            ref={input}
+            id={id}
+            data-reference-name={name}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-required={required}
+            type="text"
+            autoComplete="off"
+            value={!multiple && !typing && ids.length ? selectedLabel(ids[0]) : search}
             disabled={disabled}
-            className="shrink-0 rounded p-2 text-slate-500"
-            aria-label={`Clear ${selectedLabel(ids[0])}`}
-            onClick={() => {
-              onChange('');
-              setSearch('');
-              setTyping(false);
-              onSearch?.('');
-              input.current?.focus();
+            aria-expanded={open && !disabled}
+            aria-controls={open && !disabled ? `${id}-results` : undefined}
+            aria-activedescendant={
+              open && active >= 0 && matches[active] ? `${id}-option-${active}` : undefined
+            }
+            aria-invalid={!!error}
+            aria-describedby={error ? `${id}-error` : undefined}
+            placeholder={
+              placeholder ?? (multiple && ids.length ? 'Search to add more…' : 'Search to select…')
+            }
+            onFocus={(event) => {
+              showResults();
+              if (!multiple) event.target.select();
             }}
-          >
-            <XMarkIcon className="h-4 w-4" aria-hidden="true" />
-          </button>
-        )}
-      </div>
-      {open && !disabled && (
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700">
-          <div
-            ref={results}
-            id={`${id}-results`}
-            aria-busy={remote.pending}
-
-            role="listbox"
-            aria-label={label}
-            aria-multiselectable={multiple || undefined}
-            className="max-h-52 overflow-y-auto p-2"
-          >
-            {matches.length ? (
-              matches.map((option, index) => (
-                <button
-                  type="button"
-                  key={option.id}
-                  id={`${id}-option-${index}`}
-                  role="option"
-                  aria-selected={active === index}
-                  tabIndex={-1}
-                  onMouseDown={(event) => event.preventDefault()}
-                  className={`block w-full rounded p-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-slate-800 ${active === index ? 'bg-blue-50 dark:bg-slate-800' : ''}`}
-                  onClick={() => select(option)}
-                >
-                  {option.label}
-                  {option.description && (
-                    <span className="ml-2 text-xs text-slate-500">{option.description}</span>
-                  )}
-                </button>
-              ))
-            ) : (
-              <p className="p-2 text-sm text-slate-500">
-                {remote.pending || query !== search
-                  ? 'Searching…'
-                  : remote.error
-                    ? 'Results unavailable.'
-                    : 'No matching records.'}
-              </p>
-            )}
-            <div ref={sentinel} role="presentation" className="h-px" />
-          </div>
-          <p role="status" className="px-2 text-sm text-slate-500">
-            {remote.pending && matches.length > 0 ? 'Loading more results…' : ''}
-          </p>
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 p-2 dark:border-slate-700">
-            {remote.error && (
-              <p role="alert" className="p-2 text-sm text-rose-700 dark:text-rose-400">
-                {remote.error}
-                <button
-                  type="button"
-                  className="ml-2 underline"
-                  onClick={() => (remote.hasMore ? remote.loadMore() : remote.refresh())}
-                >
-                  Retry
-                </button>
-              </p>
-            )}
-            {canCreate && (
-              <a
-                href={destination.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded p-2 text-sm font-medium text-blue-700 dark:text-blue-300"
-              >
-                {destination.label}
-                <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden="true" />
-                <span className="sr-only"> (opens in a new tab)</span>
-              </a>
-            )}
-            <button
-              type="button"
-              className="p-2 text-xs text-blue-700 dark:text-blue-300"
-              onClick={() => {
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
                 setOpen(false);
                 setTyping(false);
                 setSearch('');
                 onSearch?.('');
+                setActive(-1);
+              }
+              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                setOpen(true);
+                const next =
+                  event.key === 'ArrowDown'
+                    ? Math.min(active + 1, matches.length - 1)
+                    : Math.max(active - 1, 0);
+                if (
+                  event.key === 'ArrowDown' &&
+                  active >= matches.length - 1 &&
+                  query === search &&
+                  !remote.error
+                )
+                  void remote.loadMore();
+                setActive(next);
+                document
+                  .getElementById(`${id}-option-${next}`)
+                  ?.scrollIntoView({ block: 'nearest' });
+              }
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                if (open && matches[active]) select(matches[active]);
+                else if (open && matches.length === 1) select(matches[0]);
+              }
+            }}
+            onChange={(event) => {
+              setTyping(true);
+              setSearch(event.target.value);
+              onSearch?.(event.target.value);
+              setOpen(true);
+              setActive(-1);
+            }}
+          />
+          {!multiple && ids.length > 0 && recordLink(ids[0])}
+          {!multiple && ids.length > 0 && (
+            <button
+              type="button"
+              disabled={disabled}
+              className="shrink-0 rounded p-2 text-slate-500"
+              aria-label={`Clear ${selectedLabel(ids[0])}`}
+              onClick={() => {
+                onChange('');
+                setSearch('');
+                setTyping(false);
+                onSearch?.('');
+                input.current?.focus();
               }}
             >
-              Close results
+              <XMarkIcon className="h-4 w-4" aria-hidden="true" />
             </button>
-          </div>
+          )}
         </div>
-      )}
+        {open && !disabled && (
+          <div className="absolute inset-x-0 top-full z-50 mt-1 rounded border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <div
+              ref={results}
+              id={`${id}-results`}
+              aria-busy={remote.pending}
+
+              role="listbox"
+              aria-label={label}
+              aria-multiselectable={multiple || undefined}
+              className="max-h-52 overflow-y-auto p-2"
+            >
+              {matches.length ? (
+                matches.map((option, index) => (
+                  <button
+                    type="button"
+                    key={option.id}
+                    id={`${id}-option-${index}`}
+                    role="option"
+                    aria-selected={active === index}
+                    tabIndex={-1}
+                    onMouseDown={(event) => event.preventDefault()}
+                    className={`block w-full rounded p-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-slate-800 ${active === index ? 'bg-blue-50 dark:bg-slate-800' : ''}`}
+                    onClick={() => select(option)}
+                  >
+                    {option.label}
+                    {option.description && (
+                      <span className="ml-2 text-xs text-slate-500">{option.description}</span>
+                    )}
+                  </button>
+                ))
+              ) : (
+                <p className="p-2 text-sm text-slate-500">
+                  {remote.pending || query !== search
+                    ? 'Searching…'
+                    : remote.error
+                      ? 'Results unavailable.'
+                      : 'No matching records.'}
+                </p>
+              )}
+              <div ref={sentinel} role="presentation" className="h-px" />
+            </div>
+            <p role="status" className="px-2 text-sm text-slate-500">
+              {remote.pending && matches.length > 0 ? 'Loading more results…' : ''}
+            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 p-2 dark:border-slate-700">
+              {remote.error && (
+                <p role="alert" className="p-2 text-sm text-rose-700 dark:text-rose-400">
+                  {remote.error}
+                  <button
+                    type="button"
+                    className="ml-2 underline"
+                    onClick={() => (remote.hasMore ? remote.loadMore() : remote.refresh())}
+                  >
+                    Retry
+                  </button>
+                </p>
+              )}
+              {canCreate && (
+                <a
+                  href={destination.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded p-2 text-sm font-medium text-blue-700 dark:text-blue-300"
+                >
+                  {destination.label}
+                  <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden="true" />
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              )}
+              <button
+                type="button"
+                className="p-2 text-xs text-blue-700 dark:text-blue-300"
+                onClick={() => {
+                  setOpen(false);
+                  setTyping(false);
+                  setSearch('');
+                  onSearch?.('');
+                }}
+              >
+                Close results
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       {error && (
         <p id={`${id}-error`} role="alert" className="text-sm text-rose-700 dark:text-rose-300">
           {error}

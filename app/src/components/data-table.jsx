@@ -201,7 +201,7 @@ function DataTableView({
         </div>
       </div>
       {toolbar}
-      <div id={filtersId} hidden={!filtersOpen}>
+      <div id={filtersId} className="table-filters" hidden={!filtersOpen}>
         {filters}
       </div>
       {exportError && (
