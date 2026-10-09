@@ -29,7 +29,7 @@ test('API, MongoDB persistence, and BullMQ scheduling', { timeout: 30000 }, asyn
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'ServiceKraken',
+        'X-Requested-With': 'ServiceTrident',
         ...(cookie ? { Cookie: cookie } : {}),
         ...headers,
       },

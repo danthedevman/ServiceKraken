@@ -74,5 +74,5 @@ export function xml(value) {
 
 /** A bounded RSS 2.0 feed uses stable item IDs and only stored public updates. */
 export function rssFeed(url, updates) {
-  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>ServiceKraken service status</title><link>${xml(url)}</link><description>Service health and published announcements</description><ttl>5</ttl>${updates.map((item) => `<item><title>${xml(item.title)}</title><link>${xml(url)}</link><guid isPermaLink="false">${xml(item._id)}</guid><pubDate>${new Date(item.createdAt).toUTCString()}</pubDate><description>${xml(`<pre>${xml(item.text)}</pre>`)}</description></item>`).join('')}</channel></rss>`;
+  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>ServiceTrident service status</title><link>${xml(url)}</link><description>Service health and published announcements</description><ttl>5</ttl>${updates.map((item) => `<item><title>${xml(item.title)}</title><link>${xml(url)}</link><guid isPermaLink="false">${xml(item._id)}</guid><pubDate>${new Date(item.createdAt).toUTCString()}</pubDate><description>${xml(`<pre>${xml(item.text)}</pre>`)}</description></item>`).join('')}</channel></rss>`;
 }

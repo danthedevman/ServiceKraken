@@ -77,7 +77,7 @@ export function MonitorList() {
             },
             {
               key: 'checkedAt',
-              label: 'Last checked (UTC)',
+              label: 'Last checked',
               value: (row) => row.lastCheck?.checkedAt || '',
             },
           ]}

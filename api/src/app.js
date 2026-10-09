@@ -66,7 +66,7 @@ export function createApp(db) {
   app.use('/api', (req, res, next) => {
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
       const origin = req.get('origin');
-      if (req.get('x-requested-with') !== 'ServiceKraken')
+      if (req.get('x-requested-with') !== 'ServiceTrident')
         throw new InputError('Missing request header. Reload the app and try again.', 403);
       if (origin && !isAllowedOrigin(origin, appOrigin)) {
         console.warn('Rejected request origin:', origin);

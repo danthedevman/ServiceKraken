@@ -24,7 +24,7 @@ test(
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'ServiceKraken',
+          'X-Requested-With': 'ServiceTrident',
           ...(cookie ? { Cookie: cookie } : {}),
         },
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -67,14 +67,38 @@ test(
       leftCollapsed: true,
       rightCollapsed: true,
       filtersOpen: false,
+      tableLayouts: {},
     });
     await request('/auth/preferences', owner.cookie, 'PATCH', { filtersOpen: true });
+    const tableLayouts = {
+      '/incidents::incidents': { order: ['severity', 'title'], hidden: ['createdAt'] },
+      '/tasks::tasks': { order: ['title', 'status'], hidden: [] },
+    };
+    assert.equal(
+      (await request('/auth/preferences', owner.cookie, 'PATCH', { tableLayouts })).status,
+      200,
+    );
     const anotherSession = await request('/auth/login', null, 'POST', credentials);
     assert.deepEqual(anotherSession.data.user.uiPreferences, {
       ...right.data.preferences,
       filtersOpen: true,
+      tableLayouts,
     });
     assert.equal((await request('/auth/me', other.cookie)).data.user.uiPreferences, null);
+    assert.equal(
+      (
+        await request('/auth/preferences', owner.cookie, 'PATCH', {
+          tableLayouts: { '/incidents': { order: ['title', 'title'], hidden: [] } },
+        })
+      ).status,
+      400,
+    );
+    const reset = await request('/auth/preferences', owner.cookie, 'PATCH', {
+      tableLayouts: { '/tasks::tasks': tableLayouts['/tasks::tasks'] },
+    });
+    assert.deepEqual(reset.data.preferences.tableLayouts, {
+      '/tasks::tasks': tableLayouts['/tasks::tasks'],
+    });
     await request('/auth/role', owner.cookie, 'POST', { role: 'viewer' });
     assert.equal(
       (await request('/auth/preferences', owner.cookie, 'PATCH', { rightCollapsed: false })).status,

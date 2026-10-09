@@ -190,7 +190,7 @@ export function IncidentDiscussion({ incidentId, comments, role }) {
           defaultSort="createdAt:desc"
           dateColumn="createdAt"
           columns={[
-            { key: 'createdAt', label: 'Time (UTC)', value: (row) => row.createdAt },
+            { key: 'createdAt', label: 'Time', value: (row) => row.createdAt },
             { key: 'author', label: 'Author', value: (row) => row.author },
             {
               key: 'kind',

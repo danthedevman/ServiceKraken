@@ -245,6 +245,7 @@ export function IncidentBuilderPage({ kind = 'incidents' }) {
 /** Keep unsaved settings stable during background query refreshes. */
 function Builder({ initial, path, kind, onCancel }) {
   const [editing, setEditing] = useState(false);
+  const [search, setSearch] = useState('');
   const [fields, setFields] = useState(initial.fields),
     [revision, setRevision] = useState(initial.revision),
     [savedIds, setSavedIds] = useState(initial.fields.map((field) => field.id)),
@@ -259,6 +260,14 @@ function Builder({ initial, path, kind, onCancel }) {
   }
   const save = useSave(),
     field = fields.find((row) => row.id === selected);
+  const query = search.trim().toLowerCase();
+  const matches = fields
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) =>
+      `${row.label} ${row.type === 'builtin' ? 'System Field' : `Custom ${displayValue(row.type)}`} ${row.archived ? 'Archived' : ''}`
+        .toLowerCase()
+        .includes(query),
+    );
   const update = (changes) => {
     if (!editing || save.busy || field?.type === 'builtin') return;
     setSaved(false);
@@ -291,6 +300,7 @@ function Builder({ initial, path, kind, onCancel }) {
               disabled={save.busy || fields.filter((row) => row.type !== 'builtin').length >= 20}
               onClick={() => {
                 const id = newId();
+                setSearch('');
                 setFields([
                   ...fields,
                   {
@@ -423,7 +433,27 @@ function Builder({ initial, path, kind, onCancel }) {
           <p className="text-sm text-slate-500">
             Select a field to view its settings. In edit mode, use its arrows to change the order.
           </p>
-          {fields.map((row, index) => (
+          <Field label="Search Fields" name="fieldSearch">
+            <input
+              type="search"
+              value={search}
+              placeholder="Search by label or field type"
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </Field>
+          {query && (
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <p role="status">{matches.length} matching fields</p>
+              <button type="button" className="btn-secondary" onClick={() => setSearch('')}>
+                Clear Search
+              </button>
+            </div>
+          )}
+          {query && editing && (
+            <p className="text-sm text-slate-500">Clear search to reorder fields.</p>
+          )}
+          {!matches.length && <p>No matching fields.</p>}
+          {matches.map(({ row, index }) => (
             <div
               key={row.id}
               className={`rounded-xl border p-4 ${row.id === selected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-slate-200 dark:border-slate-700'}`}
@@ -447,7 +477,7 @@ function Builder({ initial, path, kind, onCancel }) {
                         : displayValue(row.type)}
                   </span>
                 </button>
-                {editing && (
+                {editing && !query && (
                   <Reorder
                     label={row.label}
                     index={index}

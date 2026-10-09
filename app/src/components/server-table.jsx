@@ -49,6 +49,7 @@ export function ServerTable({ source, render: View, ...props }) {
       )}
       <View
         {...props}
+        source={source}
         rows={resource.data?.rows ?? []}
         loading={!resource.data && resource.loading}
         columns={props.columns.map((column) => ({
@@ -56,7 +57,7 @@ export function ServerTable({ source, render: View, ...props }) {
           value: (row) => (Object.hasOwn(row, column.key) ? row[column.key] : column.value(row)),
         }))}
         filters={
-          <div className="flex flex-wrap items-end gap-4 border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+          <div className="flex flex-wrap items-end gap-4">
             <TableSearch
               columns={props.columns.filter((c) => c.key !== 'actions')}
               search={search}

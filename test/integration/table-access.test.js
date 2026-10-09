@@ -22,7 +22,7 @@ test('server tables and references enforce workspace, parent-record, and interna
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'ServiceKraken',
+        'X-Requested-With': 'ServiceTrident',
         ...(cookie ? { Cookie: cookie } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,

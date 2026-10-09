@@ -16,7 +16,7 @@ async function request(path, method = 'GET', body) {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'X-Requested-With': 'ServiceKraken',
+      'X-Requested-With': 'ServiceTrident',
       Origin: process.env.APP_ORIGIN ?? 'http://127.0.0.1:8090',
       ...(cookie ? { Cookie: cookie } : {}),
     },

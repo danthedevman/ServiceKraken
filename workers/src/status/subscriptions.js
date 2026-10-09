@@ -136,7 +136,7 @@ export async function reconcileStatusSubscriptions(db, queue) {
       publicToken: update.publicToken,
       visibility: 'public',
       emailSubscriptions: true,
-      subscriptionsEnabled: { $ne: false },
+      subscriptionButtonVisible: { $ne: false },
     });
     if (!page) {
       await db
@@ -253,8 +253,8 @@ export async function processStatusMail(db, id, send = sendEmail) {
     await send(integration, {
       to: [subscriber.email],
       subject: confirmation
-        ? '[ServiceKraken] Confirm your status subscription'
-        : '[ServiceKraken] Service status update',
+        ? '[ServiceTrident] Confirm your status subscription'
+        : '[ServiceTrident] Service status update',
       text,
       id: row._id,
     });

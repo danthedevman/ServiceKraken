@@ -19,7 +19,7 @@ export async function sendNotification(
   if (integration.type === 'email')
     return sendEmail(integration, {
       to: integration.onCall && recipient ? [recipient] : integration.recipients,
-      subject: `[ServiceKraken] ${delivery.event}: ${incident.serviceName.replace(/[\r\n]/g, ' ')}`,
+      subject: `[ServiceTrident] ${delivery.event}: ${incident.serviceName.replace(/[\r\n]/g, ' ')}`,
       text: body,
       id: delivery._id,
     });

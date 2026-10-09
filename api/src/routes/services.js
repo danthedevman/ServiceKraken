@@ -275,7 +275,6 @@ export function installServiceRoutes(app, db) {
         .collection('statusIcons')
         .findOne({ _id: req.workspaceId }, { projection: { _id: 1 } })),
       subscriptionButtonVisible: data.subscriptionButtonVisible ?? true,
-      subscriptionsEnabled: data.subscriptionsEnabled ?? true,
       rssSubscriptions: data.rssSubscriptions ?? true,
       emailSubscriptions: data.emailSubscriptions ?? false,
       subscriptionIntegrationId: data.subscriptionIntegrationId ?? '',
@@ -314,7 +313,7 @@ export function installServiceRoutes(app, db) {
         };
       });
     }
-    for (const field of ['subscriptionButtonVisible', 'subscriptionsEnabled', 'rssSubscriptions']) {
+    for (const field of ['subscriptionButtonVisible', 'rssSubscriptions']) {
       if (req.body[field] !== undefined) {
         if (typeof req.body[field] !== 'boolean')
           throw new InputError('Choose an enabled or disabled subscription setting.', 400, {
@@ -342,7 +341,7 @@ export function installServiceRoutes(app, db) {
       data.subscriptionIntegrationId = req.body.subscriptionIntegrationId;
     }
     if (
-      data.subscriptionsEnabled !== false &&
+      data.subscriptionButtonVisible !== false &&
       data.emailSubscriptions &&
       !(await subscriptionMailer(db, data))
     )
@@ -361,7 +360,6 @@ export function installServiceRoutes(app, db) {
         .collection('statusIcons')
         .findOne({ _id: req.workspaceId }, { projection: { _id: 1 } })),
       subscriptionButtonVisible: data.subscriptionButtonVisible ?? true,
-      subscriptionsEnabled: data.subscriptionsEnabled ?? true,
       rssSubscriptions: data.rssSubscriptions ?? true,
       emailSubscriptions: data.emailSubscriptions ?? false,
       subscriptionIntegrationId: data.subscriptionIntegrationId ?? '',

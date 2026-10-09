@@ -23,6 +23,10 @@ import {
 import { RefreshButton } from './icon-button.jsx';
 import { toCsv } from '../../../shared/files/csv.js';
 import { saveCsv } from '../lib/csv-download.js';
+import { Link, useLocation } from 'react-router-dom';
+import { TableColumns } from './table-columns.jsx';
+import { tableRecordLink } from '../lib/table-record-link.js';
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 
 /** One table for server-paged records. Filtering, sorting and exports execute on the server.
  * Columns define plain values for sorting/filtering/CSV and optional safe React rendering.
@@ -39,6 +43,8 @@ export function DataTable(props) {
 }
 
 function DataTableView({
+  source,
+  rowHref,
   deletePath,
   onDeleteRow,
   onRefresh,
@@ -59,11 +65,26 @@ function DataTableView({
 }) {
   const related = useContext(RelatedListContext);
   const { user } = useContext(AuthContext);
+  const { pathname } = useLocation();
+  const { filtersOpen, setPreference, tableLayouts, setTableLayout } = useUiPreferences();
+  const viewKey =
+    `${pathname.replace(/\/[a-f\d]{24}(?=\/|$)/gi, '/record')}::${source?.split('?')[0] || filename}::${title}`
+      .replace(/[^a-zA-Z0-9/_:-]/g, '-')
+      .slice(0, 200);
+  const columnLayout = tableLayouts[viewKey] ?? { order: [], hidden: [] };
+  const setColumnLayout = (update) => setTableLayout(viewKey, update);
+  const orderedColumns = [
+    ...columnLayout.order
+      .map((key) => columns.find((column) => column.key === key))
+      .filter(Boolean),
+    ...columns.filter((column) => !columnLayout.order.includes(column.key)),
+  ];
+  const shownColumns = orderedColumns.filter((column) => !columnLayout.hidden.includes(column.key));
+  const recordHref = (row) => (rowHref ? rowHref(row) : tableRecordLink(source, deletePath, row));
   const [selection, setSelection] = useState({ scope: '', ids: new Set() });
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [confirmRows, setConfirmRows] = useState(null);
-  const { filtersOpen, setPreference } = useUiPreferences();
   const filtersId = useId();
   const Heading = fullPage ? 'h1' : 'h2';
   const [exporting, setExporting] = useState(false);
@@ -154,6 +175,24 @@ function DataTableView({
         </div>
         <div className="flex flex-wrap gap-2">
           {actions}
+          <TableColumns
+            columns={orderedColumns}
+            hidden={columnLayout.hidden}
+            onToggle={(key) =>
+              setColumnLayout((value) => ({
+                ...value,
+                hidden: value.hidden.includes(key)
+                  ? value.hidden.filter((item) => item !== key)
+                  : [...value.hidden, key],
+              }))
+            }
+            onMove={(index, offset) => {
+              const order = orderedColumns.map((column) => column.key);
+              [order[index], order[index + offset]] = [order[index + offset], order[index]];
+              setColumnLayout((value) => ({ ...value, order }));
+            }}
+            onReset={() => setColumnLayout(null)}
+          />
           <button
             type="button"
             className="btn-secondary table-filter-toggle gap-2"
@@ -204,7 +243,11 @@ function DataTableView({
         </div>
       </div>
       {toolbar}
-      <div id={filtersId} className="table-filters" hidden={!filtersOpen}>
+      <div
+        id={filtersId}
+        className="table-filters border-b border-slate-100 px-6 py-4 dark:border-slate-800"
+        hidden={!filtersOpen}
+      >
         {filters}
       </div>
       {exportError && (
@@ -264,7 +307,8 @@ function DataTableView({
             </caption>
             <colgroup>
               <col style={{ width: '3rem' }} />
-              {columns.map((column) => (
+              <col style={{ width: '3rem' }} />
+              {shownColumns.map((column) => (
                 <col key={column.key} style={column.width ? { width: column.width } : undefined} />
               ))}
             </colgroup>
@@ -285,7 +329,10 @@ function DataTableView({
                     }
                   />
                 </th>
-                {columns.map((column) => (
+                <th scope="col">
+                  <span className="sr-only">Open Record</span>
+                </th>
+                {shownColumns.map((column) => (
                   <th
                     key={column.key}
                     scope="col"
@@ -333,7 +380,10 @@ function DataTableView({
                     <td>
                       <Skeleton className="h-4 w-4" />
                     </td>
-                    {columns.map((column) => (
+                    <td>
+                      <Skeleton className="h-4 w-4" />
+                    </td>
+                    {shownColumns.map((column) => (
                       <td key={column.key} className={column.className}>
                         <Skeleton className="h-5 w-full max-w-48" />
                       </td>
@@ -352,7 +402,21 @@ function DataTableView({
                         onChange={(event) => selectRow(keys[index], event.target.checked)}
                       />
                     </td>
-                    {columns.map((column) => (
+                    <td>
+                      {recordHref(row) ? (
+                        <Link
+                          to={recordHref(row)}
+                          className="inline-flex rounded p-2 text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-slate-800"
+                          aria-label={`Open ${row.title || row.name || row.displayName || row.email || 'record'}`}
+                          title="Open Record"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden="true" />
+                        </Link>
+                      ) : (
+                        <span className="sr-only">No record view</span>
+                      )}
+                    </td>
+                    {shownColumns.map((column) => (
                       <td key={column.key} className={column.className}>
                         {column.key === 'actions' && column.render ? (
                           <RowActions render={column.render} row={row} />
@@ -377,7 +441,10 @@ function DataTableView({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={columns.length + 1} className="py-14 text-center text-slate-500">
+                  <td
+                    colSpan={shownColumns.length + 2}
+                    className="py-14 text-center text-slate-500"
+                  >
                     No matching records.
                   </td>
                 </tr>

@@ -124,7 +124,7 @@ export function SettingsPage() {
             deletePath="/settings/marketing/inquiries"
             description="Inquiries are retained for 90 days."
             columns={[
-              { key: 'createdAt', label: 'Received (UTC)', value: (row) => row.createdAt },
+              { key: 'createdAt', label: 'Received', value: (row) => row.createdAt },
               { key: 'name', label: 'Name', value: (row) => row.name },
               { key: 'email', label: 'Email', value: (row) => row.email },
               { key: 'company', label: 'Organization', value: (row) => row.company },

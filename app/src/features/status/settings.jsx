@@ -52,9 +52,6 @@ function StatusEditor({ settings, services, integrations }) {
   const [subscriptionButtonVisible, setSubscriptionButtonVisible] = useState(
     settings.subscriptionButtonVisible ?? true,
   );
-  const [subscriptionsEnabled, setSubscriptionsEnabled] = useState(
-    settings.subscriptionsEnabled ?? true,
-  );
   const [rssSubscriptions, setRssSubscriptions] = useState(settings.rssSubscriptions ?? true);
   const [emailSubscriptions, setEmailSubscriptions] = useState(
     settings.emailSubscriptions ?? false,
@@ -82,7 +79,6 @@ function StatusEditor({ settings, services, integrations }) {
       const body = {
         visibility,
         subscriptionButtonVisible,
-        subscriptionsEnabled,
         rssSubscriptions,
         emailSubscriptions,
         subscriptionIntegrationId,
@@ -146,16 +142,9 @@ function StatusEditor({ settings, services, integrations }) {
           />
           Show Subscribe to updates button
         </label>
-        <label className="flex items-center gap-3 text-sm">
-          <Toggle
-            checked={subscriptionsEnabled}
-            onChange={(event) => setSubscriptionsEnabled(event.target.checked)}
-          />
-          Enable subscriptions
-        </label>
         <p className="text-sm text-slate-500">
-          Hiding the button keeps existing subscriptions active. Disabling subscriptions stops email
-          updates and RSS access. Unsubscribe links still work.
+          Hiding subscriptions stops new signups, email updates, and RSS access. Unsubscribe links
+          still work.
         </p>
         <label className="flex items-center gap-3 text-sm">
           <Toggle
@@ -194,7 +183,7 @@ function StatusEditor({ settings, services, integrations }) {
             Email integration
             <Select
               name="subscriptionIntegrationId"
-              required={subscriptionsEnabled}
+              required={subscriptionButtonVisible}
               value={subscriptionIntegrationId}
               onChange={(event) => setSubscriptionIntegrationId(event.target.value)}
             >

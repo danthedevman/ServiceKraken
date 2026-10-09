@@ -21,7 +21,7 @@ test('admin role previews enforce permissions without changing identity or other
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'ServiceKraken',
+        'X-Requested-With': 'ServiceTrident',
         ...(cookie ? { Cookie: cookie } : {}),
         ...extra,
       },

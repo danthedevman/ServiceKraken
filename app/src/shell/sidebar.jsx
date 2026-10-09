@@ -210,7 +210,7 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
             </Tooltip>
           </div>
         ) : (
-          <Link to="/" onClick={close} aria-label="ServiceKraken dashboard">
+          <Link to="/" onClick={close} aria-label="ServiceTrident dashboard">
             {renderBrand(false)}
           </Link>
         )}

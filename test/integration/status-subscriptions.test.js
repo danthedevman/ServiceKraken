@@ -52,7 +52,7 @@ test('public subscriptions confirm, deliver, isolate, and unsubscribe while priv
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'ServiceKraken',
+        'X-Requested-With': 'ServiceTrident',
         Origin: origin,
       },
       body: JSON.stringify(body),
@@ -137,8 +137,8 @@ test('public subscriptions confirm, deliver, isolate, and unsubscribe while priv
     await db.collection('catalogs').findOne({ _id: workspace }),
   );
   assert.equal(capabilities.visible, false);
-  assert.equal(capabilities.emailEnabled, true);
-  assert.equal((await fetch(base + '/feed.xml')).status, 200);
+  assert.equal(capabilities.emailEnabled, false);
+  assert.equal((await fetch(base + '/feed.xml')).status, 404);
   await db
     .collection('catalogs')
     .updateOne({ _id: workspace }, { $set: { rssSubscriptions: false } });
@@ -148,12 +148,12 @@ test('public subscriptions confirm, deliver, isolate, and unsubscribe while priv
     await db.collection('catalogs').findOne({ _id: workspace }),
   );
   assert.equal(capabilities.rssPath, null);
-  assert.equal(capabilities.emailEnabled, true);
+  assert.equal(capabilities.emailEnabled, false);
   await db
     .collection('catalogs')
     .updateOne(
       { _id: workspace },
-      { $set: { subscriptionsEnabled: false, rssSubscriptions: true } },
+      { $set: { subscriptionButtonVisible: false, rssSubscriptions: true } },
     );
   assert.equal((await fetch(base + '/feed.xml')).status, 404);
   assert.equal(
@@ -167,6 +167,16 @@ test('public subscriptions confirm, deliver, isolate, and unsubscribe while priv
   assert.equal(capabilities.enabled, false);
   assert.equal(capabilities.emailEnabled, false);
   assert.equal(capabilities.rssEnabled, false);
+  await db
+    .collection('statusMail')
+    .updateOne({ _id: update._id }, { $set: { status: 'pending', nextAttemptAt: new Date(0) } });
+  await processStatusMail(db, update._id, send);
+  assert.equal(messages.length, 2);
+  assert.equal((await db.collection('statusMail').findOne({ _id: update._id })).status, 'skipped');
+  await db
+    .collection('catalogs')
+    .updateOne({ _id: workspace }, { $set: { subscriptionButtonVisible: true } });
+  assert.equal((await fetch(base + '/feed.xml')).status, 200);
 
   await db
     .collection('catalogs')

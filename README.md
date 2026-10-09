@@ -1,16 +1,16 @@
-# ServiceKraken
+# ServiceTrident
 
 **Know the impact · Own the response**
 
-ServiceKraken is a free, open source application for service monitoring and incident response. It brings services, health checks, incidents, tasks, knowledge, and on-call coverage into one place that developers and small teams can run themselves.
+ServiceTrident is a free, open source application for service monitoring and incident response. It brings services, health checks, incidents, tasks, knowledge, and on-call coverage into one place that developers and small teams can run themselves.
 
-> **Status: Alpha** — ServiceKraken is under active development and intended for evaluation, development environments, and small-team pilots. Expect changing features and occasional bugs. Back up your data before upgrading, and do not rely on it as your only system for critical monitoring or incident response.
+> **Status: Alpha** — ServiceTrident is under active development and intended for evaluation, development environments, and small-team pilots. Expect changing features and occasional bugs. Back up your data before upgrading, and do not rely on it as your only system for critical monitoring or incident response.
 
 ## Why I built this
 
 After years of working with enterprise platforms, I wanted to take the parts that help teams do their work and make them available in a smaller, more approachable tool. Knowing what a service depends on, who owns it, what is broken, and what happened last time should be within reach of a team without a large platform budget.
 
-I built ServiceKraken to bring that experience together in something useful that I could share for free. My goal is to give developers and small teams a place to manage their services and respond to problems without requiring a dedicated platform team just to get started. You can host it yourself, inspect the code, and adapt it to the way you work.
+I built ServiceTrident to bring that experience together in something useful that I could share for free. My goal is to give developers and small teams a place to manage their services and respond to problems without requiring a dedicated platform team just to get started. You can host it yourself, inspect the code, and adapt it to the way you work.
 
 ### Built with help from ChatGPT
 
@@ -18,7 +18,7 @@ ChatGPT, including Codex, has been a substantial part of building this applicati
 
 The motivation, product direction, and workflow decisions come from my experience with enterprise platforms. ChatGPT helped me move from those ideas to an implementation much faster. That help does not make the code automatically correct or secure: review, testing, and feedback still matter. This repository includes automated checks, and I welcome clear bug reports and improvements.
 
-ChatGPT was used during development. Running ServiceKraken does not require a ChatGPT subscription or an OpenAI API key.
+ChatGPT was used during development. Running ServiceTrident does not require a ChatGPT subscription or an OpenAI API key.
 
 ## What you can do
 
@@ -62,13 +62,13 @@ If `docker compose` is unavailable, follow the [Compose installation guide](http
 
 You do not need to install Node.js, npm, MongoDB, or Redis separately for this setup; the containers supply them. The first build needs internet access to download images and packages. Keep port **8090** available for the application.
 
-### Download and start ServiceKraken
+### Download and start ServiceTrident
 
 Clone the repository and enter its directory:
 
 ```sh
-git clone https://github.com/danthedevman/ServiceKraken.git
-cd ServiceKraken
+git clone https://github.com/danthedevman/ServiceKraken.git ServiceTrident
+cd ServiceTrident
 cp .env.example .env
 docker compose up -d --build
 ```
@@ -117,14 +117,14 @@ See [database setup, TLS, backups, and compatibility](docs/database-backends.md)
 
 ## Connect tools without adding unnecessary cost
 
-My recommendation is to start with the communication tools your team already uses. Connect a useful destination first, then add another integration when there is a clear need. ServiceKraken has no software subscription fee, but hosting, email delivery, domains, backups, and third-party accounts may cost money.
+My recommendation is to start with the communication tools your team already uses. Connect a useful destination first, then add another integration when there is a clear need. ServiceTrident has no software subscription fee, but hosting, email delivery, domains, backups, and third-party accounts may cost money.
 
-| Connection      | What to configure in Integrations                                                                                                                       | When I would use it                                                                                                                                 |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Email / SMTP    | A public SMTP hostname, port 465 or 587, sender, credentials, and fallback recipients. Enable comment notifications on one email integration if needed. | A straightforward starting point for a small team. Reuse an approved SMTP provider rather than running a mail server just for alerts.               |
-| Slack           | An official incoming webhook URL for your chosen channel.                                                                                               | When the team already coordinates in Slack. A dedicated incident channel can keep response updates out of general conversation.                     |
-| Microsoft Teams | A supported Workflow webhook that accepts requests from ServiceKraken and posts to a channel.                                                           | When the team already uses Microsoft 365. Give the workflow a co-owner so it does not depend on one person's account.                               |
-| ServiceNow      | Your instance root URL and a dedicated integration account with appropriate incident permissions.                                                       | When an existing organization needs incidents in ServiceNow as well. I would not buy an enterprise platform solely to receive ServiceKraken alerts. |
+| Connection      | What to configure in Integrations                                                                                                                       | When I would use it                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Email / SMTP    | A public SMTP hostname, port 465 or 587, sender, credentials, and fallback recipients. Enable comment notifications on one email integration if needed. | A straightforward starting point for a small team. Reuse an approved SMTP provider rather than running a mail server just for alerts.                |
+| Slack           | An official incoming webhook URL for your chosen channel.                                                                                               | When the team already coordinates in Slack. A dedicated incident channel can keep response updates out of general conversation.                      |
+| Microsoft Teams | A supported Workflow webhook that accepts requests from ServiceTrident and posts to a channel.                                                          | When the team already uses Microsoft 365. Give the workflow a co-owner so it does not depend on one person's account.                                |
+| ServiceNow      | Your instance root URL and a dedicated integration account with appropriate incident permissions.                                                       | When an existing organization needs incidents in ServiceNow as well. I would not buy an enterprise platform solely to receive ServiceTrident alerts. |
 
 For **SendGrid**, use `smtp.sendgrid.net`, port `587`, the literal username `apikey`, and a SendGrid API key as the password. Set up your sender identity and sending permissions with the provider. See [SendGrid's SMTP instructions](https://www.twilio.com/docs/sendgrid/for-developers/sending-email/integrating-with-the-smtp-api).
 
@@ -199,7 +199,7 @@ Back up the database, the integration-encryption key, and the persistent Redis d
 
 Checks currently target public HTTP/HTTPS addresses on standard ports. Private and reserved addresses are blocked, and followed redirects are revalidated. Self-hosting does not automatically enable scanning an internal network. These are HTTP availability checks, not TCP, database, or full infrastructure monitoring.
 
-ServiceKraken is currently alpha. It does not include SSO/MFA, password-reset email, SMS/voice paging, multi-step on-call escalation, or a hosted uptime SLA. Test upgrades and backup restores in an isolated environment before updating a pilot deployment. Automated tests are useful checks, but they are not a guarantee of production readiness.
+ServiceTrident is currently alpha. It does not include SSO/MFA, password-reset email, SMS/voice paging, multi-step on-call escalation, or a hosted uptime SLA. Test upgrades and backup restores in an isolated environment before updating a pilot deployment. Automated tests are useful checks, but they are not a guarantee of production readiness.
 
 Before calling it beta, I want the core workflows to be stable, upgrade and recovery procedures to be validated, permissions and integrations to have broader testing, and realistic load tests to establish capacity. There is no committed beta release date.
 
@@ -207,7 +207,7 @@ See [operations and recovery](docs/operations.md), [database deployment](docs/da
 
 ## Deploy to Render
 
-You can host ServiceKraken on [Render](https://render.com/). This is a manual deployment using the repository's Dockerfiles; the Compose file is for local hosting and is not a one-click Render deployment. I have not yet validated this guide with a live Render deployment.
+You can host ServiceTrident on [Render](https://render.com/). This is a manual deployment using the repository's Dockerfiles; the Compose file is for local hosting and is not a one-click Render deployment. I have not yet validated this guide with a live Render deployment.
 
 ### 1. Create the database and queue
 
@@ -311,7 +311,7 @@ History supports 7, 14, and 30 days, plus the current and previous UTC calendar 
 
 Public visitors can use **Subscribe to updates**, beside the theme toggle, to choose email or copy the RSS feed URL into their feed reader. RSS needs no email provider. Feeds include the latest 50 public updates within the last 30 days.
 
-Status page settings let admins show or hide the subscription button, enable or disable subscriptions globally, and enable email and RSS independently. Hiding the button only changes its visibility. Disabling subscriptions stops email delivery and RSS access, while unsubscribe links remain available. A visible button is disabled when subscriptions are disabled or neither channel is available. Existing pages retain RSS access by default.
+Status page settings let admins show or hide subscriptions and enable email and RSS independently. Hiding subscriptions also stops new signups, confirmation emails, email updates, and RSS access. Unsubscribe links remain available. Showing subscriptions restores access to the configured channels; the button is disabled if neither channel is available. Existing pages retain RSS access by default.
 
 To enable email, configure and enable an email integration under **Integrations**, then open **Service status → Settings → Subscriptions**. Enable **Email updates**, select that integration, and set **Public origin** to your reachable HTTPS origin (for example, `https://status.example.com`). Local development allows HTTP on localhost. Your SMTP provider must authorize the sender address. SendGrid and other providers offering authenticated SMTP can use this integration.
 
@@ -429,7 +429,7 @@ Remove credentials, webhook URLs, session cookies, and private record data from 
 
 ## License
 
-ServiceKraken is available under the [MIT License](LICENSE). My intention is to keep this a useful, freely available tool that developers and small teams can run and adapt. Hosting and any third-party services you choose remain your responsibility.
+ServiceTrident is available under the [MIT License](LICENSE). My intention is to keep this a useful, freely available tool that developers and small teams can run and adapt. Hosting and any third-party services you choose remain your responsibility.
 
 ### Managing users
 

@@ -27,7 +27,7 @@ test(
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'ServiceKraken',
+          'X-Requested-With': 'ServiceTrident',
           ...(cookie ? { Cookie: cookie } : {}),
         },
         body: body === undefined ? (method === 'DELETE' ? '{}' : undefined) : JSON.stringify(body),
@@ -56,7 +56,7 @@ test(
     const settings = await request('/status-settings', owner);
     assert.equal(settings.data.visibility, 'private');
     assert.equal(settings.data.subscriptionButtonVisible, true);
-    assert.equal(settings.data.subscriptionsEnabled, true);
+    assert.equal(settings.data.subscriptionsEnabled, undefined);
     assert.equal(settings.data.rssSubscriptions, true);
     assert.equal(
       (
@@ -70,12 +70,11 @@ test(
     const controls = await request('/status-settings', owner, 'PATCH', {
       visibility: 'private',
       subscriptionButtonVisible: false,
-      subscriptionsEnabled: false,
       rssSubscriptions: false,
     });
     assert.equal(controls.status, 200);
     assert.equal(controls.data.subscriptionButtonVisible, false);
-    assert.equal(controls.data.subscriptionsEnabled, false);
+    assert.equal(controls.data.subscriptionsEnabled, undefined);
     assert.equal(controls.data.rssSubscriptions, false);
 
     const publicApi = settings.data.publicPath.replace('/status/public/', '/public/status/');

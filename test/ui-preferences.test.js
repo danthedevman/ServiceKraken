@@ -8,6 +8,7 @@ test('layout preferences accept only boolean changes and exclude unrelated user 
     leftCollapsed: true,
     rightCollapsed: false,
     filtersOpen: false,
+    tableLayouts: {},
   });
   for (const value of [
     null,

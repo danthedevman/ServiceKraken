@@ -32,7 +32,7 @@ export function publicOrigin(value) {
 /** Allow only an enabled SMTP integration explicitly selected for public subscriptions. */
 export async function subscriptionMailer(db, page) {
   if (
-    page.subscriptionsEnabled === false ||
+    page.subscriptionButtonVisible === false ||
     !page.emailSubscriptions ||
     !page.subscriptionIntegrationId
   )
@@ -68,11 +68,11 @@ export function subscriberEmail(value) {
 export async function subscriptionInfo(db, page) {
   return {
     visible: page.subscriptionButtonVisible !== false,
-    enabled: page.subscriptionsEnabled !== false,
+    enabled: page.subscriptionButtonVisible !== false,
     emailEnabled: !!(await subscriptionMailer(db, page)),
-    rssEnabled: page.subscriptionsEnabled !== false && page.rssSubscriptions !== false,
+    rssEnabled: page.subscriptionButtonVisible !== false && page.rssSubscriptions !== false,
     rssPath:
-      page.subscriptionsEnabled !== false && page.rssSubscriptions !== false
+      page.subscriptionButtonVisible !== false && page.rssSubscriptions !== false
         ? `/api/public/status/${page.publicToken}/feed.xml`
         : null,
   };

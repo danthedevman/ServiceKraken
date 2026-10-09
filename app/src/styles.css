@@ -927,6 +927,38 @@ select:disabled,
   pointer-events: none;
 }
 
+/* Integration tabs fill the list workspace; only catalog content or table rows scroll. */
+.integrations-page > .related-lists {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.integrations-page .related-lists > [role='tablist'] {
+  flex-shrink: 0;
+  padding-inline: 1.5rem;
+}
+.integrations-page .related-list-panels {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.integrations-page .related-list-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.integrations-page .related-list-panel[data-active='false'] {
+  display: none;
+}
+.integrations-page .data-table > div:first-child {
+  padding-inline: 1.5rem;
+}
+
 /* Section-local placeholders use real field and cell geometry; content itself never fades. */
 .skeleton {
   display: block;
@@ -984,6 +1016,47 @@ button,
   border: 1px solid #cbd5e1;
 }
 [data-theme='dark'] .private-profile-settings.panel.form-body input:not([type='hidden']) {
+  border-color: #64748b;
+}
+
+.coverage-modal .form-body input:not([type='hidden']):not([type='checkbox']):not([type='radio']),
+.coverage-modal .form-body :is(.select-trigger, .reference-control, textarea, select) {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+[data-theme='dark']
+  .coverage-modal
+  .form-body
+  input:not([type='hidden']):not([type='checkbox']):not([type='radio']),
+[data-theme='dark']
+  .coverage-modal
+  .form-body
+  :is(.select-trigger, .reference-control, textarea, select) {
+  border-color: #64748b;
+}
+.coverage-modal
+  .form-body
+  .reference-control
+  input:not([type='hidden']):not([type='checkbox']):not([type='radio']) {
+  border: 0;
+}
+
+.table-columns-menu {
+  position: fixed;
+  margin: 0;
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: min(32rem, calc(100dvh - 1rem));
+  overflow-y: auto;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+}
+[data-theme='dark'] .table-columns-menu {
+  background: #0f172a;
+  color: #e2e8f0;
   border-color: #64748b;
 }
 

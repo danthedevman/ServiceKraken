@@ -25,7 +25,7 @@ test(
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'ServiceKraken',
+          'X-Requested-With': 'ServiceTrident',
           ...(cookie ? { Cookie: cookie } : {}),
         },
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -65,7 +65,7 @@ test(
         method: 'POST',
         headers: {
           'Content-Type': 'application/octet-stream',
-          'X-Requested-With': 'ServiceKraken',
+          'X-Requested-With': 'ServiceTrident',
           'X-File-Name': encodeURIComponent(name),
           ...(cookie ? { Cookie: cookie } : {}),
           ...headers,

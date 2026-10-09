@@ -22,7 +22,7 @@ test('demo route adds once and removes only its workspace batch', async (t) => {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'ServiceKraken',
+        'X-Requested-With': 'ServiceTrident',
         ...(cookie ? { Cookie: cookie } : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),

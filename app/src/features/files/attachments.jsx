@@ -271,7 +271,7 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
           columns={[
             { key: 'name', label: 'File', value: (row) => row.name },
             { key: 'size', label: 'Size (bytes)', value: (row) => row.size },
-            { key: 'createdAt', label: 'Uploaded (UTC)', value: (row) => row.createdAt },
+            { key: 'createdAt', label: 'Uploaded', value: (row) => row.createdAt },
             {
               key: 'actions',
               label: 'Actions',

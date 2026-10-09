@@ -44,7 +44,7 @@ export function StatusIconUpload({ hasIcon }) {
         });
       else await writeApi('/status-settings/icon', { method: 'DELETE' });
       setPresent(!!file);
-      setNotice(file ? 'Icon updated.' : 'Custom icon removed. The default icon is restored.');
+      setNotice(file ? 'Icon updated.' : '');
       setVersion(Date.now());
     } catch (failure) {
       setError(failure.message);
@@ -57,8 +57,8 @@ export function StatusIconUpload({ hasIcon }) {
       <h2 className="font-semibold">Status Page Icon</h2>
       <div className="flex flex-wrap items-center gap-4">
         <img
-          src={present ? `/api/status-settings/icon?v=${version}` : '/favicon.svg?v=connectors'}
-          alt={present ? 'Custom status page icon' : 'Default ServiceKraken icon'}
+          src={present ? `/api/status-settings/icon?v=${version}` : '/favicon.svg?v=trident'}
+          alt={present ? 'Custom status page icon' : 'Default ServiceTrident icon'}
           className="h-16 w-16 object-contain"
         />
         {present && (

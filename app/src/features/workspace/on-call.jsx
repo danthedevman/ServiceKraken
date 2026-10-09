@@ -220,11 +220,11 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
               </dd>
             </div>
             <div>
-              <dt>Start (UTC)</dt>
+              <dt>Start</dt>
               <dd>{existing.start}</dd>
             </div>
             <div>
-              <dt>End (UTC)</dt>
+              <dt>End</dt>
               <dd>{existing.end}</dd>
             </div>
           </dl>
@@ -310,7 +310,7 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
         value={editor.serviceIds}
         onChange={(serviceIds) => setEditor({ ...editor, serviceIds })}
       />
-      <Field name="start" label="Start (UTC)" errors={save.fields}>
+      <Field name="start" label="Start" errors={save.fields}>
         <input
           type="datetime-local"
           value={editor.start}
@@ -318,7 +318,7 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
         />
       </Field>
       {!rotation && (
-        <Field name="end" label="End (UTC, exclusive)" errors={save.fields}>
+        <Field name="end" label="End (exclusive)" errors={save.fields}>
           <input
             type="datetime-local"
             value={editor.end}
@@ -357,6 +357,7 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
       {quickDate && admin && (
         <Modal
           title={`Add coverage · ${quickDate}`}
+          className="coverage-modal"
           onClose={closeEditor}
           busy={save.busy}
           footer={editorActions}
@@ -472,8 +473,8 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
                     .join(', ')
                 : 'All services',
           },
-          { key: 'start', label: 'Start (UTC)', value: (r) => r.start },
-          { key: 'end', label: 'End (UTC)', value: (r) => r.end },
+          { key: 'start', label: 'Start', value: (r) => r.start },
+          { key: 'end', label: 'End', value: (r) => r.end },
           ...(admin
             ? [
                 {

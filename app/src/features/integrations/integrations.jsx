@@ -11,6 +11,8 @@ import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../auth/auth-context.js';
 import { useResource } from '../../data/use-resource.js';
 import { DataTable } from '../../components/data-table.jsx';
+import { RecordTabs } from '../../components/record-tabs.jsx';
+import { RefreshButton } from '../../components/icon-button.jsx';
 import { Notice } from '../../components/forms/fields.jsx';
 import { newId } from '../../lib/identifiers.js';
 import { useSave } from '../../data/use-save.js';
@@ -24,7 +26,6 @@ export function IntegrationsPage({ form = false }) {
     admin = user?.role === 'admin';
   const config = useResource(admin ? '/integrations' : null),
     services = useResource('/services'),
-    deliveries = useResource(null),
     save = useSave();
   const [formVersion, setFormVersion] = useState(0);
   const [editingId, setEditingId] = useState(null);
@@ -32,25 +33,6 @@ export function IntegrationsPage({ form = false }) {
     setEditingId(null);
     setFormVersion((value) => value + 1);
   };
-  const [tab, setTab] = useState('catalog');
-  const toolbar = (
-    <nav aria-label="Integration lists" className="flex gap-2 px-6 py-2">
-      {['catalog', 'integrations', 'deliveries'].map((value) => (
-        <button
-          key={value}
-          className={`nav-link ${tab === value ? 'active' : ''}`}
-          aria-pressed={tab === value}
-          onClick={() => setTab(value)}
-        >
-          {value === 'catalog'
-            ? 'App catalog'
-            : value === 'integrations'
-              ? 'Configured apps'
-              : 'Recent deliveries'}
-        </button>
-      ))}
-    </nav>
-  );
   if (!admin)
     return (
       <div className="space-y-6">
@@ -164,125 +146,146 @@ export function IntegrationsPage({ form = false }) {
     </button>
   );
   return (
-    <div className="list-page">
-      <Notice error={config.error || deliveries.error || save.error} />
-      {tab === 'catalog' && (
-        <section className="overflow-y-auto p-6 space-y-6">
-          <h1 className="page-title">Integrations</h1>
-          {toolbar}
-          {['Communication', 'Ticketing'].map((category) => (
-            <section key={category} className="space-y-3">
-              <h2 className="text-lg font-semibold">{category}</h2>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {providers
-                  .filter((provider) => provider.category === category)
-                  .map((provider) => (
-                    <article key={provider.id} className="panel flex flex-col gap-3 p-5">
-                      <h3 className="font-semibold">{provider.name}</h3>
-                      <p className="flex-1 text-sm text-slate-500">{provider.description}</p>
-                      <button
-                        type="button"
-                        className="btn-secondary self-start"
-                        onClick={() => navigate(`/integrations/new?provider=${provider.id}`)}
-                      >
+    <div className="list-page integrations-page">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-6 py-5">
+        <h1 className="page-title">Integrations</h1>
+        <div className="flex items-center gap-2">
+          {actions}
+          <RefreshButton
+            label="Refresh Integrations"
+            busy={config.pending}
+            onClick={config.refresh}
+          />
+        </div>
+      </div>
+      <Notice error={config.error || save.error} />
+      <RecordTabs
+        related
+        lazy
+        label="Integration Views"
+        tabs={[
+          {
+            id: 'catalog',
+            label: 'App Catalog',
+            content: (
+              <section className="min-h-0 flex-1 space-y-6 overflow-y-auto p-6">
+                {['Communication', 'Ticketing'].map((category) => (
+                  <section key={category} className="space-y-3">
+                    <h2 className="text-lg font-semibold">{category}</h2>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {providers
+                        .filter((provider) => provider.category === category)
+                        .map((provider) => (
+                          <article key={provider.id} className="panel flex flex-col gap-3 p-5">
+                            <h3 className="font-semibold">{provider.name}</h3>
+                            <p className="flex-1 text-sm text-slate-500">{provider.description}</p>
+                            <button
+                              type="button"
+                              className="btn-secondary self-start"
+                              onClick={() => navigate(`/integrations/new?provider=${provider.id}`)}
+                            >
+                              Configure
+                            </button>
+                          </article>
+                        ))}
+                    </div>
+                  </section>
+                ))}
+              </section>
+            ),
+          },
+          {
+            id: 'integrations',
+            label: 'Configured Apps',
+            content: (
+              <DataTable
+                fullPage
+                loading={!config.data}
+                title="Configured Apps"
+                onRefresh={config.refresh}
+                onDeleteRow={async (row) => {
+                  const current = await api('/integrations');
+                  await writeApi(`/integrations/${row.id}`, {
+                    method: 'DELETE',
+                    body: { revision: current.revision },
+                  });
+                }}
+                source="integrations"
+                filename="integrations.csv"
+                rowKey={(r) => r.id}
+                rows={config.data?.integrations ?? []}
+                columns={[
+                  { key: 'name', label: 'Name', value: (r) => r.name },
+                  { key: 'type', label: 'Provider', value: (r) => displayValue(r.type) },
+                  { key: 'destination', label: 'Destination', value: (r) => r.destination },
+                  {
+                    key: 'enabled',
+                    label: 'Enabled',
+                    value: (r) => (r.enabled ? 'Yes' : 'No'),
+                    render: (r) => <StateBadge status={r.enabled ? 'enabled' : 'disabled'} />,
+                  },
+                  {
+                    key: 'actions',
+                    label: 'Actions',
+                    sortable: false,
+                    value: () => '',
+                    render: (r) => (
+                      <button className="btn-secondary" onClick={() => edit(r)}>
                         Configure
                       </button>
-                    </article>
-                  ))}
-              </div>
-            </section>
-          ))}
-        </section>
-      )}
-      {tab === 'integrations' && (
-        <DataTable
-          fullPage
-          loading={!config.data}
-          actions={actions}
-          toolbar={toolbar}
-          title="Integrations"
-          onRefresh={config.refresh}
-          onDeleteRow={async (row) => {
-            const current = await api('/integrations');
-            await writeApi(`/integrations/${row.id}`, {
-              method: 'DELETE',
-              body: { revision: current.revision },
-            });
-          }}
-          source="integrations"
-          filename="integrations.csv"
-          rowKey={(r) => r.id}
-          rows={config.data?.integrations ?? []}
-          columns={[
-            { key: 'name', label: 'Name', value: (r) => r.name },
-            { key: 'type', label: 'Provider', value: (r) => displayValue(r.type) },
-            { key: 'destination', label: 'Destination', value: (r) => r.destination },
-            {
-              key: 'enabled',
-              label: 'Enabled',
-              value: (r) => (r.enabled ? 'Yes' : 'No'),
-              render: (r) => <StateBadge status={r.enabled ? 'enabled' : 'disabled'} />,
-            },
-            {
-              key: 'actions',
-              label: 'Actions',
-              sortable: false,
-              value: () => '',
-              render: (r) => (
-                <button className="btn-secondary" onClick={() => edit(r)}>
-                  Configure
-                </button>
-              ),
-            },
-          ]}
-        />
-      )}
-      {tab === 'deliveries' && (
-        <DataTable
-          fullPage
-          loading={!deliveries.data}
-          actions={actions}
-          toolbar={toolbar}
-          title="Integrations"
-          description="Export includes all deliveries matching the current filters."
-          source="deliveries"
-          filename="integration-deliveries.csv"
-          rowKey={(r) => r.id}
-          rows={deliveries.data?.deliveries ?? []}
-          dateColumn="createdAt"
-          defaultSort="createdAt:desc"
-          columns={[
-            { key: 'createdAt', label: 'Created (UTC)', value: (r) => r.createdAt },
-            { key: 'integrationName', label: 'Integration', value: (r) => r.integrationName },
-            { key: 'event', label: 'Event', value: (r) => displayValue(r.event) },
-            {
-              key: 'status',
-              label: 'Status',
-              value: (r) => displayValue(r.status),
-              render: (r) => <StateBadge status={r.status} />,
-            },
-            { key: 'attempts', label: 'Attempts', value: (r) => r.attempts },
-            { key: 'externalId', label: 'External incident', value: (r) => r.externalId },
-            { key: 'error', label: 'Details', value: (r) => r.error },
-            {
-              key: 'actions',
-              label: 'Actions',
-              sortable: false,
-              value: () => '',
-              render: (r) =>
-                r.status === 'failed' ? (
-                  <button
-                    disabled={save.busy}
-                    className="btn-secondary"
-                    onClick={() => save.run(`/deliveries/${r.id}/retry`, 'POST', {})}
-                  >
-                    Retry
-                  </button>
-                ) : null,
-            },
-          ]}
-        />
-      )}
+                    ),
+                  },
+                ]}
+              />
+            ),
+          },
+          {
+            id: 'deliveries',
+            label: 'Logs',
+            content: (
+              <DataTable
+                fullPage
+                title="Logs"
+                source="deliveries"
+                filename="integration-deliveries.csv"
+                rowKey={(r) => r.id}
+                dateColumn="createdAt"
+                defaultSort="createdAt:desc"
+                columns={[
+                  { key: 'createdAt', label: 'Created', value: (r) => r.createdAt },
+                  { key: 'integrationName', label: 'Integration', value: (r) => r.integrationName },
+                  { key: 'event', label: 'Event', value: (r) => displayValue(r.event) },
+                  {
+                    key: 'status',
+                    label: 'Status',
+                    value: (r) => displayValue(r.status),
+                    render: (r) => <StateBadge status={r.status} />,
+                  },
+                  { key: 'attempts', label: 'Attempts', value: (r) => r.attempts },
+                  { key: 'externalId', label: 'External incident', value: (r) => r.externalId },
+                  { key: 'error', label: 'Details', value: (r) => r.error },
+                  {
+                    key: 'actions',
+                    label: 'Actions',
+                    sortable: false,
+                    value: () => '',
+                    render: (r) =>
+                      r.status === 'failed' ? (
+                        <button
+                          disabled={save.busy}
+                          className="btn-secondary"
+                          onClick={() => save.run(`/deliveries/${r.id}/retry`, 'POST', {})}
+                        >
+                          Retry
+                        </button>
+                      ) : null,
+                  },
+                ]}
+              />
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

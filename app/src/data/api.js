@@ -35,7 +35,7 @@ async function request(path, options) {
     credentials: 'same-origin',
     headers: {
       'Content-Type': body instanceof Blob ? 'application/octet-stream' : 'application/json',
-      'X-Requested-With': 'ServiceKraken',
+      'X-Requested-With': 'ServiceTrident',
       ...options.headers,
     },
     body: body === undefined ? undefined : body instanceof Blob ? body : JSON.stringify(body),

@@ -1,6 +1,6 @@
 # Architecture and maintenance
 
-ServiceKraken is one product with separate web, API, scheduling, and worker processes. Keep the separation functional; a new folder should own a clear responsibility rather than wrap a single call unnecessarily.
+ServiceTrident is one product with separate web, API, scheduling, and worker processes. Keep the separation functional; a new folder should own a clear responsibility rather than wrap a single call unnecessarily.
 
 ## Request flow
 

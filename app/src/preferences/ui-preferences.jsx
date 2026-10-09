@@ -8,12 +8,12 @@ import React, {
 } from 'react';
 import { AuthContext } from '../auth/auth-context.js';
 import { api } from '../data/api.js';
-import { uiPreferences } from '../../../shared/domain/ui-preferences.js';
+import { uiPreferences, preferencePatch } from '../../../shared/domain/ui-preferences.js';
 
 const PreferencesContext = createContext(null);
 const previewKey = 'servicekraken-layout';
 const accountKey = (id) => `servicekraken-layout:${id}`;
-/** Cache only non-sensitive layout booleans; blocked storage falls back to memory. */
+/** Cache only non-sensitive layout preferences; blocked storage falls back to memory. */
 function read(key) {
   try {
     const value = localStorage.getItem(key);
@@ -90,7 +90,12 @@ export function PreferencesProvider({ children }) {
     return () => window.removeEventListener('storage', sync);
   }, [user?.id]);
   function setPreference(key, value) {
-    if (!user || !Object.hasOwn(current.current, key) || typeof value !== 'boolean') return;
+    if (!user) return;
+    try {
+      preferencePatch({ [key]: value });
+    } catch {
+      return;
+    }
     const next = { ...current.current, [key]: value },
       account = user.id,
       signal = controller.current.signal;
@@ -118,8 +123,17 @@ export function PreferencesProvider({ children }) {
         }
       });
   }
+  /** Update one view using the latest preferences so rapid changes do not overwrite other tables. */
+  function setTableLayout(key, update) {
+    const layouts = { ...current.current.tableLayouts };
+    if (update === null) delete layouts[key];
+    else
+      layouts[key] =
+        typeof update === 'function' ? update(layouts[key] ?? { order: [], hidden: [] }) : update;
+    setPreference('tableLayouts', layouts);
+  }
   return (
-    <PreferencesContext.Provider value={{ ...values, setPreference, error }}>
+    <PreferencesContext.Provider value={{ ...values, setPreference, setTableLayout, error }}>
       {children}
     </PreferencesContext.Provider>
   );

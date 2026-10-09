@@ -54,8 +54,8 @@ export async function reconcileOperations(db, queue) {
               severity: state === 'degraded' ? 'medium' : 'high',
               status: 'open',
               source: 'monitor',
-              createdBy: 'ServiceKraken',
-              updatedBy: 'ServiceKraken',
+              createdBy: 'ServiceTrident',
+              updatedBy: 'ServiceTrident',
               activeAutomatic: true,
               fields: [],
               custom: {},
@@ -66,7 +66,7 @@ export async function reconcileOperations(db, queue) {
               timeline: [
                 {
                   at: now,
-                  by: 'ServiceKraken',
+                  by: 'ServiceTrident',
                   status: 'open',
                   note:
                     state === 'degraded'
@@ -96,7 +96,7 @@ export async function reconcileOperations(db, queue) {
                 statusLabel: 'Resolved',
                 activeAutomatic: false,
                 updatedAt: now,
-                updatedBy: 'ServiceKraken',
+                updatedBy: 'ServiceTrident',
                 updatedById: null,
                 resolvedAt: now,
                 resolutionNotes: 'All monitors and dependencies recovered.',
@@ -107,7 +107,7 @@ export async function reconcileOperations(db, queue) {
                   $each: [
                     {
                       at: now,
-                      by: 'ServiceKraken',
+                      by: 'ServiceTrident',
                       status: 'resolved',
                       note: 'All monitors and dependencies recovered.',
                     },

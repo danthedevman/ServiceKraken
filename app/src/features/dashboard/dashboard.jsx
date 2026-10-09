@@ -289,7 +289,7 @@ export function Dashboard() {
             value: (row) => row.statusLabel || displayValue(row.status),
             render: (row) => <StateBadge status={row.status} label={row.statusLabel} />,
           },
-          { key: 'dueDate', label: 'Due date (UTC)', value: (row) => row.dueDate || '—' },
+          { key: 'dueDate', label: 'Due date', value: (row) => row.dueDate || '—' },
         ]}
       />
     </div>

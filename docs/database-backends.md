@@ -1,6 +1,6 @@
 # Choose a storage backend
 
-ServiceKraken supports **MongoDB and PostgreSQL 17+** for application records. MySQL, SQLite, and SQL Server are not supported. This is storage for ServiceKraken itself, not a database availability monitor.
+ServiceTrident supports **MongoDB and PostgreSQL 17+** for application records. MySQL, SQLite, and SQL Server are not supported. This is storage for ServiceTrident itself, not a database availability monitor.
 
 The API, scheduler, and workers must use the same backend configuration. Redis remains required for BullMQ jobs. Selecting another provider does not copy any data.
 

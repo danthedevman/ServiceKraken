@@ -24,7 +24,7 @@ export function installStatusSubscriptions(app, db, appOrigin) {
   };
   app.get(`${path}/feed.xml`, async (req, res) => {
     const page = await findPage(req.params.token);
-    if (page.subscriptionsEnabled === false || page.rssSubscriptions === false)
+    if (page.subscriptionButtonVisible === false || page.rssSubscriptions === false)
       throw new InputError('RSS subscriptions are not available.', 404);
     const updates = await db
       .collection('publicStatusUpdates')
@@ -44,7 +44,7 @@ export function installStatusSubscriptions(app, db, appOrigin) {
     if (req.method === 'POST') {
       const origin = req.get('origin');
       if (
-        req.get('x-requested-with') !== 'ServiceKraken' ||
+        req.get('x-requested-with') !== 'ServiceTrident' ||
         (origin &&
           ![appOrigin, page.publicOrigin || appOrigin].some((allowed) =>
             isAllowedOrigin(origin, allowed),

@@ -7,7 +7,7 @@ export function AuditPage() {
   const columns = [
     {
       key: 'createdAt',
-      label: 'Time (UTC)',
+      label: 'Time',
       value: (row) => row.createdAt,
       render: (row) => new Date(row.createdAt).toLocaleString('en-GB', { timeZone: 'UTC' }),
     },

@@ -9,15 +9,15 @@ export function Logo({ className = '', compact = false }) {
       className={`inline-flex items-center gap-2 text-base font-bold tracking-tight ${className}`}
     >
       <img
-        src="/favicon.svg?v=connectors"
+        src="/favicon.svg?v=trident"
         width="36"
         height="36"
         className="h-9 w-9 shrink-0"
-        alt={compact ? 'ServiceKraken' : ''}
+        alt={compact ? 'ServiceTrident' : ''}
       />
       {!compact && (
         <span>
-          Service<span className="text-blue-700 dark:text-blue-400">Kraken</span>
+          Service<span className="text-blue-700 dark:text-blue-400">Trident</span>
         </span>
       )}
     </span>

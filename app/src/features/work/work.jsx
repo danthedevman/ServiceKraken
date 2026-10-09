@@ -193,7 +193,7 @@ export function WorkTable({
       : []),
     {
       key: 'updatedAt',
-      label: 'Updated (UTC)',
+      label: 'Updated',
       value: (r) => r.updatedAt,
       render: (r) => new Date(r.updatedAt).toLocaleString('en-GB', { timeZone: 'UTC' }),
     },
@@ -244,7 +244,7 @@ export function WorkTable({
           onExport: (signal) => downloadCsv(`/${kind}/export?${query}`, `${kind}.csv`, signal),
         }}
         filters={
-          <div className="flex flex-wrap items-end gap-4 p-6">
+          <div className="flex flex-wrap items-end gap-4">
             <TableSearch
               columns={columns}
               search={search}
@@ -821,7 +821,9 @@ function WorkForm({
       />
 
       {layout.map(control)}
-      <AttachmentPicker draft={draft} imageIds={embeddedImageIds(value.contentDocument)} />
+      {!item && (
+        <AttachmentPicker draft={draft} imageIds={embeddedImageIds(value.contentDocument)} />
+      )}
       <RecordActions>
         <CancelButton onCancel={onClose} to={`/${kind}`} disabled={save.busy} />
         <button

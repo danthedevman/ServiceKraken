@@ -98,7 +98,7 @@ export function IncidentsPage({ initialServiceId = '', related = false }) {
     },
     {
       key: 'createdAt',
-      label: 'Created (UTC)',
+      label: 'Created',
       value: (r) => r.createdAt,
       render: (r) => new Date(r.createdAt).toLocaleString('en-GB', { timeZone: 'UTC' }),
     },
@@ -145,7 +145,7 @@ export function IncidentsPage({ initialServiceId = '', related = false }) {
           onExport: (signal) => downloadCsv(`/incidents/export?${query}`, 'incidents.csv', signal),
         }}
         filters={
-          <div className="flex flex-wrap items-end gap-4 p-6">
+          <div className="flex flex-wrap items-end gap-4">
             <TableSearch
               columns={columns}
               search={search}
@@ -449,7 +449,7 @@ export function IncidentPage({ edit = false }) {
                           title="Incident Activity"
                           rows={[...item.timeline].reverse()}
                           columns={[
-                            { key: 'at', label: 'Time (UTC)', value: (row) => row.at },
+                            { key: 'at', label: 'Time', value: (row) => row.at },
                             { key: 'by', label: 'Updated by', value: (row) => row.by },
                             {
                               key: 'status',
@@ -786,7 +786,7 @@ function IncidentEditor({
           <AutoTextarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={2000} />
         </Field>
       )}
-      <AttachmentPicker draft={draft} />
+      {!incident && <AttachmentPicker draft={draft} />}
       <RecordActions>
         <CancelButton onCancel={onClose} to={'/incidents'} disabled={save.busy} />
         <button className="btn-primary" disabled={save.busy || draft.busy}>

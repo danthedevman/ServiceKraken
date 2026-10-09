@@ -24,7 +24,7 @@ test('resolution enforces configurable notes and mandatory fields; knowledge lin
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'ServiceKraken',
+        'X-Requested-With': 'ServiceTrident',
         ...(cookie ? { Cookie: cookie } : {}),
       },
       body: body === undefined ? undefined : JSON.stringify(body),

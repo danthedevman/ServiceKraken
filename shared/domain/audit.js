@@ -1,6 +1,6 @@
 /** Server-owned audit fields. Never invent creator history for existing legacy records. */
 export function auditStamp(current, actor, now = new Date()) {
-  const updatedBy = actor.email || actor.displayName || 'ServiceKraken';
+  const updatedBy = actor.email || actor.displayName || 'ServiceTrident';
   const updatedById = actor._id ? String(actor._id) : undefined;
   return {
     ...(current
@@ -46,7 +46,7 @@ export async function writeAudit(db, entry) {
     workspaceId: entry.workspaceId,
     createdAt: new Date(),
     actorId: text(entry.actorId),
-    actor: text(entry.actor || 'ServiceKraken'),
+    actor: text(entry.actor || 'ServiceTrident'),
     actualRole: text(entry.actualRole || 'system', 32),
     effectiveRole: text(entry.effectiveRole || 'system', 32),
     source: entry.source === 'worker' ? 'worker' : 'api',

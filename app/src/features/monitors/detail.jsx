@@ -294,6 +294,7 @@ export function MonitorDetail() {
                     content: (
                       <DataTable
                         title="Check History"
+                        rowHref={(event) => `/monitors/${id}/events/${event.id}`}
                         description="Last 30 days · Times shown in your profile time zone"
                         rows={eventState.data?.events ?? []}
                         columns={eventColumns}
@@ -323,7 +324,7 @@ export function MonitorDetail() {
                             ),
                         }}
                         filters={
-                          <div className="grid gap-4 border-b border-slate-100 dark:border-slate-800 px-6 py-4 sm:grid-cols-2 lg:grid-cols-4">
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <label className="field-label">
                               Status
                               <Select
@@ -338,7 +339,7 @@ export function MonitorDetail() {
                             </label>
 
                             <label className="field-label">
-                              From date (UTC)
+                              From date
                               <input
                                 type="date"
                                 aria-invalid={!!dateErrors.from}
@@ -356,7 +357,7 @@ export function MonitorDetail() {
                               )}
                             </label>
                             <label className="field-label">
-                              Through date (UTC)
+                              Through date
                               <input
                                 type="date"
                                 aria-invalid={!!dateErrors.to}

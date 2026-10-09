@@ -1,5 +1,7 @@
 # Loading and data UI conventions
 
+- Shared tables provide a column-settings gear to show, hide, and reorder data columns. Selection and Open Record are fixed leading columns and cannot be hidden or reordered. Preserve title links and use explicit, known detail routes for launch links; do not fabricate record pages for data-only rows.
+
 - Form Builder opens in read-only mode. Edit enables field creation, reordering, and permitted custom-field changes. Show Cancel immediately before Save; Cancel discards the draft and returns to saved configuration. Do not add a separate Reload Saved Form action.
 
 - Delete confirmations identify records by their title, name, or email, never by internal IDs. Use a neutral “Selected record” fallback when no readable label is available; keep explicit confirmation for every deletion.
@@ -12,6 +14,7 @@
 - Cancel private reads and clear private caches on session changes. Gate private reads on authentication readiness. Never replace the entire application shell during session loading.
 - Preserve form inputs during background refreshes. Keep refresh feedback local, disable duplicate actions, and show refresh errors alongside cached data.
 - Record creation and editing use dedicated routes. The explicit exception is on-call calendar quick-add, which opens the shared Modal prefilled with the clicked UTC date. Dialogs use fixed headers/footers and a scrolling body, with keyboard focus, Escape, and inline errors.
+- Keep table filter padding and the divider above column headers in the shared `DataTable` component; filter content must not add its own outer padding or divider.
 - Use `DataTable` for every table. Every DataTable must supply a server source or remote paging. Never filter, sort, or paginate table datasets in the browser. Server exports use the same filters and workspace/role restrictions as list routes. Use `shared/csv.js` to escape values and neutralize spreadsheet formulas.
 - Show built-in enum values in normal case with `displayValue`, retaining machine values in API payloads. Preserve user-defined select option labels exactly.
 - Use ReferenceField for relationships to users, groups, services, and other records. Use the shared Toggle switch for enable/disable settings. Keep table selection and schema-defined checkbox fields as checkboxes. Preserve saved unavailable references and enforce workspace validation in the API.
@@ -42,7 +45,7 @@
 
 - Keep table filters collapsed for new users; persist the Filters button visibility through the shared filtersOpen user preference across list views and refreshes. Preserve active filters when hiding them; share visibility only, not filter values.
 - The status page is a flat service-only list. Do not expose individual monitor details there.
-- Use the tagline “Know the impact · Own the response” and ServiceKraken branding.
+- Use the tagline “Know the impact · Own the response” and ServiceTrident branding.
 
 - Read-only record details use `record-details`: muted labels, readable values, subtle dividers, and a subtle theme-aware background on values. Use background styling for non-editable fields; do not add “Read only” badges or labels.
 
