@@ -1,5 +1,11 @@
 # Loading and data UI conventions
 
+- Form Builder opens in read-only mode. Edit enables field creation, reordering, and permitted custom-field changes. Show Cancel immediately before Save; Cancel discards the draft and returns to saved configuration. Do not add a separate Reload Saved Form action.
+
+- Delete confirmations identify records by their title, name, or email, never by internal IDs. Use a neutral “Selected record” fallback when no readable label is available; keep explicit confirmation for every deletion.
+
+- Use title case for built-in page and section titles, navigation and breadcrumb labels, and action labels (for example, “Service Status”, “Create Incident”, and “Private Account Settings”). Keep short connecting words lowercase unless first or last. Preserve user-entered record titles, custom field labels, API values, and normal sentence case in help text, validation, and notifications.
+
 - Use section-local skeletons for initial dynamic table and form loads. Match real columns, row counts, field heights, and spacing; keep titles, navigation, and existing data visible. Never replace cached content with skeletons during background refreshes. Respect reduced motion; do not add artificial delays.
 - Do not fade in pages or content. Keep navigation, titles, and existing data visible during loading and refresh. Respect reduced motion and avoid layout animations.
 - Use `useResource` for API reads and `writeApi` for writes. Share query keys. Never add artificial delays or persist private responses to browser storage.
@@ -10,7 +16,7 @@
 - Show built-in enum values in normal case with `displayValue`, retaining machine values in API payloads. Preserve user-defined select option labels exactly.
 - Use ReferenceField for relationships to users, groups, services, and other records. Use the shared Toggle switch for enable/disable settings. Keep table selection and schema-defined checkbox fields as checkboxes. Preserve saved unavailable references and enforce workspace validation in the API.
 - Use RecordTabs for related record sections; preserve draft input while switching tabs and support keyboard navigation.
-- Configure incident/task/knowledge dropdown choices through their form schemas. New workflow choices require canonical mappings; built-in choices can be hidden but never deleted or remapped. Preserve saved historical values.
+- System Field choices are locked in form builders. Preserve historical choices and canonical mappings; custom select options remain configurable.
 - Keep native scrolling and shared theme-aware scrollbar styles. Do not hide scrollbars or intercept wheel/touch scrolling.
 
 - Keep Form builder links on create/edit forms only, not table-list views.
@@ -25,7 +31,7 @@
 - Record views use RecordWorkspace: read-only record details on the left with a visible pencil Edit button for authorized roles to open editable fields and a fixed full-height right rail with a left border on desktop. Stack the rail on narrow screens. Viewers and other roles without edit permission stay read-only. Preserve drafts during refresh; Save and Cancel return existing records to read-only mode without navigating away. Cancel discards unsaved edits. Creation forms return to their owning list; quick-add dialogs close without navigation. Creation pages open directly as forms. Hide unavailable actions without reserving empty space.
 - Keep list views flush with the viewport. The sidenav profile area and full-page table pagination share a fixed --app-footer-height across every route; never measure table content to resize the profile rail. The Create control stays outside the scrollable nav; the collapsed logo reveals the expand control on hover or focus.
 - Global search focuses its input after the native dialog opens.
-- Form builders show fields and order controls on the left, selected field settings on the right. Preserve immutable types and built-in protections.
+- Form builders show fields and order controls on the left, selected field settings on the right. Use “System Field” for out-of-box fields in user-facing labels and messages. System Fields and custom fields can both be reordered. Other System Field settings are read-only: labels, required flags, types, choices, and visibility cannot be changed. Enforce this in shared API validation. Preserve existing saved configuration; custom fields remain configurable and saved custom types remain immutable.
 - Embedded rich-text images remain protected record files but are excluded from visible attachment lists. Ordinary image attachments remain visible.
 - Describe supported checks accurately: HTTP/HTTPS endpoints using HEAD and GET. Do not imply arbitrary queries or network scanning.
 

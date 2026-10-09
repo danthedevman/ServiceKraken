@@ -8,13 +8,14 @@ import { mandatoryErrors } from '../../../../shared/forms/schema.js';
 import { RecordActions } from '../../components/record-actions.jsx';
 import { IncidentDiscussion } from './discussion.jsx';
 import { CancelButton } from '../../components/forms/cancel-button.jsx';
-import {
-  RecordWorkspace,
-  RecordSection,
-  RecordMetadata,
-} from '../../components/record-workspace.jsx';
+import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
 import { ActionMenu } from '../../components/action-menu.jsx';
-import { AttachmentPanel, AttachmentPicker, useAttachmentDraft } from '../files/attachments.jsx';
+import {
+  AttachmentLinks,
+  AttachmentPanel,
+  AttachmentPicker,
+  useAttachmentDraft,
+} from '../files/attachments.jsx';
 import { RecordTabs } from '../../components/record-tabs.jsx';
 import { ReferenceField } from '../../components/forms/reference-field.jsx';
 import { fieldChoices, recordFields } from '../../../../shared/forms/form-options.js';
@@ -230,7 +231,7 @@ export function IncidentPage({ edit = false }) {
     <div className={id ? 'space-y-6' : 'form-page'}>
       {!id && (
         <div className="flex items-center justify-between gap-3">
-          {!id && <h1 className="page-title">Create incident</h1>}
+          {!id && <h1 className="page-title">Create Incident</h1>}
           {!id && user?.role === 'admin' && (
             <ActionMenu label="Form actions">
               <Link className="btn-secondary" to="/incidents/fields">
@@ -330,12 +331,10 @@ export function IncidentPage({ edit = false }) {
                         ['Opened by', memberName(item.createdById)],
                       ]}
                     />
-                    <RecordSection title="Attachments">
-                      <AttachmentPanel compact kind="incidents" recordId={item.id} />
-                    </RecordSection>
                   </>
                 }
               >
+                <AttachmentLinks kind="incidents" recordId={item.id} />
                 {canEdit && editing ? (
                   <IncidentEditor
                     key={`${id}-${formVersion}`}
@@ -437,12 +436,17 @@ export function IncidentPage({ edit = false }) {
                       ),
                     },
                     {
+                      id: 'attachments',
+                      label: 'Attachments',
+                      content: <AttachmentPanel kind="incidents" recordId={item.id} />,
+                    },
+                    {
                       id: 'activity',
                       label: 'Activity',
                       content: (
                         <DataTable
                           source={`activity?recordId=${item.id}`}
-                          title="Incident activity"
+                          title="Incident Activity"
                           rows={[...item.timeline].reverse()}
                           columns={[
                             { key: 'at', label: 'Time (UTC)', value: (row) => row.at },
@@ -792,7 +796,7 @@ function IncidentEditor({
               ? 'Resolve incident'
               : current
                 ? 'Save incident'
-                : 'Create incident'}
+                : 'Create Incident'}
         </button>
       </RecordActions>
     </form>

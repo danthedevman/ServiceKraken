@@ -177,77 +177,16 @@ test('resolution enforces configurable notes and mandatory fields; knowledge lin
       .countDocuments({ incidentId: stored._id, event: 'impacted', resolutionCycle: 2 }),
     1,
   );
-  const schema = (await request('/incident-fields', owner)).data;
-  assert.equal(
-    (
-      await request('/incident-fields', owner, 'PUT', {
-        ...schema,
-        fields: schema.fields.map((field) => ({
-          ...field,
-          required:
-            field.id === 'description'
-              ? true
-              : field.id === 'resolutionNotes'
-                ? false
-                : field.required,
-        })),
-      })
-    ).status,
-    200,
-  );
-  assert.equal(
-    (await request('/incidents', owner, 'POST', input)).data.fields.description,
-    'Description is required.',
-  );
-  const optional = (
-    await request('/incidents', owner, 'POST', { ...input, description: 'Impact confirmed' })
-  ).data.incident;
-  assert.equal(
-    (
-      await request(`/incidents/${optional.id}`, owner, 'PATCH', {
-        revision: 0,
-        status: 'resolved',
-      })
-    ).status,
-    200,
-  );
-  const taskSchema = (await request('/task-fields', owner)).data;
-  assert.equal(
-    (
-      await request('/task-fields', owner, 'PUT', {
-        ...taskSchema,
-        fields: taskSchema.fields.map((field) => ({
-          ...field,
-          required: field.id === 'description' ? true : field.required,
-        })),
-      })
-    ).status,
-    200,
-  );
-  assert.equal(
-    (await request('/tasks', owner, 'POST', { title: 'Follow-up' })).data.fields.description,
-    'Description is required.',
-  );
-  const articleSchema = (await request('/knowledge-fields', owner)).data;
-  assert.equal(
-    (
-      await request('/knowledge-fields', owner, 'PUT', {
-        ...articleSchema,
-        fields: articleSchema.fields.map((field) => ({
-          ...field,
-          required: field.id === 'content' ? false : field.required,
-        })),
-      })
-    ).status,
-    200,
-  );
-  assert.equal(
-    (
-      await request('/knowledge', owner, 'POST', {
-        title: 'Empty draft',
-        contentDocument: { type: 'doc', content: [{ type: 'paragraph' }] },
-      })
-    ).status,
-    201,
-  );
+  for (const path of ['/incident-fields', '/task-fields', '/knowledge-fields']) {
+    const schema = (await request(path, owner)).data;
+    const rejected = await request(path, owner, 'PUT', {
+      ...schema,
+      fields: schema.fields.map((field, index) =>
+        index ? field : { ...field, required: !field.required },
+      ),
+    });
+    assert.equal(rejected.status, 400);
+    assert.deepEqual((await request(path, owner)).data.fields, schema.fields);
+    assert.equal((await request(path, owner, 'PUT', schema)).status, 200);
+  }
 });

@@ -5,6 +5,7 @@ import { fieldErrors } from '../../../../shared/validation/form-validation.js';
 import { FormPage } from '../../components/forms/form-page.jsx';
 import { Field, Notice } from '../../components/forms/fields.jsx';
 import { Select } from '../../components/forms/select.jsx';
+import { ReferenceField } from '../../components/forms/reference-field.jsx';
 import { RecordActions } from '../../components/record-actions.jsx';
 import { timeZoneOptions } from '../../lib/time-zones.js';
 import { displayValue } from '../../lib/display-value.js';
@@ -28,6 +29,7 @@ export function UserAccountForm({ reset = false }) {
       password: value.password,
     });
     if (!reset) {
+      if ((value.groupIds?.length ?? 0) > 100) found.groupIds = 'Choose up to 100 groups.';
       try {
         userDetails(value);
       } catch (error) {
@@ -49,7 +51,7 @@ export function UserAccountForm({ reset = false }) {
     );
   }
   return (
-    <FormPage title={reset ? 'Reset password' : 'Create user'}>
+    <FormPage title={reset ? 'Reset Password' : 'Create User'}>
       <form noValidate className="form-body" onSubmit={submit}>
         <Notice error={save.error || Object.values(errors)[0]} />
         {!reset && (
@@ -106,6 +108,16 @@ export function UserAccountForm({ reset = false }) {
                 ))}
               </Select>
             </Field>
+            <ReferenceField
+              label="Groups"
+              name="groupIds"
+              referenceType="groups"
+              multiple
+              value={value.groupIds ?? []}
+              onChange={(groupIds) => setValue({ ...value, groupIds })}
+              error={fields.groupIds}
+              disabled={save.busy}
+            />
           </>
         )}
         {reset && (
@@ -166,7 +178,7 @@ export function UserAccountForm({ reset = false }) {
             Cancel
           </button>
           <button className="btn-primary" disabled={save.busy}>
-            {save.busy ? 'Saving…' : reset ? 'Reset password' : 'Create user'}
+            {save.busy ? 'Saving…' : reset ? 'Reset Password' : 'Create User'}
           </button>
         </RecordActions>
       </form>

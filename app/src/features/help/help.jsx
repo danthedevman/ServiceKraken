@@ -20,11 +20,11 @@ import { helpQuestions, helpTopics } from './topics.js';
 const guides = {
   'getting-started': [
     RocketLaunchIcon,
-    'Getting started',
+    'Getting Started',
     'Set up your workspace and create your first service',
   ],
   services: [ServerStackIcon, 'Services', 'Organize ownership, collections, and dependencies'],
-  monitoring: [SignalIcon, 'Monitoring', 'Configure endpoint checks and understand results'],
+  monitoring: [SignalIcon, 'Monitoring', 'Configure Endpoint Checks and Understand Results'],
   incidents: [
     ExclamationTriangleIcon,
     'Incident response',
@@ -117,7 +117,7 @@ export function HelpPage() {
         <div className="min-w-0 space-y-6">
           {query ? (
             <>
-              <h2 className="text-xl font-semibold">Search results</h2>
+              <h2 className="text-xl font-semibold">Search Results</h2>
               <p role="status" className="text-sm text-slate-500">
                 {matches.length} guides and {questions.length} answers
               </p>
@@ -169,19 +169,19 @@ export function HelpPage() {
                 >
                   {index < helpTopics.length - 1
                     ? guides[helpTopics[index + 1].id][1]
-                    : 'Common questions'}
+                    : 'Common Questions'}
                   <ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </nav>
             </article>
           ) : faq ? (
             <>
-              <h2 className="text-xl font-semibold">Common questions</h2>
+              <h2 className="text-xl font-semibold">Common Questions</h2>
               <Questions questions={helpQuestions} />
             </>
           ) : (
             <>
-              <h2 className="text-xl font-semibold">Browse documentation</h2>
+              <h2 className="text-xl font-semibold">Browse Documentation</h2>
               <GuideCards topics={helpTopics} onSelect={clear} />
               <Link
                 to="/help?topic=questions"

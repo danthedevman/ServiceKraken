@@ -55,9 +55,57 @@ test('admins create profiles and securely reset workspace passwords', async (t) 
       .status,
     400,
   );
-  const created = await request('/members', owner.cookie, 'POST', profile);
+  const groups = await request('/groups', owner.cookie);
+  const group = await request('/groups', owner.cookie, 'POST', {
+    name: 'Operations',
+    memberIds: [],
+    revision: groups.data.revision,
+  });
+  assert.equal(group.status, 201);
+  for (const groupIds of [
+    'invalid',
+    ['000000000000000000000000'],
+    [group.data.group.id, group.data.group.id],
+  ]) {
+    const rejected = await request('/members', owner.cookie, 'POST', { ...profile, groupIds });
+    assert.equal(rejected.status, 400);
+    assert.equal(await db.collection('users').countDocuments({ email: profile.email }), 0);
+  }
+  const created = await request('/members', owner.cookie, 'POST', {
+    ...profile,
+    groupIds: [group.data.group.id],
+  });
   assert.equal(created.status, 201);
+  assert.deepEqual((await request('/groups', owner.cookie)).data.groups[0].memberIds, [
+    created.data.user.id,
+  ]);
   assert.equal(created.data.user.passwordHash, undefined);
+  const directory = await request('/members', owner.cookie);
+  const member = directory.data.members.find((entry) => entry.id === created.data.user.id);
+  assert.deepEqual(member.groupIds, [group.data.group.id]);
+  const edit = { ...profile, disabled: false, groupIds: [], groupsRevision: member.groupsRevision };
+  const memberPath = `/members/${created.data.user.id}`;
+  assert.equal(
+    (
+      await request(memberPath, owner.cookie, 'PATCH', {
+        ...edit,
+        groupIds: ['000000000000000000000000'],
+      })
+    ).status,
+    400,
+  );
+  assert.equal((await request(memberPath, owner.cookie, 'PATCH', edit)).status, 200);
+  assert.deepEqual((await request('/groups', owner.cookie)).data.groups[0].memberIds, []);
+  assert.equal((await request(memberPath, owner.cookie, 'PATCH', edit)).status, 409);
+  const updated = await request('/members', owner.cookie);
+  edit.groupsRevision = updated.data.members.find(
+    (entry) => entry.id === created.data.user.id,
+  ).groupsRevision;
+  edit.groupIds = [group.data.group.id];
+  assert.equal((await request(memberPath, owner.cookie, 'PATCH', edit)).status, 200);
+  assert.deepEqual((await request('/groups', owner.cookie)).data.groups[0].memberIds, [
+    created.data.user.id,
+  ]);
   assert.equal((await request('/members', owner.cookie, 'POST', profile)).status, 400);
   const login = await request('/auth/login', null, 'POST', { email: profile.email, password });
   assert.equal(login.status, 200);

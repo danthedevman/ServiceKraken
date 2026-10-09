@@ -69,7 +69,7 @@ export function RecordWorkspace({
                 {(showFormBuilder || secondaryActions) && (
                   <ActionMenu label="Record actions">
                     {secondaryActions}
-                    {showFormBuilder && <Link to={`/${kind}/fields`}>Form builder</Link>}
+                    {showFormBuilder && <Link to={`/${kind}/fields`}>Form Builder</Link>}
                   </ActionMenu>
                 )}
               </div>
@@ -149,7 +149,7 @@ export function RecordMetadata({ item, extra = [] }) {
     ['Last check', date(item.lastCheck?.checkedAt)],
     ['Last check started', date(item.lastStartedAt)],
     ['Next scheduled check', item.paused ? null : date(item.nextCheckAt)],
-    ['HTTP status', item.lastCheck?.statusCode],
+    ['HTTP Status', item.lastCheck?.statusCode],
     [
       'Response time',
       typeof item.lastCheck?.durationMs === 'number' ? `${item.lastCheck.durationMs} ms` : null,
@@ -184,8 +184,8 @@ export function EditRecordButton({ onClick }) {
       type="button"
       className="btn-secondary"
       onClick={onClick}
-      aria-label="Edit record"
-      title="Edit record"
+      aria-label="Edit Record"
+      title="Edit Record"
     >
       <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
       <span>Edit</span>

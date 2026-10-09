@@ -17,6 +17,8 @@ import {
   ArrowsUpDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
 } from '@heroicons/react/24/outline';
 import { RefreshButton } from './icon-button.jsx';
 import { toCsv } from '../../../shared/files/csv.js';
@@ -154,10 +156,11 @@ function DataTableView({
           {actions}
           <button
             type="button"
-            className="btn-secondary gap-2"
+            className="btn-secondary table-filter-toggle gap-2"
             aria-label="Filters"
             title="Filters"
             aria-expanded={filtersOpen}
+            aria-pressed={filtersOpen}
             aria-controls={filtersId}
             onClick={() => setPreference('filtersOpen', !filtersOpen)}
           >
@@ -192,7 +195,7 @@ function DataTableView({
               className="btn-secondary gap-2"
               disabled={exporting || busy || invalid}
               onClick={exportRows}
-              title="Export all filtered rows, across all pages"
+              title="Export All Filtered Rows, Across All Pages"
             >
               <ArrowDownTrayIcon className="h-5 w-5" aria-hidden="true" />
               {exporting ? 'Exporting…' : 'Export CSV'}
@@ -270,8 +273,8 @@ function DataTableView({
                 <th scope="col">
                   <input
                     type="checkbox"
-                    aria-label="Select all rows on this page"
-                    title="Select all rows on this page"
+                    aria-label="Select All Rows on This Page"
+                    title="Select All Rows on This Page"
                     checked={allSelected}
                     disabled={initialLoading || !visible.length || deleting}
                     ref={(node) => {
@@ -409,6 +412,16 @@ function DataTableView({
         </label>
         <div className="flex gap-2">
           <button
+            type="button"
+            className="btn-secondary"
+            aria-label="Go to First Page"
+            title="Go to First Page"
+            disabled={current <= 1 || busy || invalid}
+            onClick={() => remote.onPage(1)}
+          >
+            <ChevronDoubleLeftIcon className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
             className="btn-secondary gap-1"
             disabled={current <= 1 || busy || invalid}
             onClick={() => remote.onPage(current - 1)}
@@ -423,6 +436,16 @@ function DataTableView({
           >
             Next
             <ChevronRightIcon className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            aria-label="Go to Last Page"
+            title="Go to Last Page"
+            disabled={current >= pages || busy || invalid}
+            onClick={() => remote.onPage(pages)}
+          >
+            <ChevronDoubleRightIcon className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </nav>
@@ -459,7 +482,11 @@ function DataTableView({
           <ul className="mt-3 max-h-48 overflow-auto text-sm">
             {confirmRows.map((row, index) => (
               <li key={index}>
-                {row.title || row.name || row.email || row.id || `Row ${index + 1}`}
+                {row.title ||
+                  row.name ||
+                  row.displayName ||
+                  row.email ||
+                  `Selected record ${index + 1}`}
               </li>
             ))}
           </ul>

@@ -38,12 +38,12 @@ const links = [
   ['/incidents', 'Incidents', ExclamationTriangleIcon],
   ['/services', 'Services', ServerStackIcon],
   ['/tasks', 'Tasks', ClipboardDocumentListIcon],
-  ['/on-call', 'On-call', CalendarDaysIcon],
+  ['/on-call', 'On Call', CalendarDaysIcon],
   ['/knowledge', 'Knowledge', BookOpenIcon],
   ['/groups', 'Groups', UserGroupIcon],
   ['/integrations', 'Integrations', PuzzlePieceIcon],
   ['/workspace', 'Users', UsersIcon],
-  ['/status', 'Status page', ChartBarSquareIcon],
+  ['/status', 'Status Page', ChartBarSquareIcon],
   ['/settings', 'Settings', Cog6ToothIcon],
 ];
 
@@ -197,12 +197,12 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
             <span className="group-hover:opacity-0 group-focus-within:opacity-0">
               {renderBrand(true)}
             </span>
-            <Tooltip label={compact ? 'Expand navigation' : null}>
+            <Tooltip label={compact ? 'Expand Navigation' : null}>
               <button
                 type="button"
                 className="absolute inset-0 grid place-items-center rounded-lg bg-white opacity-0 hover:bg-slate-100 focus:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-slate-900 dark:hover:bg-slate-800"
-                aria-label="Expand navigation"
-                title="Expand navigation"
+                aria-label="Expand Navigation"
+                title="Expand Navigation"
                 onClick={() => setCollapsed(false)}
               >
                 <ChevronDoubleRightIcon className="h-5 w-5" aria-hidden="true" />
@@ -215,12 +215,12 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
           </Link>
         )}
         <div className={`flex shrink-0 ${compact ? 'flex-col' : 'items-center'}`}>
-          <Tooltip label={compact ? 'Search workspace' : null}>
+          <Tooltip label={compact ? 'Search Workspace' : null}>
             <button
               type="button"
               className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Search workspace"
-              title="Search workspace"
+              aria-label="Search Workspace"
+              title="Search Workspace"
               aria-haspopup="dialog"
               onClick={() => {
                 close();
@@ -239,14 +239,14 @@ export function Sidebar({ user, logout, busy, collapsed, setCollapsed, renderBra
                 mobile
                   ? 'Close navigation'
                   : collapsed
-                    ? 'Expand navigation'
+                    ? 'Expand Navigation'
                     : 'Collapse navigation'
               }
               title={
                 mobile
                   ? 'Close navigation'
                   : collapsed
-                    ? 'Expand navigation'
+                    ? 'Expand Navigation'
                     : 'Collapse navigation'
               }
             >
@@ -390,7 +390,7 @@ function CreateDialog({ role, onNavigate, onClose }) {
           },
           {
             to: '/knowledge/new',
-            title: 'Knowledge article',
+            title: 'Knowledge Article',
             description: 'Share a runbook or solution.',
             Icon: BookOpenIcon,
           },

@@ -20,6 +20,7 @@ import {
 
 import { memberFilter } from '../repositories/members.js';
 import { members } from '../repositories/members.js';
+import { settings, save } from '../repositories/settings.js';
 
 /** Register workspace routes; authentication and workspace policy run in app.js. */
 export function installWorkspaceRoutes(app, db, appOrigin) {
@@ -36,6 +37,24 @@ export function installWorkspaceRoutes(app, db, appOrigin) {
     const details = userDetails(req.body);
     const role = choice(req.body.role, ['admin', 'responder', 'user', 'viewer'], 'role');
     if (req.body.confirmPassword !== password) invalid('confirmPassword', 'Passwords must match.');
+    const groupIds = req.body.groupIds ?? [];
+    if (
+      !Array.isArray(groupIds) ||
+      groupIds.length > 100 ||
+      new Set(groupIds).size !== groupIds.length ||
+      groupIds.some((value) => typeof value !== 'string')
+    )
+      invalid('groupIds', 'Choose up to 100 groups without duplicates.');
+    const groupSettings = groupIds.length ? await settings(db, req.workspaceId) : null;
+    if (
+      groupIds.some(
+        (value) =>
+          !(groupSettings.groups ?? []).some(
+            (group) => group.id === value && !group.demoBatchId && group.memberIds.length < 100,
+          ),
+      )
+    )
+      invalid('groupIds', 'Choose available workspace groups with room for another member.');
     if (await db.collection('users').findOne({ email }))
       invalid('email', 'An account already uses this email address.');
     const count = await db
@@ -61,6 +80,25 @@ export function installWorkspaceRoutes(app, db, appOrigin) {
     } catch (error) {
       if (error.code === 11000) invalid('email', 'An account already uses this email address.');
       throw error;
+    }
+    if (groupSettings) {
+      try {
+        await save(db, groupSettings, groupSettings.revision, {
+          groups: groupSettings.groups.map((group) =>
+            groupIds.includes(group.id)
+              ? {
+                  ...group,
+                  ...auditStamp(group, req.user),
+                  memberIds: [...group.memberIds, String(user._id)],
+                }
+              : group,
+          ),
+        });
+      } catch (error) {
+        // Roll back this newly created account if membership saving conflicts.
+        await db.collection('users').deleteOne({ _id: user._id, workspaceId: req.workspaceId });
+        throw error;
+      }
     }
     res.status(201).json({ user: serializeUser(user) });
   });
@@ -100,7 +138,8 @@ export function installWorkspaceRoutes(app, db, appOrigin) {
     await db.collection('sessions').deleteMany({ userId });
     res.json({ ok: true });
   });
-  app.get('/api/members', async (req, res) =>
+  app.get('/api/members', async (req, res) => {
+    const data = await settings(db, req.workspaceId);
     res.json({
       members: (await members(db, req.workspaceId))
         .filter((u) => req.role !== 'user' || String(u._id) === String(req.user._id))
@@ -111,9 +150,16 @@ export function installWorkspaceRoutes(app, db, appOrigin) {
           ...auditFields(u),
           disabled: u.disabled === true,
           owner: String(u._id) === String(req.workspaceId),
+          groupsRevision: data.revision,
+          groupIds: (data.groups ?? [])
+            .filter((group) => group.memberIds.includes(String(u._id)))
+            .map((group) => group.id),
+          groupNames: (data.groups ?? [])
+            .filter((group) => group.memberIds.includes(String(u._id)))
+            .map((group) => group.name),
         })),
-    }),
-  );
+    });
+  });
   app.get('/api/invitations', requireAdmin, async (req, res) => {
     const rows = await db
       .collection('invitations')
@@ -212,12 +258,48 @@ export function installWorkspaceRoutes(app, db, appOrigin) {
     if (!current) throw new InputError('Teammate not found.', 404);
     if (current.demoBatchId && req.body.disabled !== true)
       invalid('disabled', 'Demo users cannot sign in.');
+    const details = userDetails(req.body, current);
+    if (req.body.groupIds !== undefined) {
+      const groupIds = req.body.groupIds;
+      const data = await settings(db, req.workspaceId);
+      const groups = data.groups ?? [];
+      if (
+        !Array.isArray(groupIds) ||
+        groupIds.length > 100 ||
+        new Set(groupIds).size !== groupIds.length ||
+        groupIds.some(
+          (value) =>
+            typeof value !== 'string' ||
+            !groups.some(
+              (group) =>
+                group.id === value &&
+                (group.memberIds.includes(String(userId)) ||
+                  (!group.demoBatchId && group.memberIds.length < 100)),
+            ),
+        )
+      )
+        invalid('groupIds', 'Choose available workspace groups without duplicates.');
+      await save(db, data, req.body.groupsRevision, {
+        groups: groups.map((group) => {
+          const included = group.memberIds.includes(String(userId));
+          const selected = groupIds.includes(group.id);
+          if (included === selected) return group;
+          return {
+            ...group,
+            ...auditStamp(group, req.user),
+            memberIds: selected
+              ? [...group.memberIds, String(userId)]
+              : group.memberIds.filter((value) => value !== String(userId)),
+          };
+        }),
+      });
+    }
     const result = await db.collection('users').updateOne(
       { ...memberFilter(req.workspaceId), _id: userId },
       {
         $set: {
           ...auditStamp(current, req.user),
-          ...userDetails(req.body, current),
+          ...details,
           displayName,
           role,
           disabled: req.body.disabled,
@@ -225,7 +307,12 @@ export function installWorkspaceRoutes(app, db, appOrigin) {
       },
     );
     if (!result.matchedCount) throw new InputError('Teammate not found.', 404);
-    await db.collection('sessions').deleteMany({ userId });
+    if (
+      String(userId) !== String(req.user._id) ||
+      role !== current.role ||
+      req.body.disabled !== current.disabled
+    )
+      await db.collection('sessions').deleteMany({ userId });
     res.json({ ok: true });
   });
 }

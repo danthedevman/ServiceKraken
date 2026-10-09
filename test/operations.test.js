@@ -9,22 +9,25 @@ import { integrationUrl } from '../shared/integrations/provider-url.js';
 import { sendNotification } from '../workers/src/notifications/send.js';
 
 const id = () => new ObjectId().toHexString();
-test('built-in fields allow mandatory changes while custom types remain immutable', () => {
+test('built-in settings are locked while custom fields remain configurable', () => {
   assert.throws(() => validateFields(BUILTIN_FIELDS.slice(1)), /cannot be removed/);
-  assert.throws(
-    () => validateFields(BUILTIN_FIELDS.map((f) => ({ ...f, archived: true }))),
-    /allow/,
-  );
-  assert.deepEqual(
-    validateFields(BUILTIN_FIELDS.map((f) => ({ ...f, required: !f.required }))).map(
-      (f) => f.required,
-    ),
-    BUILTIN_FIELDS.map((f) => !f.required),
-  );
-  assert.equal(
-    validateFields([...BUILTIN_FIELDS].reverse().map((f) => ({ ...f, label: 'Label' })))[0].label,
-    'Label',
-  );
+  for (const change of [
+    { required: false },
+    { label: 'Changed' },
+    { archived: true },
+    { type: 'text' },
+    { choices: [] },
+  ]) {
+    assert.throws(
+      () =>
+        validateFields(
+          BUILTIN_FIELDS.map((field, index) => (index ? field : { ...field, ...change })),
+        ),
+      /cannot be changed/,
+    );
+  }
+  assert.deepEqual(validateFields([...BUILTIN_FIELDS].reverse()), [...BUILTIN_FIELDS].reverse());
+  assert.deepEqual(validateFields(BUILTIN_FIELDS), BUILTIN_FIELDS);
   const custom = {
     id: id(),
     label: 'Environment',

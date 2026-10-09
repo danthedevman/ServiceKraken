@@ -185,18 +185,18 @@ export function Dashboard() {
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
         <BarChart
-          title="Unresolved incidents by severity"
+          title="Unresolved Incidents by Severity"
           rows={rows(data.severity, ['critical', 'high', 'medium', 'low'])}
           note="All unresolved incidents · custom labels use their workflow mapping"
         />
         <PieChart
-          title="Response status"
+          title="Response Status"
           rows={rows(data.incidentStatus, ['open', 'acknowledged'])}
           note="How much active work has been acknowledged"
         />
       </div>
       <DataTable
-        title="Priority incidents"
+        title="Priority Incidents"
         description="Highest severity first, then oldest within severity. Export covers this queue."
         rows={data.incidents}
         rowKey={(row) => row.id}
@@ -252,18 +252,18 @@ export function Dashboard() {
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
         <PieChart
-          title="Task workload by status"
+          title="Task Workload by Status"
           rows={rows(data.taskStatus, ['todo', 'in_progress', 'blocked'])}
           note="Outstanding tasks only"
         />
         <BarChart
-          title="Outstanding tasks by priority"
+          title="Outstanding Tasks by Priority"
           rows={rows(data.taskPriority, ['high', 'medium', 'low'])}
           note="All outstanding tasks, including overdue work"
         />
       </div>
       <DataTable
-        title="Priority tasks"
+        title="Priority Tasks"
         description="Search and export all outstanding records."
         rows={data.tasks}
         rowKey={(row) => row.id}
@@ -320,7 +320,7 @@ export function Dashboard() {
         </div>
         <div className="grid gap-5 lg:grid-cols-2">
           <PieChart
-            title="Service health"
+            title="Service Health"
             rows={healthRows(
               Object.fromEntries(
                 ['up', 'degraded', 'down', 'unknown'].map((status) => [
@@ -332,7 +332,7 @@ export function Dashboard() {
             note="Missing and stale checks are not treated as healthy"
           />
           <BarChart
-            title="Services with the most active incidents"
+            title="Services with the Most Active Incidents"
             rows={[...data.services]
               .sort((a, b) => b.count - a.count)
               .slice(0, 8)
@@ -345,7 +345,7 @@ export function Dashboard() {
           />
         </div>
         <DataTable
-          title="Services with active incidents"
+          title="Services with Active Incidents"
           rows={data.services}
           rowKey={(row) => row.id}
           source="impacted-services"
@@ -368,7 +368,7 @@ export function Dashboard() {
           ]}
         />
         <PieChart
-          title="Monitor health"
+          title="Monitor Health"
           rows={healthRows(chart.counts)}
           note="Current state including paused and unverified monitors"
         />
@@ -400,7 +400,7 @@ export function Dashboard() {
         tabs={[
           { id: 'incidents', label: 'Incidents', content: incidents },
           { id: 'tasks', label: 'Tasks', content: tasks },
-          { id: 'services', label: 'Service health', content: services },
+          { id: 'services', label: 'Service Health', content: services },
         ]}
       />
       {data && (

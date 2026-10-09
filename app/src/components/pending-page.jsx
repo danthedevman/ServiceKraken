@@ -11,7 +11,7 @@ export function PendingPage({ pathname }) {
     title = 'Dashboard';
     variant = 'dashboard';
   } else if (kind === 'status') {
-    title = 'Status page';
+    title = 'Status Page';
     variant = 'status';
   } else if (kind === 'profile') {
     title = 'Profile settings';
@@ -29,11 +29,11 @@ export function PendingPage({ pathname }) {
   } else if (kind === 'monitors') {
     title =
       id === 'new'
-        ? 'Add a monitor'
+        ? 'Add a Monitor'
         : action === 'edit'
-          ? 'Edit monitor'
+          ? 'Edit Monitor'
           : action === 'events'
-            ? 'Check event'
+            ? 'Check Event'
             : 'Monitor';
     variant =
       id === 'new' || action === 'edit'

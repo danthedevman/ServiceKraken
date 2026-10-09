@@ -22,7 +22,7 @@ export function MonitorOrganization({ monitor }) {
   return (
     <section className="panel space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-semibold">Service and organization</h2>
+        <h2 className="font-semibold">Service and Organization</h2>
         <AdminOnly>
           <Link className="btn-secondary" to={`/monitors/${monitor.id}/edit`}>
             Edit assignment / component

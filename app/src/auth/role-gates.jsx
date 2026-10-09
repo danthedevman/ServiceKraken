@@ -4,7 +4,7 @@ import { AuthContext } from './auth-context.js';
 /** Hide administrative controls for responders; the API remains the authority. */
 export function AdminOnly({ children, page = false }) {
   const { user, loading } = useContext(AuthContext);
-  if (loading) return page ? <p role="status">Loading account…</p> : null;
+  if (loading) return null;
   return user?.role === 'admin' ? (
     children
   ) : page ? (
@@ -15,7 +15,7 @@ export function AdminOnly({ children, page = false }) {
 /** Operational editors are available to responders and admins, never read-only users. */
 export function ResponderOnly({ children, page = false }) {
   const { user, loading } = useContext(AuthContext);
-  if (loading) return page ? <p role="status">Loading account…</p> : null;
+  if (loading) return null;
   return ['admin', 'responder'].includes(user?.role) ? (
     children
   ) : page ? (
@@ -26,7 +26,7 @@ export function ResponderOnly({ children, page = false }) {
 /** Users can submit incidents; viewers cannot create or modify operational records. */
 export function IncidentCreatorOnly({ children }) {
   const { user, loading } = useContext(AuthContext);
-  if (loading) return <p role="status">Loading account…</p>;
+  if (loading) return null;
   return ['admin', 'responder', 'user'].includes(user?.role) ? (
     children
   ) : (

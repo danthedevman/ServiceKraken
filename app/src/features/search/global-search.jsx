@@ -37,7 +37,7 @@ export function GlobalSearch({ role, onClose }) {
   return (
     <Modal
       className="global-search-modal"
-      title="Search workspace"
+      title="Search Workspace"
       onClose={onClose}
       initialFocusRef={inputRef}
     >

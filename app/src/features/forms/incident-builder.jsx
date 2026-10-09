@@ -3,9 +3,13 @@ import { Select } from '../../components/forms/select.jsx';
 import { useUiPreferences } from '../../preferences/ui-preferences.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
 import { RecordWorkspace } from '../../components/record-workspace.jsx';
-import { ActionMenu } from '../../components/action-menu.jsx';
 import React, { useContext, useState } from 'react';
-import { ArrowUpIcon, ArrowDownIcon, PlusIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  PlusIcon,
+  PencilSquareIcon,
+} from '@heroicons/react/24/outline';
 import { AuthContext } from '../../auth/auth-context.js';
 import { useResource } from '../../data/use-resource.js';
 import { Field, CustomField, Notice } from '../../components/forms/fields.jsx';
@@ -206,6 +210,7 @@ function OptionsEditor({ field, kind, onChange }) {
 }
 /** One admin form builder for incidents, tasks, and knowledge. */
 export function IncidentBuilderPage({ kind = 'incidents' }) {
+  const [version, setVersion] = useState(0);
   const { user } = useContext(AuthContext),
     path =
       kind === 'incidents'
@@ -216,9 +221,6 @@ export function IncidentBuilderPage({ kind = 'incidents' }) {
   const resource = useResource(user?.role === 'admin' ? path : null);
   return (
     <div className="space-y-3">
-      <h1 className="page-title">
-        {kind === 'incidents' ? 'Incident' : kind === 'tasks' ? 'Task' : 'Knowledge'} form builder
-      </h1>
       {user?.role !== 'admin' ? (
         <p>Workspace admin access is required.</p>
       ) : (
@@ -226,11 +228,11 @@ export function IncidentBuilderPage({ kind = 'incidents' }) {
           <Notice error={resource.error} />
           {resource.data ? (
             <Builder
-              key={kind}
+              key={`${kind}-${version}`}
               initial={resource.data}
               path={path}
               kind={kind}
-              reload={resource.refresh}
+              onCancel={() => setVersion((value) => value + 1)}
             />
           ) : (
             <p role="status">Loading form settings…</p>
@@ -241,7 +243,8 @@ export function IncidentBuilderPage({ kind = 'incidents' }) {
   );
 }
 /** Keep unsaved settings stable during background query refreshes. */
-function Builder({ initial, path, kind, reload }) {
+function Builder({ initial, path, kind, onCancel }) {
+  const [editing, setEditing] = useState(false);
   const [fields, setFields] = useState(initial.fields),
     [revision, setRevision] = useState(initial.revision),
     [savedIds, setSavedIds] = useState(initial.fields.map((field) => field.id)),
@@ -257,7 +260,7 @@ function Builder({ initial, path, kind, reload }) {
   const save = useSave(),
     field = fields.find((row) => row.id === selected);
   const update = (changes) => {
-    if (save.busy) return;
+    if (!editing || save.busy || field?.type === 'builtin') return;
     setSaved(false);
     setFields(fields.map((row) => (row.id === selected ? { ...row, ...changes } : row)));
   };
@@ -265,74 +268,82 @@ function Builder({ initial, path, kind, reload }) {
     <>
       <Notice error={save.error} />
       {saved && <p role="status">Form saved.</p>}
-      <div className="flex flex-wrap gap-3">
-        <button
-          className="btn-primary"
-          disabled={save.busy}
-          onClick={() =>
-            save.run(path, 'PUT', { fields, revision }, () => {
-              setRevision(revision + 1);
-              setSavedIds(fields.map((row) => row.id));
-              setSaved(true);
-            })
-          }
-        >
-          {save.busy ? 'Saving…' : 'Save form'}
-        </button>
-        <ActionMenu label="Form builder actions">
+      <div className="flex flex-wrap justify-end gap-3">
+        {!editing ? (
           <button
-            className="btn-secondary"
-            disabled={save.busy}
-            onClick={async () => {
-              const result = await reload();
-              if (result.data) {
-                setFields(result.data.fields);
-                setRevision(result.data.revision);
-                setSavedIds(result.data.fields.map((row) => row.id));
-                setSaved(false);
-              }
+            type="button"
+            className="btn-secondary gap-2"
+            onClick={() => {
+              setFields(initial.fields);
+              setRevision(initial.revision);
+              setSavedIds(initial.fields.map((field) => field.id));
+              setSaved(false);
+              setEditing(true);
             }}
           >
-            Reload saved form
+            <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
+            Edit
           </button>
-        </ActionMenu>
-        <button
-          className="btn-secondary gap-2"
-          disabled={save.busy || fields.filter((row) => row.type !== 'builtin').length >= 20}
-          onClick={() => {
-            const id = newId();
-            setFields([
-              ...fields,
-              {
-                id,
-                label: 'New field',
-                type: 'text',
-                required: false,
-                archived: false,
-                options: [],
-              },
-            ]);
-            selectField(id);
-            setSaved(false);
-          }}
-        >
-          <PlusIcon className="h-5 w-5" />
-          Add custom field
-        </button>
+        ) : (
+          <>
+            <button
+              className="btn-secondary gap-2"
+              disabled={save.busy || fields.filter((row) => row.type !== 'builtin').length >= 20}
+              onClick={() => {
+                const id = newId();
+                setFields([
+                  ...fields,
+                  {
+                    id,
+                    label: 'New Field',
+                    type: 'text',
+                    required: false,
+                    archived: false,
+                    options: [],
+                  },
+                ]);
+                selectField(id);
+                setSaved(false);
+              }}
+            >
+              <PlusIcon className="h-5 w-5" aria-hidden="true" />
+              Add Custom Field
+            </button>
+            <button type="button" className="btn-secondary" disabled={save.busy} onClick={onCancel}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={save.busy}
+              onClick={() =>
+                save.run(path, 'PUT', { fields, revision }, () => {
+                  setRevision(revision + 1);
+                  setSavedIds(fields.map((row) => row.id));
+                  setSaved(true);
+                  setEditing(false);
+                })
+              }
+            >
+              {save.busy ? 'Saving…' : 'Save'}
+            </button>
+          </>
+        )}
       </div>
       <RecordWorkspace
         showToolbar={false}
         label="Field settings"
         sidebar={
           <section className="panel form-body p-6">
-            <h2 className="font-semibold">{field ? `Edit ${field.label}` : 'Field settings'}</h2>
+            <h2 className="font-semibold">{field ? field.label : 'Field Settings'}</h2>
             {!field && (
-              <p className="text-sm text-slate-500">
-                Select a field or add one to edit its settings.
-              </p>
+              <p className="text-sm text-slate-500">Select a field to view its settings.</p>
             )}
             {field && (
-              <>
+              <fieldset
+                disabled={!editing || save.busy || field.type === 'builtin'}
+                className="space-y-4"
+              >
                 <Field name="label" label="Label" errors={save.fields}>
                   <input
                     value={field.label}
@@ -349,8 +360,7 @@ function Builder({ initial, path, kind, reload }) {
                 </label>
                 {field.type === 'builtin' ? (
                   <p className="text-sm text-slate-500">
-                    This field cannot be removed or have its type changed. Required can be enabled
-                    or disabled.
+                    System Fields can be reordered. Their other settings are locked.
                   </p>
                 ) : (
                   <>
@@ -403,15 +413,15 @@ function Builder({ initial, path, kind, reload }) {
                 {(field.type === 'select' || builtinChoices[kind]?.[field.id]) && (
                   <OptionsEditor key={field.id} kind={kind} field={field} onChange={update} />
                 )}
-              </>
+              </fieldset>
             )}
           </section>
         }
       >
         <section className="panel space-y-4 p-5">
-          <h2 className="font-semibold">Form fields</h2>
+          <h2 className="font-semibold">Form Fields</h2>
           <p className="text-sm text-slate-500">
-            Select a field to configure it. Use its arrows to change the order.
+            Select a field to view its settings. In edit mode, use its arrows to change the order.
           </p>
           {fields.map((row, index) => (
             <div
@@ -430,20 +440,26 @@ function Builder({ initial, path, kind, reload }) {
                     {row.required ? ' *' : ''}
                   </span>
                   <span className="text-xs text-slate-500">
-                    {row.archived ? 'Archived' : displayValue(row.type)}
+                    {row.archived
+                      ? 'Archived'
+                      : row.type === 'builtin'
+                        ? 'System Field'
+                        : displayValue(row.type)}
                   </span>
                 </button>
-                <Reorder
-                  label={row.label}
-                  index={index}
-                  length={fields.length}
-                  onMove={(offset) => {
-                    if (save.busy) return;
-                    setFields(move(fields, index, offset));
-                    setSelected(row.id);
-                    setSaved(false);
-                  }}
-                />
+                {editing && (
+                  <Reorder
+                    label={row.label}
+                    index={index}
+                    length={fields.length}
+                    onMove={(offset) => {
+                      if (save.busy) return;
+                      setFields(move(fields, index, offset));
+                      setSelected(row.id);
+                      setSaved(false);
+                    }}
+                  />
+                )}
               </div>
               <fieldset disabled aria-hidden="true" className="pointer-events-none min-w-0">
                 {row.type === 'builtin' ? (

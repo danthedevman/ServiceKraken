@@ -70,7 +70,7 @@ export function AuthPage({ register = false }) {
       </section>
       <section className="panel p-7 sm:p-10">
         <h2 className="text-2xl font-semibold tracking-tight">
-          {register ? 'Create your account' : 'Sign in'}
+          {register ? 'Create Your Account' : 'Sign in'}
         </h2>
 
         <ValidatedForm
@@ -109,7 +109,7 @@ export function AuthPage({ register = false }) {
             />
           </label>
           <button className="btn-primary w-full" disabled={busy}>
-            {busy ? 'Please wait…' : register ? 'Create account' : 'Sign in'}
+            {busy ? 'Please wait…' : register ? 'Create Account' : 'Sign in'}
             <ArrowRightIcon className="h-5 w-5" aria-hidden="true" />
           </button>
         </ValidatedForm>
@@ -119,7 +119,7 @@ export function AuthPage({ register = false }) {
             className="font-semibold text-blue-700 dark:text-blue-400 hover:underline"
             to={register ? '/login' : '/register'}
           >
-            {register ? 'Sign in' : 'Create an account'}
+            {register ? 'Sign in' : 'Create an Account'}
           </Link>
         </p>
       </section>

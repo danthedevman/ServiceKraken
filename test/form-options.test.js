@@ -43,9 +43,11 @@ test('built-in dropdown values cannot be deleted or remapped; custom choices req
   );
   const added = { value: id(), label: 'Waiting on vendor', base: 'open', hidden: false };
   const choices = validateChoices([...options, added], 'incidents', 'status');
-  const schema = validateFields(
-    BUILTIN_FIELDS.map((field) => (field.id === 'status' ? { ...field, choices } : field)),
+  const legacy = BUILTIN_FIELDS.map((field) =>
+    field.id === 'status' ? { ...field, choices } : field,
   );
+  const schema = validateFields(legacy, legacy);
+  assert.throws(() => validateFields(legacy), /cannot be changed/);
   const result = resolveChoices({ statusOption: added.value }, schema, 'incidents');
   assert.equal(result.status, 'open');
   assert.equal(result.statusLabel, 'Waiting on vendor');

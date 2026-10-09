@@ -90,7 +90,7 @@ export function IncidentDiscussion({ incidentId, comments, role }) {
           </p>
           <div className="form-actions">
             <button className="btn-primary" disabled={save.busy || !body.trim()}>
-              {save.busy ? 'Posting…' : kind === 'work_note' ? 'Add work note' : 'Post comment'}
+              {save.busy ? 'Posting…' : kind === 'work_note' ? 'Add Work Note' : 'Post comment'}
             </button>
           </div>
         </form>
@@ -183,7 +183,7 @@ export function IncidentDiscussion({ incidentId, comments, role }) {
       ) : (
         <DataTable
           source={`comments?recordId=${incidentId}`}
-          title="Comments and notes"
+          title="Comments and Notes"
           rows={visible}
           rowKey={(row) => row.id}
           filename="incident-comments.csv"

@@ -1,6 +1,6 @@
 import { DateTime } from '../../preferences/date-time.jsx';
 import { StatusSubscriptions } from './subscriptions.jsx';
-import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import { Select } from '../../components/forms/select.jsx';
 import { statusRange } from '../../../../shared/domain/status-range.js';
 import { StatusMessage } from './message.jsx';
@@ -32,7 +32,7 @@ export function StatusPage({ publicView = false }) {
           {!publicView && data?.iconUrl && (
             <img src={data.iconUrl} alt="" className="h-10 w-10 object-contain" />
           )}
-          <h1 className="page-title">Service status</h1>
+          <h1 className="page-title">Service Status</h1>
         </div>
         <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
           <label className="field-label !min-w-0 flex-1 sm:w-64">
@@ -67,11 +67,12 @@ export function StatusPage({ publicView = false }) {
               <Link
                 className="btn-secondary h-11 w-11 shrink-0 !p-0"
                 to="/status/settings"
-                aria-label="Manage status page"
-                title="Manage status page"
+                aria-label="Manage Status Page"
+                title="Manage Status Page"
               >
                 <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
               </Link>
+              <PublicStatusLink />
             </AdminOnly>
           )}
         </div>
@@ -111,6 +112,23 @@ export function StatusPage({ publicView = false }) {
     </section>
   );
 }
+/** Show the public launch action only after saved visibility settings confirm public access. */
+function PublicStatusLink() {
+  const { data } = useResource('/status-settings', 30000);
+  if (data?.visibility !== 'public' || !data.publicPath) return null;
+  return (
+    <a
+      href={data.publicPath}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="btn-secondary h-11 w-11 shrink-0 !p-0"
+      aria-label="Open Public Status Page in a new tab"
+      title="Open Public Status Page"
+    >
+      <ArrowTopRightOnSquareIcon className="h-5 w-5" aria-hidden="true" />
+    </a>
+  );
+}
 /** Public pages omit private record links and management actions. */
 export function PublicStatusPage() {
   const { token } = useParams();
@@ -123,11 +141,18 @@ export function PublicStatusPage() {
   return (
     <div className="mx-auto max-w-4xl px-5 py-8">
       <header className="mb-10 flex items-center justify-between gap-4">
-        {data?.iconUrl ? (
-          <img src={data.iconUrl} alt="Status page logo" className="h-14 max-w-48 object-contain" />
-        ) : (
-          <Logo />
-        )}
+        <div className="flex h-14 min-w-0 items-center">
+          {data &&
+            (data.iconUrl ? (
+              <img
+                src={data.iconUrl}
+                alt="Status page logo"
+                className="h-14 max-w-48 object-contain"
+              />
+            ) : (
+              <Logo />
+            ))}
+        </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
           <ThemeToggle />
           <StatusSubscriptions token={token} capabilities={data?.subscriptions} />

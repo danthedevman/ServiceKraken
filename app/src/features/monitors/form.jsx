@@ -30,7 +30,7 @@ export function MonitorForm({ monitor, onReset }) {
   if (!monitor && !preferences.data)
     return (
       <div className="form-page">
-        <h1 className="page-title">Create monitor</h1>
+        <h1 className="page-title">Create Monitor</h1>
         <ErrorNotice>{preferences.error}</ErrorNotice>
         {!preferences.error && <p role="status">Loading monitor defaults…</p>}
       </div>
@@ -78,7 +78,7 @@ function MonitorEditor({ monitor, onReset, defaults }) {
     }
   };
   return (
-    <FormPage title={monitor ? 'Monitor' : 'Create monitor'}>
+    <FormPage title={monitor ? 'Monitor' : 'Create Monitor'}>
       <ValidatedForm
         kind={monitor ? 'monitor' : 'monitor-create'}
         onSubmit={submit}
@@ -193,7 +193,7 @@ function MonitorEditor({ monitor, onReset, defaults }) {
         <RecordActions>
           <CancelButton onCancel={onReset} to="/monitors" disabled={busy} />
           <button className="btn-primary" disabled={busy}>
-            {busy ? 'Saving…' : monitor ? 'Save changes' : 'Create monitor'}
+            {busy ? 'Saving…' : monitor ? 'Save Changes' : 'Create Monitor'}
           </button>
         </RecordActions>
       </ValidatedForm>

@@ -45,7 +45,7 @@ export function IntegrationEditor({ initial, services, close, onSaved, onDeleted
     </Field>
   );
   return (
-    <FormPage title={initial.existing ? 'Configure integration' : 'New integration'}>
+    <FormPage title={initial.existing ? 'Configure Integration' : 'New Integration'}>
       <form
         noValidate
         className="form-body"

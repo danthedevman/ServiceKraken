@@ -20,7 +20,7 @@ export function JoinPage() {
     [password, setPassword] = useState('');
   return (
     <main className="mx-auto max-w-lg space-y-6 p-8">
-      <h1 className="page-title">Join your workspace</h1>
+      <h1 className="page-title">Join Your Workspace</h1>
       <form
         noValidate
         className="panel space-y-5 p-6"

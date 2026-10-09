@@ -23,7 +23,7 @@ export function HeaderTable({ headerSet = 'request' }) {
   return (
     <DataTable
       source={`headers?monitorId=${id}&eventId=${eventId}&headerSet=${headerSet}`}
-      title="Response headers"
+      title="Response Headers"
       rowKey={(row) => row.name}
       filename="response-headers.csv"
       defaultSort="name:asc"
@@ -96,12 +96,12 @@ export function EventDetail() {
             </div>
             <div className={layouts.scores}>
               <Stat
-                title="HTTP status"
+                title="HTTP Status"
                 value={event.statusCode ?? '—'}
                 note={event.statusCode ? 'Last response received' : 'No HTTP response received'}
               />
               <Stat
-                title="Total duration"
+                title="Total Duration"
                 value={`${event.durationMs} ms`}
                 note={
                   details?.method === 'HEAD'
@@ -235,9 +235,9 @@ export function EventDetail() {
                       <span>Connected IP: {response.remoteAddress ?? 'Not recorded'}</span>
                       <span>Headers received: {response.headersMs ?? '—'} ms</span>
                     </div>
-                    <h3 className="mt-6 text-sm font-semibold">Response headers</h3>
+                    <h3 className="mt-6 text-sm font-semibold">Response Headers</h3>
                     <HeaderTable headerSet={String(index)} />
-                    <h3 className="mt-6 text-sm font-semibold">Response body</h3>
+                    <h3 className="mt-6 text-sm font-semibold">Response Body</h3>
                     {response.body ? (
                       <>
                         <p className="my-2 text-xs text-slate-500 dark:text-slate-400">

@@ -34,7 +34,7 @@ export function ConfirmDeleteButton({
       </button>
       {open && (
         <Modal
-          title="Confirm removal"
+          title="Confirm Removal"
           busy={busy}
           initialFocusRef={cancel}
           onClose={() => setOpen(false)}

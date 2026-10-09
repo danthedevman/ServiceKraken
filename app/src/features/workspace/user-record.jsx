@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { notify } from '../../data/toast.js';
 import { timeZoneOptions } from '../../lib/time-zones.js';
 import { Select } from '../../components/forms/select.jsx';
+import { ReferenceField } from '../../components/forms/reference-field.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../auth/auth-context.js';
@@ -62,6 +63,10 @@ export function UserRecord({ member }) {
                 <StateBadge status={member.disabled ? 'disabled' : 'active'} />
               </dd>
             </div>
+            <div>
+              <dt>Groups</dt>
+              <dd>{member.groupNames?.join(', ') || 'None'}</dd>
+            </div>
           </dl>
         </section>
       )}
@@ -85,6 +90,8 @@ export function UserRecord({ member }) {
 
 /** Validate shared contact fields on both client and server while keeping access controls separate. */
 function UserDetailsForm({ member, own, onClose }) {
+  const { user } = useContext(AuthContext);
+  const admin = user?.role === 'admin';
   const save = useSave();
   const [value, setValue] = useState(member);
   const [errors, setErrors] = useState({});
@@ -95,11 +102,24 @@ function UserDetailsForm({ member, own, onClose }) {
         event.preventDefault();
         try {
           const details = userDetails(value);
+          if (admin && (value.groupIds?.length ?? 0) > 100) {
+            setErrors({ groupIds: 'Choose up to 100 groups.' });
+            notify('Choose up to 100 groups.', 'error');
+            return;
+          }
           setErrors({});
           save.run(
-            own ? '/auth/details' : `/members/${member.id}`,
+            own && !admin ? '/auth/details' : `/members/${member.id}`,
             'PATCH',
-            own ? details : { ...details, role: value.role, disabled: !!value.disabled },
+            own && !admin
+              ? details
+              : {
+                  ...details,
+                  role: value.role,
+                  disabled: !!value.disabled,
+                  groupIds: value.groupIds ?? [],
+                  groupsRevision: value.groupsRevision,
+                },
             onClose,
           );
         } catch (error) {
@@ -146,6 +166,18 @@ function UserDetailsForm({ member, own, onClose }) {
       <Field name="email" label="Email">
         <input type="email" value={member.email} readOnly />
       </Field>
+      {admin && (
+        <ReferenceField
+          label="Groups"
+          name="groupIds"
+          referenceType="groups"
+          multiple
+          value={value.groupIds ?? []}
+          onChange={(groupIds) => setValue({ ...value, groupIds })}
+          error={errors.groupIds || save.fields.groupIds}
+          disabled={save.busy}
+        />
+      )}
       {!own && (
         <>
           <label className="field-label">
@@ -180,7 +212,7 @@ function UserDetailsForm({ member, own, onClose }) {
           Cancel
         </button>
         <button className="btn-primary" disabled={save.busy}>
-          {save.busy ? 'Saving…' : 'Save changes'}
+          {save.busy ? 'Saving…' : 'Save Changes'}
         </button>
       </RecordActions>
     </form>

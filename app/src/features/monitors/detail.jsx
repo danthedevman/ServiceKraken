@@ -255,7 +255,7 @@ export function MonitorDetail() {
               </AdminOnly>
               <div className={layouts.scores}>
                 <Stat
-                  title="Check interval"
+                  title="Check Interval"
                   value={`${monitor.intervalMinutes} min`}
                   note={
                     monitor.paused
@@ -264,7 +264,7 @@ export function MonitorDetail() {
                   }
                 />
                 <Stat
-                  title="Latest response"
+                  title="Latest Response"
                   value={monitor.lastCheck ? `${monitor.lastCheck.durationMs} ms` : '—'}
                   note={
                     monitor.lastCheck?.statusCode
@@ -273,7 +273,7 @@ export function MonitorDetail() {
                   }
                 />
                 <Stat
-                  title="Last checked"
+                  title="Last Checked"
                   compact
                   value={monitor.lastCheck ? dateTime(monitor.lastCheck.checkedAt) : '—'}
                   note={!monitor.lastCheck ? 'First check starts shortly' : undefined}
@@ -290,10 +290,10 @@ export function MonitorDetail() {
                 tabs={[
                   {
                     id: 'events',
-                    label: 'Check history',
+                    label: 'Check History',
                     content: (
                       <DataTable
-                        title="Check history"
+                        title="Check History"
                         description="Last 30 days · Times shown in your profile time zone"
                         rows={eventState.data?.events ?? []}
                         columns={eventColumns}
@@ -405,7 +405,7 @@ export function MonitorDetail() {
               <AdminOnly>
                 {confirmDelete ? (
                   <Modal
-                    title="Delete monitor?"
+                    title="Delete Monitor?"
                     onClose={() => setConfirmDelete(false)}
                     busy={busy}
                     footer={

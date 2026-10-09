@@ -6,7 +6,7 @@ import { identifier } from '../validation/fields.js';
 import { choice } from '../validation/fields.js';
 import { references } from '../validation/fields.js';
 
-/** Built-in fields keep their identity and type; administrators may configure required values. */
+/** Built-in configuration is locked; existing saved settings are preserved. */
 export const BUILTIN_FIELDS = [
   { id: 'title', label: 'Title', type: 'builtin', required: true },
   { id: 'serviceId', label: 'Service', type: 'builtin', required: true },
@@ -38,21 +38,14 @@ export function validateFields(
     if (seen.has(id)) invalid('fields', 'Field IDs must be unique.');
     seen.add(id);
     if (builtin) {
+      const saved = previous.find((entry) => entry.id === id) ?? builtin;
       if (
-        field.type !== builtin.type ||
-        field.archived === true ||
-        typeof field.required !== 'boolean' ||
-        (field.options?.length ?? 0) !== 0
+        [...new Set([...Object.keys(saved), ...Object.keys(field)])].some(
+          (key) => JSON.stringify(field[key]) !== JSON.stringify(saved[key]),
+        )
       )
-        invalid('fields', 'Built-in fields allow label, order, and required changes only.');
-      return {
-        ...builtin,
-        required: field.required,
-        label: text(field.label, 'label', 80),
-        ...(builtinChoices[kind]?.[id]
-          ? { choices: validateChoices(fieldChoices(kind, field), kind, id) }
-          : {}),
-      };
+        invalid('fields', 'System Field settings cannot be changed.');
+      return { ...saved };
     }
     const type = choice(
       field.type,
@@ -78,7 +71,7 @@ export function validateFields(
     };
   });
   if (builtins.some((field) => !seen.has(field.id)))
-    invalid('fields', 'Built-in fields cannot be removed.');
+    invalid('fields', 'System Fields cannot be removed.');
   if (previous.some((old) => !seen.has(old.id)))
     invalid('fields', 'Archive existing fields instead of removing them to preserve reports.');
   return result;
@@ -148,7 +141,7 @@ export function validateChoices(choices, kind, field) {
     const label = text(option.label, 'option label', 80),
       base = choice(option.base, bases, 'workflow mapping');
     if (bases.includes(value) && base !== value)
-      invalid('fields', 'Built-in meanings cannot change.');
+      invalid('fields', 'System Field meanings cannot change.');
     if (values.has(value) || labels.has(label.toLowerCase()))
       invalid('fields', 'Choice values and labels must be unique.');
     values.add(value);
@@ -156,7 +149,7 @@ export function validateChoices(choices, kind, field) {
     return { value, label, base, hidden: option.hidden === true };
   });
   if (bases.some((value) => !values.has(value)))
-    invalid('fields', 'Hide built-in options instead of deleting them.');
+    invalid('fields', 'System Field options cannot be deleted.');
   if (!result.some((option) => !option.hidden))
     invalid('fields', 'Keep at least one option visible.');
   if (

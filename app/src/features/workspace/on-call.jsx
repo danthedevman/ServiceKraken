@@ -26,7 +26,7 @@ export function OnCallPage({ form = false }) {
     services = useResource('/services');
   return (
     <div className="space-y-6">
-      {!form && !id && <h1 className="page-title">On call</h1>}
+      {!form && !id && <h1 className="page-title">On Call</h1>}
       <Notice error={schedule.error || members.error || services.error} />
       {schedule.data && members.data && services.data ? (
         <Calendar
@@ -347,7 +347,7 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
     ) : id && !existing ? (
       <p role="alert">Coverage not found.</p>
     ) : (
-      <FormPage title={existing ? 'Edit coverage' : 'Add coverage'}>
+      <FormPage title={existing ? 'Edit Coverage' : 'Add Coverage'}>
         {editorForm}
         <div className="form-actions">{editorActions}</div>
       </FormPage>
@@ -454,7 +454,7 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
         source={`coverage?serviceId=${serviceId}`}
         deletePath="/on-call"
         onRefresh={schedule.refresh}
-        title="Scheduled coverage"
+        title="Scheduled Coverage"
         rows={filtered}
         rowKey={(r) => r.id}
         defaultSort="start:asc"

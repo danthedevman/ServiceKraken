@@ -40,7 +40,7 @@ export function AuditPage() {
     { key: 'effectiveRole', label: 'Acting role', value: (row) => row.effectiveRole },
     { key: 'source', label: 'Source', value: (row) => row.source },
     { key: 'operation', label: 'Operation', value: (row) => row.operation },
-    { key: 'statusCode', label: 'HTTP status', value: (row) => row.statusCode },
+    { key: 'statusCode', label: 'HTTP Status', value: (row) => row.statusCode },
     { key: 'actorId', label: 'Actor ID', value: (row) => row.actorId },
     { key: 'parentId', label: 'Parent record ID', value: (row) => row.parentId },
     { key: 'requestId', label: 'Request ID', value: (row) => row.requestId },
@@ -50,7 +50,7 @@ export function AuditPage() {
       <DataTable
         fullPage
         source="audit"
-        title="Audit log"
+        title="Audit Log"
         columns={columns}
         defaultSort="createdAt:desc"
         dateColumn="createdAt"

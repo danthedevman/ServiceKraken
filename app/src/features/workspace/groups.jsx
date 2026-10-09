@@ -188,7 +188,7 @@ function GroupEditor({ initial, revision, members, onClose, onSaved }) {
     });
   const [originalRevision] = useState(revision);
   return (
-    <FormPage title={initial.id ? 'Edit group' : 'Create group'}>
+    <FormPage title={initial.id ? 'Edit Group' : 'Create Group'}>
       <form
         noValidate
         className="form-body"

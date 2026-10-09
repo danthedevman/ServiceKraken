@@ -144,7 +144,7 @@ export function CatalogForm({
       )}
       {isService && (
         <section className="space-y-5">
-          <h2 className="font-semibold">Health thresholds</h2>
+          <h2 className="font-semibold">Health Thresholds</h2>
           <label className="flex items-center gap-2">
             <Toggle
               aria-describedby="manual-degraded-help"
@@ -208,7 +208,7 @@ export function CatalogForm({
       )}
       {isService && (
         <section className="space-y-5 border-t border-slate-200 pt-5 dark:border-slate-700">
-          <h2 className="font-semibold">Ownership and contact</h2>
+          <h2 className="font-semibold">Ownership and Contact</h2>
           <ServiceChoices
             name="ownerIds"
             label="Service owners"
@@ -264,8 +264,8 @@ export function CatalogForm({
           {busy
             ? 'Saving…'
             : item
-              ? 'Save changes'
-              : `Create ${kind === 'services' ? 'service' : 'collection'}`}
+              ? 'Save Changes'
+              : `Create ${kind === 'services' ? 'Service' : 'Collection'}`}
         </button>
       </RecordActions>
     </ValidatedForm>
@@ -281,7 +281,7 @@ export function CatalogFormPage({ kind = 'services' }) {
   const noun = kind === 'services' ? 'service' : 'collection';
   if (id) return <Navigate replace to={`/${kind}/${id}`} />;
   return (
-    <FormPage title={`Create ${noun}`}>
+    <FormPage title={`Create ${noun.charAt(0).toUpperCase()}${noun.slice(1)}`}>
       {error && (
         <p role="alert" className="text-rose-700 dark:text-rose-400">
           {error}

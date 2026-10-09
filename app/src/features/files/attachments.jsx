@@ -12,6 +12,29 @@ import { Notice } from '../../components/forms/fields.jsx';
 
 export const fileAccept =
   '.pdf,.txt,.csv,.log,.json,.md,.png,.jpg,.jpeg,.gif,.webp,.zip,.docx,.xlsx,.pptx';
+
+/** Show saved attachment downloads using the same authorized, cached record query as the list. */
+export function AttachmentLinks({ kind, recordId }) {
+  const resource = useResource(`/attachments/${kind}/${recordId}`);
+  const files = resource.data?.attachments ?? [];
+  if (!files.length) return null;
+  return (
+    <ul aria-label="Attached files" className="flex flex-wrap gap-x-4 gap-y-2">
+      {files.map((file) => (
+        <li key={file.id} className="min-w-0 max-w-full">
+          <a
+            href={file.downloadUrl}
+            download
+            className="inline-flex max-w-full items-center gap-2 py-1 text-sm text-blue-700 underline underline-offset-2 dark:text-blue-300"
+          >
+            <PaperClipIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="break-all">{file.name}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
 /** Stage private uploads until the parent record is saved; aborted drafts are cleaned by workers. */
 export function useAttachmentDraft(kind, recordId, initialIds = []) {
   const existing = useResource(recordId ? `/attachments/${kind}/${recordId}` : null);
@@ -27,8 +50,8 @@ export function useAttachmentDraft(kind, recordId, initialIds = []) {
     currentIds.current = ids;
   }, [ids]);
   useEffect(() => () => controller.current?.abort(), []);
-  /** Upload one file; raw binary avoids base64 expansion and never changes record permissions. */
-  async function upload(file, { inline = false } = {}) {
+  /** Upload one file; callers linking it immediately defer feedback until the link succeeds. */
+  async function upload(file, { inline = false, toast = true } = {}) {
     if (active.current) throw new Error('Wait for the current upload to finish.');
     if (!file || !file.size || file.size > 5 * 1024 * 1024)
       throw new Error('Choose a nonempty file no larger than 5 MB.');
@@ -43,6 +66,7 @@ export function useAttachmentDraft(kind, recordId, initialIds = []) {
         body: file,
         headers: { 'X-File-Name': encodeURIComponent(file.name) },
         signal: controller.current.signal,
+        toast,
       });
       if (inline) setInlineIds((old) => [...old, result.attachment.id]);
       setFiles((old) => [...old, result.attachment]);
@@ -100,7 +124,7 @@ export function AttachmentPicker({ draft, imageIds = [] }) {
                   type="button"
                   className="btn-danger"
                   disabled={draft.busy}
-                  title="Remove attachment"
+                  title="Remove Attachment"
                   onConfirm={() => draft.setIds(draft.ids.filter((value) => value !== id))}
                 >
                   Remove
@@ -149,7 +173,7 @@ export function AttachmentPanel({ kind, recordId, compact = false, imageIds = []
             disabled={busy || draft.busy}
             onError={setError}
             onUpload={async (file) => {
-              const item = await draft.upload(file);
+              const item = await draft.upload(file, { toast: false });
               await attach([item.id]);
             }}
           />

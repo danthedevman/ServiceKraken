@@ -93,7 +93,7 @@ export function CatalogDetailPage({ kind = 'services' }) {
                 {isService && (
                   <>
                     <AdminOnly>
-                      <Link to={`/monitors/new?serviceId=${selected.id}`}>Create monitor</Link>
+                      <Link to={`/monitors/new?serviceId=${selected.id}`}>Create Monitor</Link>
                     </AdminOnly>
                     <Link to={`/tasks?serviceId=${selected.id}`}>View tasks</Link>
                     <Link to={`/knowledge?serviceId=${selected.id}`}>View knowledge</Link>
@@ -292,7 +292,7 @@ function ServiceMonitors({ serviceId }) {
       <DataTable
         source={`monitors?serviceId=${serviceId}`}
         deletePath="/monitors"
-        title="Service monitors"
+        title="Service Monitors"
         actions={
           <AdminOnly>
             <Link className="btn-primary" to={`/monitors/new?serviceId=${serviceId}`}>

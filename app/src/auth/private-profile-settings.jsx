@@ -37,12 +37,16 @@ export function PrivateProfileSettings({ member }) {
   if (!user) return <PendingPage pathname="/profile" />;
   return (
     <div className="form-page">
-      <h2 className="text-lg font-semibold">Private account settings</h2>
+      <h2 className="text-lg font-semibold">Private Account Settings</h2>
       <p className="text-sm text-slate-500">
         Only you can view these settings. Confirm your password to change your account email or
         password.
       </p>
-      <ValidatedForm kind="profile" onSubmit={submit} className="panel form-body p-6">
+      <ValidatedForm
+        kind="profile"
+        onSubmit={submit}
+        className="private-profile-settings panel form-body p-6"
+      >
         <ErrorNotice>{error}</ErrorNotice>
         {message && (
           <p role="status" className="text-sm text-blue-700 dark:text-blue-300">
@@ -83,7 +87,7 @@ export function PrivateProfileSettings({ member }) {
         </label>
         <div className="form-actions">
           <button className="btn-primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save profile'}
+            {busy ? 'Saving…' : 'Save Profile'}
           </button>
         </div>
       </ValidatedForm>

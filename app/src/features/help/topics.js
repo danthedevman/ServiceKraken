@@ -2,7 +2,7 @@
 export const helpTopics = [
   {
     id: 'getting-started',
-    title: 'Getting started',
+    title: 'Getting Started',
     paragraphs: [
       'Start by creating a service for something your team owns, such as a customer portal or payments API. Add owners and a primary contact, then create a monitor from the service’s action menu.',
       'Create user profiles, assign appropriate roles, and configure a communication integration before relying on notifications. Add an on-call schedule so responders know who owns coverage.',
@@ -11,7 +11,7 @@ export const helpTopics = [
   },
   {
     id: 'services',
-    title: 'Services, collections, and dependencies',
+    title: 'Services, Collections, and Dependencies',
     paragraphs: [
       'A service represents a capability your team supports. Collections organize related services. You can select or create a collection from the service form, and associate users or groups as owners.',
       'Dependencies describe services that another service relies on. A failing dependency can affect the parent service’s health. Avoid circular dependencies.',
@@ -20,7 +20,7 @@ export const helpTopics = [
   },
   {
     id: 'monitoring',
-    title: 'Monitoring endpoints',
+    title: 'Monitoring Endpoints',
     paragraphs: [
       'Create a monitor from a service’s secondary action menu or its Monitors related list. A service and a public HTTP or HTTPS endpoint are required. Check intervals range from 1 minute to 1,440 minutes.',
       'HEAD checks response headers without requesting a full response body. GET also stores a bounded text preview. Choose GET if the endpoint does not support HEAD or you need response details for troubleshooting.',
@@ -31,7 +31,7 @@ export const helpTopics = [
   },
   {
     id: 'incidents',
-    title: 'Incidents, tasks, and knowledge',
+    title: 'Incidents, Tasks, and Knowledge',
     paragraphs: [
       'Create an incident with a clear title, affected service, severity, and description. Assign the responder and, when appropriate, the person the incident was opened for. Use tasks to track investigation and follow-up work.',
       'Comments are shared with people who can read the incident and can notify its participants through configured email delivery. Work notes are visible only to responders and admins. Do not put internal information in a shared comment.',
@@ -42,7 +42,7 @@ export const helpTopics = [
   },
   {
     id: 'people',
-    title: 'People, access, and on-call coverage',
+    title: 'People, Access, and On-call Coverage',
     paragraphs: [
       'Admins manage configuration and membership. Responders manage operational work such as incidents, tasks, and knowledge. Users can create incidents and view incidents opened by or for them. Viewers can read permitted workspace information but cannot edit it.',
       'An admin creates a profile from Users with a name, email, role, and initial password. Share the password privately. Admins can reset another user’s password from their record after confirming their own password; this signs the user out. The owner changes their own password in Profile settings. Groups let you organize multiple members for ownership and coordination.',
@@ -52,7 +52,7 @@ export const helpTopics = [
   },
   {
     id: 'integrations',
-    title: 'Configure integrations and notifications',
+    title: 'Configure Integrations and Notifications',
     paragraphs: [
       'Admins can configure email, Slack, Microsoft Teams, and ServiceNow under Integrations. Choose the provider, enter its configuration, enable delivery, and select service scopes, recovery notifications, and on-call routing where applicable.',
       'Email requires an authorized sender and a configured SMTP server. Supported SMTP ports are 465 for implicit TLS and 587 for STARTTLS. Use the credentials and sender verification required by your provider. An email address in a user profile alone is not enough to send mail.',
@@ -62,9 +62,9 @@ export const helpTopics = [
   },
   {
     id: 'status-page',
-    title: 'Status pages and subscriptions',
+    title: 'Status Pages and Subscriptions',
     paragraphs: [
-      'Open Service status and select the settings gear. Choose Private for workspace access or Public to share the generated public link. The public page has no application sidebar and omits monitor targets and response bodies.',
+      'Open Service Status and select the settings gear. Choose Private for workspace access or Public to share the generated public link. The public page has no application sidebar and omits monitor targets and response bodies.',
       'Publish a global banner or service-specific message to explain impact. Choose its criticality and enable it when ready. Messages add context; they do not override measured service health. You can upload or remove a branding icon.',
       'Subscription settings control button visibility, overall availability, and email/RSS independently. Hiding the button does not stop existing subscriptions. Disabling subscriptions stops email updates and RSS access. Unsubscribe links continue to work.',
       'For email subscriptions, select an enabled SMTP integration and configure the public HTTPS origin used for links. Visitors select Subscribe to updates beside the theme toggle, then choose email or RSS. Email requires confirmation within 24 hours and includes an unsubscribe link.',
@@ -74,10 +74,10 @@ export const helpTopics = [
   },
   {
     id: 'configuration',
-    title: 'Forms, tables, and administration',
+    title: 'Forms, Tables, and Administration',
     paragraphs: [
-      'Admins access Form builder from a supported record or create form. Reorder fields, customize labels, and configure required fields. Built-in fields cannot be deleted. Field types cannot change after creation.',
-      'Custom select options can be added and ordered. Built-in options can be hidden but not deleted; added workflow options must map to a built-in meaning so reporting and automation continue to work.',
+      'Admins access Form Builder from a supported record or create form. Custom fields allow label, order, and required-setting changes. System Fields can also be reordered, but their other settings are locked. Existing saved configuration is preserved. Field types cannot change after creation.',
+      'Custom select options can be added, ordered, hidden, or removed. System Field choices are read-only so workflow meanings and existing reports stay consistent.',
       'Use the filter icon to reveal table search and filters. Search all columns or choose a column, and sort using column headers. Tables search and paginate on the server. CSV export follows filters; selecting rows exposes actions for that selection above the table.',
       'Settings includes the audit log for record activity. Deletion requires confirmation. Review the affected record and consequences before confirming, especially bulk deletion or demo cleanup.',
       'Some infrastructure controls still require deployment configuration, including database connections, network access, and worker capacity. Consult the README for environment variables and monitor limits; not every infrastructure setting has a UI control.',
@@ -85,7 +85,7 @@ export const helpTopics = [
   },
   {
     id: 'hosting',
-    title: 'Self-hosting and maintenance',
+    title: 'Self-hosting and Maintenance',
     paragraphs: [
       'Follow the repository README to create your environment configuration, then run docker compose up -d --build from the project root. The app normally opens at http://127.0.0.1:8090. Use the exact configured origin to avoid write-origin errors.',
       'The application uses a React frontend, Express API, scheduled workers, Redis, and a configured persistence backend. MongoDB and PostgreSQL are supported. Changing a database connection is not a migration of existing data.',

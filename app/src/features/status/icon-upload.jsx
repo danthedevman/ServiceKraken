@@ -54,7 +54,7 @@ export function StatusIconUpload({ hasIcon }) {
   }
   return (
     <section className="space-y-4">
-      <h2 className="font-semibold">Status page icon</h2>
+      <h2 className="font-semibold">Status Page Icon</h2>
       <div className="flex flex-wrap items-center gap-4">
         <img
           src={present ? `/api/status-settings/icon?v=${version}` : '/favicon.svg?v=connectors'}

@@ -50,7 +50,7 @@ export function SettingsPage() {
     <div className="space-y-6">
       <h1 className="page-title">Settings</h1>
       <section className="panel space-y-4 p-6">
-        <h2 className="text-lg font-semibold">Audit log</h2>
+        <h2 className="text-lg font-semibold">Audit Log</h2>
         <p>
           Review record activity, including who performed an action and when. Search, filter by
           date, and export matching entries.
@@ -60,7 +60,7 @@ export function SettingsPage() {
         </Link>
       </section>
       <section className="panel space-y-4 p-6">
-        <h2 className="text-lg font-semibold">Communication apps</h2>
+        <h2 className="text-lg font-semibold">Communication Apps</h2>
         <p>
           Connect email, Slack, Microsoft Teams, or ServiceNow and choose where service-impact
           notifications go.
@@ -70,7 +70,7 @@ export function SettingsPage() {
         </Link>
       </section>
       <section className="panel space-y-4 p-6">
-        <h2 className="text-lg font-semibold">Demo data</h2>
+        <h2 className="text-lg font-semibold">Demo Data</h2>
         <Notice error={resource.error || save.error || clientError} />
         {message && <p role="status">{message}</p>}
         {!resource.data ? (
@@ -97,7 +97,7 @@ export function SettingsPage() {
                 disabled={save.busy || working || !!batch}
                 onClick={() => run('add')}
               >
-                {save.busy && !confirm ? 'Adding…' : 'Add demo data'}
+                {save.busy && !confirm ? 'Adding…' : 'Add Demo Data'}
               </button>
               <button
                 className="btn-danger"
@@ -115,7 +115,7 @@ export function SettingsPage() {
           <Notice error={inbox.error} />
           <DataTable
             source="inquiries"
-            title="Hosting inquiries"
+            title="Hosting Inquiries"
             rows={inbox.data?.inquiries ?? []}
             loading={!inbox.data}
             rowKey={(row) => row.id}
@@ -161,7 +161,7 @@ export function SettingsPage() {
       )}
       {confirm && (
         <Modal
-          title="Delete demo data?"
+          title="Delete Demo Data?"
           busy={save.busy}
           onClose={() => setConfirm(false)}
           footer={

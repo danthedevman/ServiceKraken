@@ -319,7 +319,7 @@ export function App() {
                   path="*"
                   element={
                     <div className="panel p-10 text-center">
-                      <h1 className="text-xl font-semibold">Page not found</h1>
+                      <h1 className="text-xl font-semibold">Page Not Found</h1>
                       <Link to="/monitors" className="btn-primary mt-5">
                         Back to monitors
                       </Link>

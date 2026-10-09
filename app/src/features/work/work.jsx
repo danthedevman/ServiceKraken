@@ -5,6 +5,7 @@ import { TableSearch } from '../../components/table-search.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
 import { mandatoryErrors } from '../../../../shared/forms/schema.js';
 import { RecordActions } from '../../components/record-actions.jsx';
+import { RecordTabs } from '../../components/record-tabs.jsx';
 import { CancelButton } from '../../components/forms/cancel-button.jsx';
 import {
   RecordWorkspace,
@@ -12,7 +13,12 @@ import {
   RecordMetadata,
 } from '../../components/record-workspace.jsx';
 import { ActionMenu } from '../../components/action-menu.jsx';
-import { AttachmentPanel, AttachmentPicker, useAttachmentDraft } from '../files/attachments.jsx';
+import {
+  AttachmentLinks,
+  AttachmentPanel,
+  AttachmentPicker,
+  useAttachmentDraft,
+} from '../files/attachments.jsx';
 
 import {
   textDocument,
@@ -69,7 +75,7 @@ export function WorkCreatePage({ kind = 'tasks' }) {
   return (
     <div className="form-page">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="page-title">Create {kind === 'tasks' ? 'task' : 'knowledge article'}</h1>
+        <h1 className="page-title">Create {kind === 'tasks' ? 'Task' : 'Knowledge Article'}</h1>
         {user?.role === 'admin' && (
           <ActionMenu label="Form actions">
             <Link className="btn-secondary" to={`/${kind}/fields`}>
@@ -335,17 +341,20 @@ export function WorkDetail({ kind = 'tasks' }) {
                       : []),
                   ]}
                 />
-                <RecordSection title="Attachments">
-                  <AttachmentPanel
-                    compact
-                    kind={kind}
-                    recordId={item.id}
-                    imageIds={embeddedImageIds(item.contentDocument)}
-                  />
-                </RecordSection>
+                {!task && (
+                  <RecordSection title="Attachments">
+                    <AttachmentPanel
+                      compact
+                      kind={kind}
+                      recordId={item.id}
+                      imageIds={embeddedImageIds(item.contentDocument)}
+                    />
+                  </RecordSection>
+                )}
               </>
             }
           >
+            {task && <AttachmentLinks kind="tasks" recordId={item.id} />}
             {canEdit && editing ? (
               <WorkEditor
                 key={`${id}-${formVersion}`}
@@ -459,6 +468,18 @@ export function WorkDetail({ kind = 'tasks' }) {
                   ))}
                 </dl>
               </article>
+            )}
+            {task && (
+              <RecordTabs
+                related
+                tabs={[
+                  {
+                    id: 'attachments',
+                    label: 'Attachments',
+                    content: <AttachmentPanel kind="tasks" recordId={item.id} />,
+                  },
+                ]}
+              />
             )}
           </RecordWorkspace>
         </>
@@ -807,7 +828,7 @@ function WorkForm({
           className="btn-primary"
           disabled={save.busy || draft.busy || (task && !!value.incidentId && !incident)}
         >
-          {save.busy ? 'Saving…' : item ? 'Save changes' : `Create ${task ? 'task' : 'article'}`}
+          {save.busy ? 'Saving…' : item ? 'Save Changes' : `Create ${task ? 'Task' : 'Article'}`}
         </button>
       </RecordActions>
     </form>

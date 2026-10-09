@@ -31,7 +31,7 @@ export function StatusSettings({ page = false }) {
       </ActionMenu>
     );
   return (
-    <FormPage title="Status page settings">
+    <FormPage title="Status Page Settings">
       {(settings.error || services.error) && <p role="alert">{settings.error || services.error}</p>}
       {settings.data && services.data ? (
         <StatusEditor
@@ -217,18 +217,18 @@ function StatusEditor({ settings, services, integrations }) {
         <StatusIconUpload hasIcon={initial.hasStatusIcon} />
       </div>
       <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
-        <MessageEditor title="Global banner" value={banner} onChange={setBanner} />
+        <MessageEditor title="Global Banner" value={banner} onChange={setBanner} />
       </div>
       <section className="space-y-5 border-t border-slate-200 pt-6 dark:border-slate-700">
         <div className="space-y-1">
-          <h2 className="font-semibold">Service messages</h2>
+          <h2 className="font-semibold">Service Messages</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Messages add context without changing measured health.
           </p>
         </div>
         <ReferenceField
           referenceType="services"
-          label="Add a service message"
+          label="Add a Service Message"
           value={serviceId}
           options={services
             .filter((service) => !messages.some((message) => message.serviceId === service.id))

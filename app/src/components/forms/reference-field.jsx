@@ -20,14 +20,14 @@ const recordRoutes = {
 };
 
 const destinations = {
-  knowledge: { href: '/knowledge/new', label: 'Create article', roles: ['admin', 'responder'] },
-  services: { href: '/services/new', label: 'Create service', roles: ['admin'] },
-  collections: { href: '/collections/new', label: 'Create collection', roles: ['admin'] },
-  groups: { href: '/groups/new', label: 'Create group', roles: ['admin'] },
-  members: { href: '/workspace/new', label: 'Create user', roles: ['admin'] },
+  knowledge: { href: '/knowledge/new', label: 'Create Article', roles: ['admin', 'responder'] },
+  services: { href: '/services/new', label: 'Create Service', roles: ['admin'] },
+  collections: { href: '/collections/new', label: 'Create Collection', roles: ['admin'] },
+  groups: { href: '/groups/new', label: 'Create Group', roles: ['admin'] },
+  members: { href: '/workspace/new', label: 'Create User', roles: ['admin'] },
   incidents: {
     href: '/incidents/new',
-    label: 'Create incident',
+    label: 'Create Incident',
     roles: ['admin', 'responder', 'user'],
   },
 };
