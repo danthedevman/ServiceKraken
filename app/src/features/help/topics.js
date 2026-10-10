@@ -186,7 +186,7 @@ export const helpTopics = [
     ],
     paragraphs: [
       'Open Service Status and select the settings gear. Choose Private for workspace access or Public to share the generated public link. The public page has no application sidebar and omits monitor targets and response bodies.',
-      'Admins can choose a Background Color in status settings for the private and public status page. Use App Theme removes the override. Content panels retain readable surfaces and heading text adjusts to the chosen background.',
+      'The in-app status page shows Settings and the public launch control in its top header. Public launch appears for admins when public visibility is enabled. Admins can choose a Background Color in status settings for the private and public status page. Use App Theme removes the override. Content panels retain readable surfaces and heading text adjusts to the chosen background.',
       'Publish a global banner or service-specific message to explain impact. Choose its criticality and enable it when ready. Messages add context; they do not override measured service health. You can upload or remove a branding icon.',
       'Show or hide subscriptions with one control. Hiding subscriptions stops new signups, email updates, and RSS access. Email and RSS can be configured independently when shown. Unsubscribe links continue to work.',
       'For email subscriptions, select an enabled SMTP integration and configure the public HTTPS origin used for links. Visitors select Subscribe to updates beside the theme toggle, then choose email or RSS. Email requires confirmation within 24 hours and includes an unsubscribe link.',

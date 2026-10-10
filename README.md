@@ -24,15 +24,19 @@ Optional AI features let a workspace connect its own OpenAI or Claude API accoun
 
 ## App preview
 
-These current dark-mode screenshots contain **synthetic demo data only**. They are captured in an isolated browser that intercepts every API request and blocks external requests; no live workspace is read or modified. [Reproduce the captures](app/public/help/README.md).
+These current screenshots use the **default Ocean theme in dark mode** and contain **synthetic demo data only**. They are captured in an isolated browser that intercepts every API request and blocks external requests; no live workspace is read or modified. [Reproduce the captures](app/public/help/README.md).
 
 ### Overview dashboard
 
-![Dark-mode Overview dashboard with demo bar and pie charts across incident severity, tasks, and service health](app/public/help/readme-dashboard-dark.png)
+![Default Ocean theme in dark mode: Overview dashboard with demo bar and pie charts across incident severity, tasks, and service health](app/public/help/readme-dashboard-dark.png)
 
 ### Tasks board
 
 ![Dark-mode demo task board with custom status lanes and shared ordering controls](app/public/help/readme-tasks-dark.png)
+
+### Status page
+
+![Default Ocean theme in dark mode: demo status page with service health history and header management controls](app/public/help/readme-status-dark.png)
 
 ### Knowledge runbook
 

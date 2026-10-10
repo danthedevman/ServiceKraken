@@ -111,6 +111,7 @@ let failMove = false;
 let aiProvider = null;
 let aiRevision = 0;
 let statusBackground = '#e8f2ed';
+let statusVisibility = 'private';
 const mutations = [];
 let builderFields = workBuiltinFields('tasks');
 let builderRevision = 0;
@@ -347,7 +348,8 @@ await context.route('**/api/**', async (route) => {
   else if (path === '/status-settings') {
     if (request.method() === 'PATCH') statusBackground = request.postDataJSON().backgroundColor;
     data = {
-      visibility: 'private',
+      visibility: statusVisibility,
+      publicPath: '/public/status/demo-share',
       backgroundColor: statusBackground,
       revision: 0,
       serviceMessages: [],
@@ -868,8 +870,17 @@ try {
     return Math.abs((crumb.top + crumb.bottom) / 2 - (actions.top + actions.bottom) / 2);
   });
   assert.ok(listAlignment < 2, 'List breadcrumbs and actions align in one row');
+  statusVisibility = 'public';
   await page.goto(`${base}/status`);
   await page.getByText('Demo Customer Portal', { exact: true }).waitFor();
+  await page
+    .locator('.record-sticky-header')
+    .getByRole('link', { name: 'Manage Status Page', exact: true })
+    .waitFor();
+  await page
+    .locator('.record-sticky-header')
+    .getByRole('link', { name: 'Open Public Status Page in a new tab', exact: true })
+    .waitFor();
   await page.screenshot({ path: `${output}/status-background.png` });
   await page.goto(`${base}/status/settings`);
   const hexColour = page.getByRole('textbox', { name: 'Page Background Colour Hex', exact: true });
@@ -880,6 +891,8 @@ try {
   await page.screenshot({ path: `${output}/status-settings.png` });
 
   await page.goto(`${base}/profile`);
+  await page.getByRole('radio', { name: 'Ocean', exact: true }).check();
+  await page.waitForFunction(() => document.documentElement.dataset.colorScheme === 'ocean');
   await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
   await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
   await page.getByRole('heading', { name: 'Theme', exact: true }).evaluate((element) => {
@@ -909,6 +922,11 @@ try {
     });
   });
   await page.screenshot({ path: `${output}/readme-dashboard-dark.png` });
+  statusBackground = null;
+  await page.goto(`${base}/status`);
+  await page.getByText('Demo Customer Portal', { exact: true }).waitFor();
+  await page.screenshot({ path: `${output}/readme-status-dark.png` });
+
   await page.goto(`${base}/tasks`);
   await page.getByRole('region', { name: 'Demo Review task cards', exact: true }).waitFor();
   await page.screenshot({ path: `${output}/readme-tasks-dark.png` });
@@ -919,7 +937,7 @@ try {
 
   assert.deepEqual(faults, []);
   console.log(
-    'Captured twenty-two demo-only screenshots, including four dark-mode README images; verified task ordering and loading, knowledge bases and runbooks, accessible labels, global lanes, AI gating and drafts, themes, date formats, and record header alignment.',
+    'Captured twenty-three demo-only screenshots, including five dark-mode README images; verified task ordering and loading, knowledge bases and runbooks, accessible labels, global lanes, AI gating and drafts, themes, date formats, and record header alignment.',
   );
 } catch (error) {
   console.log('Browser faults', faults);

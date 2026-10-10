@@ -1,3 +1,4 @@
+import { RecordHeader } from '../../components/record-actions.jsx';
 import { DateTime } from '../../preferences/date-time.jsx';
 import { StatusSubscriptions } from './subscriptions.jsx';
 import { Cog6ToothIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
@@ -82,17 +83,21 @@ export function StatusPage({ publicView = false }) {
             </Select>
           </label>
           {!publicView && (
-            <AdminOnly>
-              <Link
-                className="btn-secondary h-11 w-11 shrink-0 !p-0"
-                to="/status/settings"
-                aria-label="Manage Status Page"
-                title="Manage Status Page"
-              >
-                <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
-              </Link>
-              <PublicStatusLink />
-            </AdminOnly>
+            <RecordHeader>
+              <div className="flex items-center gap-2">
+                <AdminOnly>
+                  <Link
+                    className="btn-secondary h-9 w-9 shrink-0 !p-0"
+                    to="/status/settings"
+                    aria-label="Manage Status Page"
+                    title="Manage Status Page"
+                  >
+                    <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
+                  </Link>
+                  <PublicStatusLink />
+                </AdminOnly>
+              </div>
+            </RecordHeader>
           )}
         </div>
       </header>
@@ -144,7 +149,7 @@ function PublicStatusLink() {
       href={data.publicPath}
       target="_blank"
       rel="noopener noreferrer"
-      className="btn-secondary h-11 w-11 shrink-0 !p-0"
+      className="btn-secondary h-9 w-9 shrink-0 !p-0"
       aria-label="Open Public Status Page in a new tab"
       title="Open Public Status Page"
     >
