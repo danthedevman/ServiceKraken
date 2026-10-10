@@ -4,6 +4,7 @@ import { CancelButton } from '../../components/forms/cancel-button.jsx';
 import { FormPage } from '../../components/forms/form-page.jsx';
 import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
 import { ReferenceField } from '../../components/forms/reference-field.jsx';
+import { ReferenceValue } from '../../components/reference-value.jsx';
 import { displayValue } from '../../lib/display-value.js';
 import React, { useContext, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -98,7 +99,9 @@ export function GroupsPage({ form = false }) {
                 <h2 className="font-semibold">Members</h2>
                 <ul className="space-y-2">
                   {item.memberIds.map((memberId) => (
-                    <li key={memberId}>{memberName(memberId)}</li>
+                    <li key={memberId}>
+                      <ReferenceValue type="members" id={memberId} label={memberName(memberId)} />
+                    </li>
                   ))}
                 </ul>
               </section>

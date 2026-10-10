@@ -172,7 +172,6 @@ export function MonitorDetail() {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="field-label">Name</span>
                   <span className="break-words">{monitor.name}</span>
-                  <Badge status={monitor.status} />
                 </div>
                 <a
                   href={!monitor.type || monitor.type === 'http' ? monitor.url : undefined}

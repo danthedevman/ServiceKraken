@@ -1,11 +1,15 @@
 import { assignmentGroup } from '../domain/assignment.js';
 import { claimAttachments } from './attachments.js';
-import { validateRichContent } from '@servicetrident/shared/files/rich-content';
+import { validateRichContent, textDocument } from '@servicetrident/shared/files/rich-content';
 import { ObjectId } from 'mongodb';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { InputError } from '@servicetrident/shared/validation/validation';
-import { workBuiltinFields, recordFields } from '@servicetrident/shared/forms/form-options';
+import {
+  workBuiltinFields,
+  recordFields,
+  fieldChoices,
+} from '@servicetrident/shared/forms/form-options';
 import { invalid } from '@servicetrident/shared/validation/fields';
 import {
   validateFields,
@@ -19,6 +23,8 @@ import { catalog, id } from './services.js';
 import { requireResponder, requireAdmin } from '../auth/auth.js';
 import { memberFilter } from '../repositories/members.js';
 import { settings } from '../repositories/settings.js';
+import { boardRankStage } from '../../../shared/domain/task-board.js';
+import { positionTask } from '../domain/task-board.js';
 
 /** Strip internal tenant identifiers while keeping author attribution and revision. */
 function view({ _id, workspaceId, ...row }) {
@@ -65,6 +71,40 @@ async function associations(db, workspaceId, input, current, task) {
 
 /** Tasks and knowledge stay private to the workspace. Admins and responders can create/edit both. */
 export function installWorkRoutes(app, db) {
+  app.get('/api/task-board-settings', async (req, res) => {
+    const config = await settings(db, req.workspaceId);
+    res.json({ order: config.taskLaneOrder ?? [], revision: config.taskLaneRevision ?? 0 });
+  });
+  app.put('/api/task-board-settings', requireAdmin, async (req, res) => {
+    const config = await settings(db, req.workspaceId);
+    const { order, revision } = req.body ?? {};
+    const active = fieldChoices(
+      'tasks',
+      (config.taskFields ?? workBuiltinFields('tasks')).find((field) => field.id === 'status'),
+    )
+      .filter((choice) => !choice.hidden && choice.base !== 'archived')
+      .map((choice) => choice.value);
+    if (
+      !Array.isArray(order) ||
+      order.length !== active.length ||
+      new Set(order).size !== order.length ||
+      order.some((value) => !active.includes(value))
+    )
+      invalid('order', 'Include every active status lane once. Refresh before saving.');
+    if (!Number.isInteger(revision) || revision !== (config.taskLaneRevision ?? 0))
+      throw new InputError('Lane order changed. Refresh before saving.', 409);
+    // Lane ordering has its own revision so it cannot overwrite a form-builder edit.
+    const result = await db
+      .collection('operations')
+      .updateOne(
+        { _id: req.workspaceId, $expr: { $eq: [{ $ifNull: ['$taskLaneRevision', 0] }, revision] } },
+        { $set: { taskLaneOrder: order }, $inc: { taskLaneRevision: 1 } },
+      );
+    if (!result.matchedCount)
+      throw new InputError('Lane order changed. Refresh before saving.', 409);
+    res.json({ order, revision: revision + 1 });
+  });
+
   for (const kind of ['tasks', 'knowledge']) {
     const task = kind === 'tasks';
     const collection = db.collection(task ? 'tasks' : 'articles');
@@ -98,20 +138,34 @@ export function installWorkRoutes(app, db) {
       const { filter, sort, page, pageSize } = workQuery(req.query, req.workspaceId, kind);
       const [total, rows] = await Promise.all([
         collection.countDocuments(filter),
-        collection
-          .find(filter, {
-            projection: task ? { description: 0 } : { content: 0, contentDocument: 0 },
-          })
-          .sort(sort)
-          .skip((page - 1) * pageSize)
-          .limit(pageSize)
-          .toArray(),
+        task && sort.boardRank
+          ? collection
+              .aggregate([
+                { $match: filter },
+                boardRankStage(),
+                { $sort: sort },
+                { $skip: (page - 1) * pageSize },
+                { $limit: pageSize },
+                { $project: { description: 0 } },
+              ])
+              .toArray()
+          : collection
+              .find(filter, {
+                projection: task ? { description: 0 } : { content: 0, contentDocument: 0 },
+              })
+              .sort(sort)
+              .skip((page - 1) * pageSize)
+              .limit(pageSize)
+              .toArray(),
       ]);
       res.json({ items: rows.map(view), total, page, pageSize });
     });
     app.get(`/api/${kind}/export`, async (req, res) => {
       const { filter, sort } = workQuery(req.query, req.workspaceId, kind);
-      const cursor = collection.find(filter).sort(sort).batchSize(100);
+      const cursor =
+        task && sort.boardRank
+          ? collection.aggregate([{ $match: filter }, boardRankStage(), { $sort: sort }])
+          : collection.find(filter).sort(sort).batchSize(100);
       const headers = task
         ? [
             'ID',
@@ -211,6 +265,7 @@ export function installWorkRoutes(app, db) {
                 'statusOption',
                 'priorityOption',
                 'attachmentIds',
+                'boardPosition',
               ]
             : [
                 'title',
@@ -222,6 +277,10 @@ export function installWorkRoutes(app, db) {
                 'custom',
                 'statusOption',
                 'contentDocument',
+                'knowledgeBaseId',
+                'articleType',
+                'articleTypeOption',
+                'steps',
                 'attachmentIds',
               ];
           if (
@@ -235,22 +294,52 @@ export function installWorkRoutes(app, db) {
             throw new InputError('This record changed. Reload it before saving again.', 409);
           const schema = (await settings(db, req.workspaceId))[fieldKey] ?? workBuiltinFields(kind);
           const chosen = resolveChoices(body, schema, kind, current);
+          if (body.boardPosition && (!task || !current))
+            throw new InputError('Only saved tasks can be reordered.');
           const rich =
             !task &&
             (body.contentDocument ??
               (body.content === undefined ? current?.contentDocument : null));
           const article = rich
             ? validateRichContent(rich, {
-                required: schema.some((field) => field.id === 'content' && field.required),
+                required:
+                  chosen.articleType !== 'runbook' &&
+                  schema.some((field) => field.id === 'content' && field.required),
               })
-            : null;
+            : !task && chosen.articleType === 'runbook'
+              ? validateRichContent(textDocument(body.content ?? ''), { required: false })
+              : null;
           const input = validateWork(
             { ...current, ...chosen, ...(article ? { content: article.text } : {}) },
             kind,
             schema,
           );
+          if (task && body.boardPosition !== undefined)
+            input.boardRank = await positionTask(
+              collection,
+              req.workspaceId,
+              current,
+              chosen.status,
+              chosen.statusOption,
+              body.boardPosition,
+            );
           validateMandatory(schema, input);
-          if (!task) input.contentDocument = article?.document ?? null;
+          if (!task) {
+            input.contentDocument = article?.document ?? null;
+            input.knowledgeBaseTitle = null;
+            if (input.knowledgeBaseId) {
+              const base = await db
+                .collection('knowledgeBases')
+                .findOne({ _id: id(input.knowledgeBaseId), workspaceId: req.workspaceId });
+              if (base?.deleting)
+                throw new InputError(
+                  'This knowledge base is being deleted. Choose another base.',
+                  409,
+                );
+              if (!base) invalid('knowledgeBaseId', 'Choose a knowledge base from this workspace.');
+              input.knowledgeBaseTitle = base.title;
+            }
+          }
           const recordId = current?._id ?? new ObjectId();
           input.attachmentIds = await claimAttachments(
             db,
@@ -268,7 +357,7 @@ export function installWorkRoutes(app, db) {
             fields,
             current?.custom,
           );
-          for (const key of task ? ['status', 'priority'] : ['status']) {
+          for (const key of task ? ['status', 'priority'] : ['status', 'articleType']) {
             input[`${key}Option`] = chosen[`${key}Option`];
             input[`${key}Label`] = chosen[`${key}Label`];
           }

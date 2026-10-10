@@ -1,5 +1,5 @@
 import { useInfiniteResource, useResource } from '../../data/use-resource.js';
-import React, { useContext, useEffect, useId, useRef, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useId, useRef, useState } from 'react';
 import {
   InformationCircleIcon,
   XMarkIcon,
@@ -8,18 +8,14 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { AuthContext } from '../../auth/auth-context.js';
 
-const recordRoutes = {
-  services: '/services',
-  collections: '/collections',
-  groups: '/groups',
-  members: '/workspace',
-  incidents: '/incidents',
-  knowledge: '/knowledge',
-  tasks: '/tasks',
-  monitors: '/monitors',
-};
+import { referenceRoutes as recordRoutes } from '../reference-value.jsx';
 
 const destinations = {
+  knowledgeBases: {
+    href: '/knowledge/bases/new',
+    label: 'Create Knowledge Base',
+    roles: ['admin', 'responder'],
+  },
   knowledge: { href: '/knowledge/new', label: 'Create Article', roles: ['admin', 'responder'] },
   services: { href: '/services/new', label: 'Create Service', roles: ['admin'] },
   collections: { href: '/collections/new', label: 'Create Collection', roles: ['admin'] },
@@ -44,6 +40,7 @@ export function ReferenceField({
   name,
   disabled = false,
   error,
+  helpText,
   onSearch,
   referenceType,
   groupId,
@@ -57,6 +54,28 @@ export function ReferenceField({
   const input = useRef(null);
   const labels = useRef(new Map());
   const results = useRef(null);
+  const popup = useRef(null);
+  // Manual popovers escape clipping and avoid auto-dismiss on the click that follows input focus.
+  // The field retains its existing blur and Escape handling.
+  useLayoutEffect(() => {
+    if (!open || disabled || !popup.current) return;
+    const panel = popup.current;
+    panel.showPopover();
+    const position = () => {
+      const rect = input.current?.closest('.reference-control')?.getBoundingClientRect();
+      if (!rect) return;
+      panel.style.width = `${Math.min(rect.width, window.innerWidth - 16)}px`;
+      panel.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - panel.offsetWidth - 8))}px`;
+      panel.style.top = `${Math.max(8, rect.bottom + panel.offsetHeight + 8 <= window.innerHeight ? rect.bottom + 4 : rect.top - panel.offsetHeight - 4)}px`;
+    };
+    position();
+    window.addEventListener('resize', position);
+    window.addEventListener('scroll', position, true);
+    return () => {
+      window.removeEventListener('resize', position);
+      window.removeEventListener('scroll', position, true);
+    };
+  }, [open, disabled]);
   const sentinel = useRef(null);
   const { user } = useContext(AuthContext),
     client = useQueryClient();
@@ -216,7 +235,11 @@ export function ReferenceField({
               open && active >= 0 && matches[active] ? `${id}-option-${active}` : undefined
             }
             aria-invalid={!!error}
-            aria-describedby={error ? `${id}-error` : undefined}
+            aria-describedby={
+              [helpText ? `${id}-help` : '', error ? `${id}-error` : '']
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
             placeholder={
               placeholder ?? (multiple && ids.length ? 'Search to add more…' : 'Search to select…')
             }
@@ -286,7 +309,20 @@ export function ReferenceField({
           )}
         </div>
         {open && !disabled && (
-          <div className="absolute inset-x-0 top-full z-50 mt-1 rounded border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+          <div
+            ref={popup}
+            popover="manual"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                setOpen(false);
+                input.current?.focus();
+              }
+            }}
+            onToggle={(event) => {
+              if (event.newState === 'closed') setOpen(false);
+            }}
+            className="reference-options fixed m-0 rounded border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
+          >
             <div
               ref={results}
               id={`${id}-results`}
@@ -371,6 +407,11 @@ export function ReferenceField({
           </div>
         )}
       </div>
+      {helpText && (
+        <p id={`${id}-help`} className="field-hint whitespace-pre-wrap">
+          {helpText}
+        </p>
+      )}
       {error && (
         <p id={`${id}-error`} role="alert" className="text-sm text-rose-700 dark:text-rose-300">
           {error}

@@ -1,6 +1,10 @@
 import { ObjectId } from 'mongodb';
 import { randomBytes } from 'node:crypto';
-import { DEMO_COUNT, DEMO_TYPES, validateDemoAction } from '@servicetrident/shared/domain/demo-data';
+import {
+  DEMO_COUNT,
+  DEMO_TYPES,
+  validateDemoAction,
+} from '@servicetrident/shared/domain/demo-data';
 import { InputError } from '@servicetrident/shared/validation/input-error';
 import { requireAdmin, hashPassword } from '../auth/auth.js';
 import { catalog } from './services.js';
@@ -15,6 +19,7 @@ const collections = [
   'incidents',
   'tasks',
   'articles',
+  'knowledgeBases',
   'incidentComments',
   'attachments',
   'deliveries',

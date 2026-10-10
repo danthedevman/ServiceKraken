@@ -386,15 +386,27 @@ function CreateDialog({ role, onNavigate, onClose }) {
             Icon: ClipboardDocumentListIcon,
           },
           {
+            to: '/knowledge/bases/new',
+            title: 'Knowledge Base',
+            description: 'Create a home for runbooks and solutions.',
+            Icon: BookOpenIcon,
+          },
+          {
             to: '/knowledge/new',
             title: 'Knowledge Article',
-            description: 'Share a runbook or solution.',
+            description: 'Write an article or a step-by-step runbook.',
             Icon: BookOpenIcon,
           },
         ]
       : []),
     ...(role === 'admin'
       ? [
+          {
+            to: '/workspace/new',
+            title: 'User',
+            description: 'Create or invite a workspace user.',
+            Icon: UserGroupIcon,
+          },
           {
             to: '/monitors/new',
             title: 'Monitor',

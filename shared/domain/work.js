@@ -1,6 +1,7 @@
 import { tableSearch } from './table-search.js';
 import { choice, identifier, invalid, text } from '../validation/fields.js';
 import { TASK_STATUSES, ARTICLE_STATUSES } from '../forms/work-options.js';
+import { taskLaneFilter } from './task-board.js';
 
 /** Validate a complete task/article without accepting ownership or query operators. */
 export function validateWork(body, kind, schema = null) {
@@ -39,12 +40,50 @@ export function validateWork(body, kind, schema = null) {
     )
       invalid('dueDate', 'Enter a valid due date.');
   } else {
+    result.articleType = choice(
+      body.articleType ?? 'article',
+      ['article', 'runbook'],
+      'articleType',
+    );
+    result.steps = [];
+    if (result.articleType === 'runbook') {
+      if (!Array.isArray(body.steps) || !body.steps.length || body.steps.length > 30)
+        invalid('steps', 'Add between 1 and 30 runbook steps.');
+      result.steps = body.steps.map((step) => {
+        if (
+          !step ||
+          typeof step !== 'object' ||
+          Array.isArray(step) ||
+          Object.keys(step).some((key) => !['title', 'instructions'].includes(key))
+        )
+          invalid('steps', 'Use a title and instructions for each step.');
+        return {
+          title: text(step.title ?? '', 'steps', 160),
+          instructions: text(step.instructions ?? '', 'steps', 5000),
+        };
+      });
+    }
     result.content = text(
       body.content ?? '',
       'content',
       30000,
-      schema ? schema.some((field) => field.id === 'content' && field.required) : true,
+      result.articleType === 'article' &&
+        (schema ? schema.some((field) => field.id === 'content' && field.required) : true),
     );
+    if (result.articleType === 'runbook')
+      result.content = text(
+        [
+          result.content,
+          ...result.steps.map((step, index) => `${index + 1}. ${step.title}\n${step.instructions}`),
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+        'content',
+        30000,
+      );
+    result.knowledgeBaseId = body.knowledgeBaseId
+      ? identifier(body.knowledgeBaseId, 'knowledgeBaseId')
+      : null;
     result.summary = text(body.summary ?? '', 'summary', 500, false);
   }
   return result;
@@ -74,12 +113,30 @@ export function workQuery(query, workspaceId, kind) {
   if (query.status)
     filter.status = choice(query.status, task ? TASK_STATUSES : ARTICLE_STATUSES, 'status');
   else filter.status = { $ne: 'archived' };
+  if (task && query.statusOption) {
+    const option = TASK_STATUSES.includes(query.statusOption)
+      ? query.statusOption
+      : identifier(query.statusOption, 'statusOption');
+    const lane = taskLaneFilter(option, query.status || option);
+    filter.$and = [...(filter.$and || []), lane];
+  }
+  if (!task && query.knowledgeBaseId)
+    filter.knowledgeBaseId = identifier(query.knowledgeBaseId, 'knowledgeBaseId');
   if (query.serviceId) filter.serviceId = identifier(query.serviceId, 'serviceId');
   if (query.incidentId && task) filter.incidentId = identifier(query.incidentId, 'incidentId');
   const sortBy = choice(
     query.sortBy ?? 'updatedAt',
     task
-      ? ['title', 'status', 'priority', 'dueDate', 'createdAt', 'updatedAt', 'assignmentGroupName']
+      ? [
+          'title',
+          'status',
+          'priority',
+          'dueDate',
+          'createdAt',
+          'updatedAt',
+          'assignmentGroupName',
+          'boardRank',
+        ]
       : ['title', 'status', 'createdAt', 'updatedAt'],
     'sortBy',
   );

@@ -148,6 +148,31 @@ export function HelpPage() {
                   </p>
                 ))}
               </div>
+              {topic.screenshots?.map((screenshot) => (
+                <figure key={screenshot.src} className="space-y-3">
+                  <a
+                    href={screenshot.src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open screenshot: ${screenshot.alt} (opens in a new tab)`}
+                    className="block rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+                  >
+                    <img
+                      src={screenshot.src}
+                      alt={screenshot.alt}
+                      width="1440"
+                      height="960"
+                      loading="lazy"
+                      className="h-auto w-full rounded border border-slate-200 dark:border-slate-700"
+                    />
+                  </a>
+                  {screenshot.caption && (
+                    <figcaption className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      Demo data only. {screenshot.caption}
+                    </figcaption>
+                  )}
+                </figure>
+              ))}
               <nav
                 aria-label="Adjacent guides"
                 className="flex flex-wrap justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-700"

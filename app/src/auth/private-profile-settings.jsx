@@ -1,3 +1,6 @@
+import { DateTimeSettings } from '../preferences/date-time-settings.jsx';
+import { AIFeatureSettings } from '../features/ai/ai.jsx';
+import { ThemeSettings } from '../preferences/theme-settings.jsx';
 import { PendingPage } from '../components/pending-page.jsx';
 import { writeApi } from '../data/query-client.js';
 
@@ -37,6 +40,9 @@ export function PrivateProfileSettings({ member }) {
   if (!user) return <PendingPage pathname="/profile" />;
   return (
     <div className="form-page">
+      <ThemeSettings />
+      <DateTimeSettings />
+      <AIFeatureSettings />
       <h2 className="text-lg font-semibold">Private Account Settings</h2>
       <p className="text-sm text-slate-500">
         Only you can view these settings. Confirm your password to change your account email or

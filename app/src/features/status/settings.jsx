@@ -1,3 +1,5 @@
+import { backgroundInk } from '../../../../shared/status/appearance.js';
+import { RecordActions } from '../../components/record-actions.jsx';
 import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
@@ -61,6 +63,7 @@ function StatusEditor({ settings, services, integrations }) {
     settings.subscriptionIntegrationId ?? '',
   );
   const [publicOrigin, setPublicOrigin] = useState(settings.publicOrigin ?? '');
+  const [backgroundColor, setBackgroundColor] = useState(settings.backgroundColor ?? '');
   const [initial] = useState(settings);
   const [visibility, setVisibility] = useState(settings.visibility);
   const [banner, setBanner] = useState(settings.banner ?? emptyMessage());
@@ -79,6 +82,7 @@ function StatusEditor({ settings, services, integrations }) {
     try {
       const body = {
         visibility,
+        backgroundColor,
         subscriptionButtonVisible,
         rssSubscriptions,
         emailSubscriptions,
@@ -108,6 +112,51 @@ function StatusEditor({ settings, services, integrations }) {
         </p>
       )}
       <section className="space-y-3">
+        <div className="space-y-2">
+          <label htmlFor="status-background-hex" className="field-label">
+            Page Background Colour
+          </label>
+          <div className="status-colour-control">
+            <label className="status-colour-swatch">
+              <span className="sr-only">Choose Background Colour</span>
+              <input
+                type="color"
+                value={/^#[a-f0-9]{6}$/i.test(backgroundColor) ? backgroundColor : '#f4f7fb'}
+                onChange={(event) => setBackgroundColor(event.target.value)}
+              />
+            </label>
+            <input
+              id="status-background-hex"
+              name="backgroundColor"
+              aria-label="Page Background Colour Hex"
+              type="text"
+              maxLength={7}
+              placeholder="App theme"
+              value={backgroundColor}
+              onChange={(event) => setBackgroundColor(event.target.value)}
+              spellCheck={false}
+              autoComplete="off"
+            />
+            <button type="button" className="btn-secondary" onClick={() => setBackgroundColor('')}>
+              Use App Theme
+            </button>
+          </div>
+          <div
+            className="status-colour-preview"
+            style={
+              /^#[a-f0-9]{6}$/i.test(backgroundColor)
+                ? { backgroundColor, color: backgroundInk(backgroundColor) }
+                : {}
+            }
+          >
+            <span className="font-medium">Status Page Preview</span>
+            <span className="text-xs">{backgroundColor || 'App theme'}</span>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500">
+          Applies to private and public status pages. Heading text adjusts to keep contrast
+          readable.
+        </p>
         <label className="field-label">
           Visibility
           <Select
@@ -276,7 +325,7 @@ function StatusEditor({ settings, services, integrations }) {
           </p>
         </div>
       </details>
-      <div className="form-actions">
+      <RecordActions>
         <button
           type="button"
           className="btn-secondary"
@@ -286,9 +335,9 @@ function StatusEditor({ settings, services, integrations }) {
           Cancel
         </button>
         <button className="btn-primary" disabled={busy}>
-          {busy ? 'Saving…' : 'Save status page'}
+          {busy ? 'Saving…' : 'Save Status Page'}
         </button>
-      </div>
+      </RecordActions>
     </ValidatedForm>
   );
 }

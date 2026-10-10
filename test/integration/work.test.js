@@ -280,18 +280,122 @@ test(
     );
     assert.equal(filteredCsv.status, 200);
     assert.match(await filteredCsv.text(), /Investigate payments/);
+    const orderTarget = (
+      await request('/tasks', responder.cookie, 'POST', {
+        ...taskInput,
+        title: 'Ordering target',
+        status: 'in_progress',
+      })
+    ).data.item;
+    const reordered = await request(`/tasks/${task.id}`, responder.cookie, 'PATCH', {
+      revision: 1,
+      boardPosition: { targetId: orderTarget.id, side: 'after' },
+    });
+    assert.equal(reordered.status, 200, JSON.stringify(reordered.data));
+    const board = await request(
+      '/tasks?status=in_progress&sortBy=boardRank&order=asc',
+      responder.cookie,
+    );
+    assert.deepEqual(
+      board.data.items.map((item) => item.id),
+      [orderTarget.id, task.id],
+    );
+    assert.equal(
+      (
+        await request(`/tasks/${task.id}`, responder.cookie, 'PATCH', {
+          revision: 1,
+          boardPosition: { targetId: orderTarget.id, side: 'before' },
+        })
+      ).status,
+      409,
+    );
+    assert.equal(
+      (
+        await request(`/tasks/${task.id}`, viewer.cookie, 'PATCH', {
+          revision: 2,
+          boardPosition: { targetId: orderTarget.id, side: 'before' },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (await request(`/tasks/${orderTarget.id}`, owner.cookie, 'DELETE', {})).status,
+      204,
+    );
     assert.equal(
       (
         await request(`/tasks/${task.id}`, responder.cookie, 'PATCH', {
           status: 'archived',
-          revision: 1,
+          revision: 2,
         })
       ).status,
       200,
     );
     assert.equal((await request('/tasks', responder.cookie)).data.total, 0);
     assert.equal((await request('/tasks?status=archived', responder.cookie)).data.total, 1);
+    assert.equal(
+      (
+        await request('/knowledge', responder.cookie, 'POST', {
+          title: 'Optional base',
+          content: 'Text',
+        })
+      ).status,
+      201,
+    );
+    const baseResult = await request('/knowledge-bases', responder.cookie, 'POST', {
+      title: 'Operations',
+      description: 'Runbooks',
+    });
+    assert.equal(baseResult.status, 201);
+    const knowledgeBaseId = baseResult.data.item.id;
+    assert.equal((await request('/knowledge-bases?search=runbooks', viewer.cookie)).data.total, 1);
+    assert.equal((await request('/knowledge-bases?search=missing', viewer.cookie)).data.total, 0);
+    assert.equal((await request(`/knowledge-bases/${knowledgeBaseId}`, other.cookie)).status, 404);
+    assert.equal(
+      (await request('/knowledge-bases', viewer.cookie, 'POST', { title: 'No' })).status,
+      403,
+    );
+    assert.equal(
+      (
+        await request('/knowledge', other.cookie, 'POST', {
+          title: 'Foreign base',
+          content: 'Text',
+          knowledgeBaseId,
+        })
+      ).status,
+      400,
+    );
+    const boardOrder = ['done', 'blocked', 'in_progress', 'todo'];
+    assert.equal(
+      (
+        await request('/task-board-settings', responder.cookie, 'PUT', {
+          order: boardOrder,
+          revision: 0,
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await request('/task-board-settings', owner.cookie, 'PUT', {
+          order: boardOrder,
+          revision: 0,
+        })
+      ).status,
+      200,
+    );
+    assert.deepEqual((await request('/task-board-settings', viewer.cookie)).data.order, boardOrder);
+    assert.equal(
+      (
+        await request('/task-board-settings', owner.cookie, 'PUT', {
+          order: boardOrder,
+          revision: 0,
+        })
+      ).status,
+      409,
+    );
     const article = await request('/knowledge', responder.cookie, 'POST', {
+      knowledgeBaseId,
       title: '=Payment runbook',
       content: '<script>This is plain text</script>\nRestart steps',
       serviceId: service.id,
@@ -321,6 +425,105 @@ test(
       headers: { Cookie: viewer.cookie },
     });
     assert.match(await articleCsv.text(), /'=Payment runbook/);
+    for (const articleType of ['article', 'runbook']) {
+      const unassigned = await request('/knowledge', responder.cookie, 'POST', {
+        title: `Unassigned ${articleType}`,
+        articleTypeOption: articleType,
+        ...(articleType === 'article'
+          ? { content: 'Unassigned knowledge content.' }
+          : { steps: [{ title: 'Check', instructions: 'Verify the service.' }] }),
+      });
+      assert.equal(unassigned.status, 201, JSON.stringify(unassigned.data));
+      assert.equal(unassigned.data.item.articleType, articleType);
+      assert.equal(unassigned.data.item.knowledgeBaseId, null);
+    }
+    const sourceBase = (
+      await request('/knowledge-bases', owner.cookie, 'POST', { title: 'Temporary source' })
+    ).data.item;
+    const destinationBase = (
+      await request('/knowledge-bases', owner.cookie, 'POST', { title: 'Temporary destination' })
+    ).data.item;
+    const runbookResult = await request('/knowledge', responder.cookie, 'POST', {
+      title: 'Recovery procedure',
+      articleType: 'runbook',
+      knowledgeBaseId: sourceBase.id,
+      steps: [{ title: 'Check health', instructions: 'Confirm the service responds.' }],
+    });
+    assert.equal(runbookResult.status, 201, JSON.stringify(runbookResult.data));
+    const runbookId = runbookResult.data.item.id;
+    const updateRunbook = await request(`/knowledge/${runbookId}`, responder.cookie, 'PATCH', {
+      revision: runbookResult.data.item.revision,
+      status: 'published',
+    });
+    assert.equal(updateRunbook.status, 200, JSON.stringify(updateRunbook.data));
+    assert.equal(updateRunbook.data.item.content.match(/1. Check health/g).length, 1);
+    await db.collection('attachments').insertOne({
+      _id: new ObjectId(),
+      workspaceId: new ObjectId(owner.data.user.id),
+      kind: 'knowledge',
+      recordId: runbookId,
+    });
+    await db
+      .collection('incidents')
+      .updateOne({ _id: new ObjectId(privateIncident.id) }, { $push: { knowledgeIds: runbookId } });
+    const deletionBody = {
+      mode: 'move',
+      targetId: destinationBase.id,
+      revision: sourceBase.revision,
+      articleCount: 1,
+    };
+    assert.equal(
+      (await request(`/knowledge-bases/${sourceBase.id}`, responder.cookie, 'DELETE', deletionBody))
+        .status,
+      403,
+    );
+    assert.equal(
+      (
+        await request(`/knowledge-bases/${sourceBase.id}`, owner.cookie, 'DELETE', {
+          ...deletionBody,
+          targetId: sourceBase.id,
+        })
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await request(`/knowledge-bases/${sourceBase.id}`, owner.cookie, 'DELETE', {
+          ...deletionBody,
+          articleCount: 0,
+        })
+      ).status,
+      409,
+    );
+    assert.equal(
+      (await request(`/knowledge-bases/${sourceBase.id}`, owner.cookie, 'DELETE', deletionBody))
+        .status,
+      204,
+    );
+    assert.equal(
+      (await request(`/knowledge/${runbookId}`, viewer.cookie)).data.item.knowledgeBaseId,
+      destinationBase.id,
+    );
+    assert.equal(await db.collection('attachments').countDocuments({ recordId: runbookId }), 1);
+    assert.equal((await request(`/knowledge-bases/${sourceBase.id}`, viewer.cookie)).status, 404);
+    assert.equal(
+      (
+        await request(`/knowledge-bases/${destinationBase.id}`, owner.cookie, 'DELETE', {
+          mode: 'delete',
+          revision: destinationBase.revision,
+          articleCount: 1,
+        })
+      ).status,
+      204,
+    );
+    assert.equal((await request(`/knowledge/${runbookId}`, viewer.cookie)).status, 404);
+    assert.equal(await db.collection('attachments').countDocuments({ recordId: runbookId }), 0);
+    assert.ok(
+      !(
+        await db.collection('incidents').findOne({ _id: new ObjectId(privateIncident.id) })
+      ).knowledgeIds.includes(runbookId),
+    );
+
     const groupState = (await request('/groups', owner.cookie)).data;
     const groupBody = {
       name: 'Payments team',
@@ -440,11 +643,13 @@ test(
     assert.equal((await request('/services', user.cookie)).data.services[0].ownerIds, undefined);
     const publicSettings = await request('/status-settings', owner.cookie, 'PATCH', {
       visibility: 'public',
+      backgroundColor: '#e8f2ed',
     });
     const publicStatus = await request(
       publicSettings.data.publicPath.replace('/status/public/', '/public/status/'),
     );
     assert.equal(publicStatus.status, 200);
+    assert.equal(publicStatus.data.backgroundColor, '#e8f2ed');
     assert.equal(publicStatus.data.services[0].ownerIds, undefined);
     assert.equal(publicStatus.data.services[0].primaryContactId, undefined);
     assert.equal(publicStatus.data.services[0].ownerGroupIds, undefined);
@@ -568,7 +773,12 @@ test(
     );
     const catalogSearch = await request('/search?q=Payments&type=services', viewer.cookie);
     assert.equal(catalogSearch.data.results[0].id, service.id);
-    assert.ok(catalogSearch.data.results[0].href.includes('view='));
+    assert.equal(catalogSearch.data.results[0].href, `/services/${service.id}`);
+    const adminPeopleSearch = await request('/search?q=example.com&type=users', owner.cookie);
+    assert.equal(
+      adminPeopleSearch.data.results[0].href,
+      `/workspace/${adminPeopleSearch.data.results[0].id}`,
+    );
     const peopleSearch = await request('/search?q=example.com&type=users', user.cookie);
     assert.equal(peopleSearch.data.results.length, 1);
     assert.equal(peopleSearch.data.results[0].id, user.data.user.id);
@@ -652,7 +862,7 @@ test(
         title: 'Schema test',
         statusOption: optionId,
         custom: { [fieldId]: 'Production' },
-        ...(kind === 'knowledge' ? { content: 'Runbook' } : {}),
+        ...(kind === 'knowledge' ? { content: 'Runbook', knowledgeBaseId } : {}),
       };
       assert.equal(
         (
@@ -697,9 +907,9 @@ test(
             fields: hidden,
           })
         ).status,
-        200,
+        400,
       );
-      assert.equal((await request(`/${kind}`, responder.cookie, 'POST', body)).status, 400);
+      assert.equal((await request(`/${kind}`, responder.cookie, 'POST', body)).status, 201);
       assert.equal(
         (
           await request(`/${kind}/${result.data.item.id}`, responder.cookie, 'PATCH', {
@@ -708,7 +918,7 @@ test(
           })
         ).status,
         200,
-        'Hidden saved choice may be retained',
+        'Saved choice may be retained',
       );
       const exportResponse = await fetch(`${base}/${kind}/export`, {
         headers: { Cookie: owner.cookie },

@@ -1,3 +1,5 @@
+import { installKnowledgeBases } from './routes/knowledge-bases.js';
+import { installAI } from './routes/ai.js';
 import { installStatusSubscriptions } from './routes/status-subscriptions.js';
 import { installWorkspaceSettings } from './routes/workspace-settings.js';
 import { auditActivity } from './middleware/audit.js';
@@ -34,7 +36,7 @@ import { installEventRoutes } from './routes/events.js';
 /** Build an Express API with injected database access for integration testing.
  * @param {import('mongodb').Db} db @returns {import('express').Express}
  */
-export function createApp(db) {
+export function createApp(db, { aiFetch } = {}) {
   const configuredOrigin = new URL(process.env.APP_ORIGIN ?? 'http://127.0.0.1:8090');
   if (!['http:', 'https:'].includes(configuredOrigin.protocol))
     throw new Error('APP_ORIGIN must use HTTP or HTTPS.');
@@ -147,6 +149,8 @@ export function createApp(db) {
   app.use('/api', demoWriteGuard(db));
   installAttachmentRoutes(app, db);
   installOperationsRoutes(app, db, appOrigin);
+  installKnowledgeBases(app, db);
+  installAI(app, db, aiFetch);
   installWorkRoutes(app, db);
   installRecordDeletionRoutes(app, db);
   installSearchRoute(app, db);

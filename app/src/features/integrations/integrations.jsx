@@ -1,3 +1,4 @@
+import { RecordHeader } from '../../components/record-actions.jsx';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { api } from '../../data/api.js';
 import { writeApi } from '../../data/query-client.js';
@@ -6,7 +7,7 @@ import { IntegrationEditor } from './editor.jsx';
 import { IntegrationCatalog } from './catalog.jsx';
 import { providers, emailPresets } from '../../../../shared/integrations/providers.js';
 import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { displayValue } from '../../lib/display-value.js';
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../auth/auth-context.js';
@@ -17,6 +18,7 @@ import { RefreshButton } from '../../components/icon-button.jsx';
 import { Notice } from '../../components/forms/fields.jsx';
 import { newId } from '../../lib/identifiers.js';
 import { useSave } from '../../data/use-save.js';
+import { ReferenceValues } from '../../components/reference-value.jsx';
 
 /** Admin integration settings and durable delivery history; secret values never return to the browser. */
 export function IntegrationsPage({ form = false }) {
@@ -118,15 +120,16 @@ export function IntegrationsPage({ form = false }) {
                 ['Recipients', item.recipients?.join(', ') || 'None'],
                 [
                   'Services',
-                  item.serviceIds?.length
-                    ? item.serviceIds
-                        .map(
-                          (serviceId) =>
-                            services.data.services.find((service) => service.id === serviceId)
-                              ?.name || 'Unavailable service',
-                        )
-                        .join(', ')
-                    : 'All services',
+                  <ReferenceValues
+                    key="services"
+                    type="services"
+                    ids={item.serviceIds}
+                    getLabel={(serviceId) =>
+                      services.data.services.find((service) => service.id === serviceId)?.name ||
+                      'Unavailable service'
+                    }
+                    empty="All services"
+                  />,
                 ],
                 [
                   'Credentials',
@@ -159,17 +162,22 @@ export function IntegrationsPage({ form = false }) {
   );
   return (
     <div className="list-page integrations-page">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-6 py-5">
-        <h1 className="page-title">Integrations</h1>
-        <div className="flex items-center gap-2">
-          {actions}
-          <RefreshButton
-            label="Refresh Integrations"
-            busy={config.pending}
-            onClick={config.refresh}
-          />
+      <RecordHeader>
+        <div className="flex items-center justify-end gap-3">
+          <h1 className="page-title">Integrations</h1>
+          <div className="flex items-center gap-2">
+            <Link className="btn-secondary" to="/integrations/ai">
+              AI Provider
+            </Link>
+            <RefreshButton
+              label="Refresh Integrations"
+              busy={config.pending}
+              onClick={config.refresh}
+            />
+            {actions}
+          </div>
         </div>
-      </div>
+      </RecordHeader>
       <Notice error={config.error || save.error} />
       <RecordTabs
         related

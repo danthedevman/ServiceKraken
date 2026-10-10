@@ -29,6 +29,7 @@ export function RichEditor({
   busy,
   error,
   label = 'Article content',
+  helpText,
 }) {
   const [message, setMessage] = useState(''),
     [linkOpen, setLinkOpen] = useState(false),
@@ -55,6 +56,7 @@ export function RichEditor({
         role: 'textbox',
         'aria-multiline': 'true',
         'aria-label': label,
+        'aria-describedby': helpText ? 'article-content-help' : undefined,
       },
       handleDrop: (_view, event) => {
         if (event.dataTransfer?.files.length) {
@@ -230,6 +232,11 @@ export function RichEditor({
         )}
         <EditorContent editor={editor} />
       </div>
+      {helpText && (
+        <p id="article-content-help" className="field-hint whitespace-pre-wrap">
+          {helpText}
+        </p>
+      )}
       {(error || message) && (
         <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
           {error || message}

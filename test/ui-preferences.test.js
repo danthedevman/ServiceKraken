@@ -9,7 +9,16 @@ test('layout preferences accept only boolean changes and exclude unrelated user 
     rightCollapsed: false,
     filtersOpen: false,
     tableLayouts: {},
-    dashboardTab: 'incidents',
+    dashboardTab: 'overview',
+    colorScheme: 'ocean',
+    highContrast: false,
+    reduceMotion: false,
+    textScale: 'standard',
+    timeFormat: 'locale',
+    dateFormat: 'locale',
+    aiSummaries: true,
+    aiDrafting: true,
+    aiKnowledgeAnswers: true,
   });
   for (const value of [
     null,
@@ -44,13 +53,36 @@ test('audit stamps preserve original authors without inventing legacy creation h
 });
 
 test('dashboard tab preferences accept supported tabs and safely fall back for old or invalid values', () => {
-  for (const dashboardTab of ['incidents', 'tasks', 'services']) {
+  for (const dashboardTab of ['overview', 'incidents', 'tasks', 'services']) {
     assert.deepEqual(preferencePatch({ dashboardTab }), { dashboardTab });
     assert.equal(uiPreferences({ dashboardTab }).dashboardTab, dashboardTab);
   }
   for (const dashboardTab of [null, true, 'unknown', {}, ['tasks']]) {
     assert.throws(() => preferencePatch({ dashboardTab }));
-    assert.equal(uiPreferences({ dashboardTab }).dashboardTab, 'incidents');
+    assert.equal(uiPreferences({ dashboardTab }).dashboardTab, 'overview');
   }
-  assert.equal(uiPreferences().dashboardTab, 'incidents');
+  assert.equal(uiPreferences().dashboardTab, 'overview');
+});
+
+test('appearance preferences allow only supported schemes and accessibility values', () => {
+  assert.equal(
+    uiPreferences({
+      colorScheme: 'forest',
+      highContrast: true,
+      textScale: 'large',
+      reduceMotion: true,
+    }).colorScheme,
+    'forest',
+  );
+  for (const value of [{ colorScheme: 'unknown' }, { textScale: 'huge' }, { highContrast: 'yes' }])
+    assert.throws(() => preferencePatch(value));
+});
+
+test('date preferences reject unsupported date and time formats', () => {
+  assert.deepEqual(preferencePatch({ timeFormat: '24', dateFormat: 'iso' }), {
+    timeFormat: '24',
+    dateFormat: 'iso',
+  });
+  assert.throws(() => preferencePatch({ timeFormat: '25' }));
+  assert.throws(() => preferencePatch({ dateFormat: '<script>' }));
 });

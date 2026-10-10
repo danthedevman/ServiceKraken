@@ -1,5 +1,8 @@
 # Loading and data UI conventions
 
+- Tasks opens in Kanban view by default. Keep archived tasks in a separate server-filtered list. Status moves and lane ordering use revision-checked writes, retain permission checks, and provide keyboard/touch alternatives to dragging. Persist card order and admin-only global lane order on the server. Show a lane for each active status option, and load cards continuously with bounded requests and no pagination controls. Keep the toolbar padded, let lanes fill the page and grow with their cards, and provide visible lane/card insertion indicators while dragging.
+- Populated reference values remain links to their known record routes in read-only views, with readable labels, accessible new-tab cues, and noopener/noreferrer. Preserve empty and unavailable labels.
+
 - Shared tables provide a column-settings gear to show, hide, and reorder data columns. Selection and Open Record are fixed leading columns and cannot be hidden or reordered. Preserve title links and use explicit, known detail routes for launch links; do not fabricate record pages for data-only rows.
 
 - Form Builder opens in read-only mode. Edit enables field creation, reordering, and permitted custom-field changes. Show Cancel immediately before Save; Cancel discards the draft and returns to saved configuration. Do not add a separate Reload Saved Form action.
@@ -19,7 +22,7 @@
 - Show built-in enum values in normal case with `displayValue`, retaining machine values in API payloads. Preserve user-defined select option labels exactly.
 - Use ReferenceField for relationships to users, groups, services, and other records. Use the shared Toggle switch for enable/disable settings. Keep table selection and schema-defined checkbox fields as checkboxes. Preserve saved unavailable references and enforce workspace validation in the API.
 - Use RecordTabs for related record sections; preserve draft input while switching tabs and support keyboard navigation.
-- System Field choices are locked in form builders. Preserve historical choices and canonical mappings; custom select options remain configurable.
+- System Field labels and option labels can be edited, and additional select choices can be added with a canonical workflow mapping. Preserve existing option IDs, mappings, and visibility; never remove existing System Field choices. Custom select options remain configurable.
 - Keep native scrolling and shared theme-aware scrollbar styles. Do not hide scrollbars or intercept wheel/touch scrolling.
 
 - Keep Form builder links on create/edit forms only, not table-list views.
@@ -34,7 +37,7 @@
 - Record views use RecordWorkspace: read-only record details on the left with a visible pencil Edit button for authorized roles to open editable fields and a fixed full-height right rail with a left border on desktop. Stack the rail on narrow screens. Viewers and other roles without edit permission stay read-only. Preserve drafts during refresh; Save and Cancel return existing records to read-only mode without navigating away. Cancel discards unsaved edits. Creation forms return to their owning list; quick-add dialogs close without navigation. Creation pages open directly as forms. Hide unavailable actions without reserving empty space.
 - Keep list views flush with the viewport. The sidenav profile area and full-page table pagination share a fixed --app-footer-height across every route; never measure table content to resize the profile rail. The Create control stays outside the scrollable nav; the collapsed logo reveals the expand control on hover or focus.
 - Global search focuses its input after the native dialog opens.
-- Form builders show fields and order controls on the left, selected field settings on the right. Use “System Field” for out-of-box fields in user-facing labels and messages. System Fields and custom fields can both be reordered. Other System Field settings are read-only: labels, required flags, types, choices, and visibility cannot be changed. Enforce this in shared API validation. Preserve existing saved configuration; custom fields remain configurable and saved custom types remain immutable.
+- Form builders show fields and order controls on the left, selected field settings on the right. Use “System Field” for out-of-box fields in user-facing labels and messages. System Fields and custom fields can both be reordered. Allow System Field labels and additional select options; keep required flags, types, visibility, existing option IDs, and workflow meanings fixed. Enforce this in shared API validation. Preserve existing saved configuration; custom fields remain configurable and saved custom types remain immutable.
 - Embedded rich-text images remain protected record files but are excluded from visible attachment lists. Ordinary image attachments remain visible.
 - Describe supported checks accurately: HTTP/HTTPS endpoints using HEAD and GET. Do not imply arbitrary queries or network scanning.
 
@@ -82,7 +85,19 @@
 - Treat accessibility as an acceptance requirement for all new or changed HTML, JSX, components, styles, and interaction flows. Prefer semantic HTML and native controls; use ARIA only when native semantics do not express the interaction.
 - Give every input a programmatically associated label and every icon-only button a meaningful accessible name. Preserve accessible labels when hiding visible text. Use buttons for actions and links for navigation.
 - Support keyboard operation, visible focus, logical DOM/tab order, and predictable focus restoration. Dialogs must contain focus, support Escape when safe, and return focus to their trigger. Avoid keyboard traps and positive tabindex values.
-- Associate validation and help text with controls, expose invalid states, and announce meaningful loading, success, and error changes without repeatedly announcing background polling.
+- Associate validation and help text with controls, expose invalid states, and announce meaningful success and error changes without repeatedly announcing background polling.
 - Maintain readable text and control contrast in both themes, useful pointer target sizes, and usable layouts with zoom and narrow screens. Never communicate state using color alone. Respect reduced-motion settings.
 - Hide decorative icons from assistive technology; provide useful alternative text for informative images. Preserve headings, landmarks, table headers, and accessible names for tabs, menus, and related sections.
 - Check affected keyboard flows and accessible names when practical, alongside automated validation. Report any unverified accessibility behavior; passing lint or a build does not establish accessibility compliance.
+
+- Knowledge opens searchable knowledge-base cards, not a table. Knowledge-base association is optional for articles and runbooks; validate any selected base belongs to the workspace. All Articles includes unassigned records.
+
+- Admins may add bounded plain-text Help Text to every System Field and custom field. Associate hints with the controls using aria-describedby and give controls stable, unique accessible labels independent of hints or selected values.
+- Use breadcrumbs as the single page title across forms and lists. Keep record IDs and statuses in the form body, and align desktop record headers with the right information-panel header. Secondary toolbar controls precede primary actions in DOM and visual order.
+- Reopening an incident requires confirmation, including changes from a resolved record's Edit form. Focus Cancel initially, prevent duplicate requests, and retain errors.
+- AI controls require a configured workspace provider and an enabled user preference. Keys stay encrypted on the server. Send only authorized, bounded record text; render generated output as text and link to known source records. AI drafts remain unsaved and require confirmation before replacing form content.
+
+- Do not display loading messages in the UI, including temporary permission or access warnings. Use skeleton placeholders, quiet pending states, and `aria-busy` where appropriate; preserve existing content during refresh. Show access-denied messages only after authentication and authorization have resolved. Keep meaningful errors and action confirmations visible.
+
+- Keep list and form breadcrumbs and compact main actions in one row. Record, integration, and provider headers span the available content width with no outer top or side padding; keep create/edit actions visible while content scrolls. Preserve native form association for submit buttons rendered in the header. The dashboard has its picker on the left and a plain refresh icon on the right, aligned with card edges.
+- Apply subtle theme-aware borders to inputs, selects, text areas, and editor surfaces across sections. Composite reference controls have a single outer border.

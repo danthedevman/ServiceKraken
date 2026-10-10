@@ -1,3 +1,4 @@
+import { COLOR_SCHEMES } from '../../../shared/domain/color-schemes.js';
 import React, {
   createContext,
   useContext,
@@ -54,6 +55,38 @@ export function PreferencesProvider({ children }) {
   const [resolvedAccount, setResolvedAccount] = useState(null);
   const [values, setValues] = useState(initialLayout),
     [error, setError] = useState('');
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const palette =
+      COLOR_SCHEMES.find((scheme) => scheme.id === values.colorScheme) ?? COLOR_SCHEMES[0];
+    root.dataset.colorScheme = palette.id;
+    root.dataset.contrast = values.highContrast ? 'high' : 'standard';
+    root.dataset.reduceMotion = String(values.reduceMotion);
+    root.dataset.textScale = values.textScale;
+    root.style.setProperty('--app-background-light', palette.background);
+    root.style.setProperty('--app-background-dark', palette.dark);
+    for (const [shade, lightness] of [
+      [50, 97],
+      [100, 94],
+      [200, 88],
+      [300, 79],
+      [400, 66],
+      [500, 48],
+      [600, 38],
+      [700, 28],
+      [800, 22],
+      [900, 15],
+      [950, 9],
+    ]) {
+      root.style.setProperty(`--color-blue-${shade}`, `hsl(${palette.hue} 62% ${lightness}%)`);
+      root.style.setProperty(
+        `--color-slate-${shade}`,
+        shade === 500 || shade === 400
+          ? `light-dark(hsl(${palette.neutral} 12% ${shade === 500 ? 40 : 42}%), hsl(${palette.neutral} 12% ${shade === 500 ? 68 : 79}%))`
+          : `hsl(${palette.neutral} 12% ${lightness}%)`,
+      );
+    }
+  }, [values.colorScheme, values.highContrast, values.reduceMotion, values.textScale]);
   const current = useRef(values),
     identity = useRef(user?.id),
     queue = useRef(Promise.resolve());
@@ -123,7 +156,7 @@ export function PreferencesProvider({ children }) {
         } catch (failure) {
           if (!signal.aborted && identity.current === account)
             setError(
-              'Layout saved in this browser, but account sync failed. Toggle again to retry.',
+              'Preferences saved in this browser, but account sync failed. Change a setting to retry.',
             );
         }
       });

@@ -7,6 +7,9 @@ export function ConfirmDeleteButton({
   onConfirm,
   confirmation = 'Remove this item? This action cannot be undone.',
   confirmLabel = 'Delete',
+  title = 'Confirm Removal',
+  busyLabel = 'Removing…',
+  confirmClassName = 'btn-danger',
   disabled,
   ...props
 }) {
@@ -34,7 +37,7 @@ export function ConfirmDeleteButton({
       </button>
       {open && (
         <Modal
-          title="Confirm Removal"
+          title={title}
           busy={busy}
           initialFocusRef={cancel}
           onClose={() => setOpen(false)}
@@ -49,8 +52,8 @@ export function ConfirmDeleteButton({
               >
                 Cancel
               </button>
-              <button type="button" className="btn-danger" disabled={busy} onClick={confirm}>
-                {busy ? 'Removing…' : confirmLabel}
+              <button type="button" className={confirmClassName} disabled={busy} onClick={confirm}>
+                {busy ? busyLabel : confirmLabel}
               </button>
             </>
           }

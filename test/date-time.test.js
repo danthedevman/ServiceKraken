@@ -36,3 +36,15 @@ test('timestamps use the selected zone including daylight savings and fractional
   assert.equal(dateTime('invalid'), 'Unavailable');
   assert.equal(dateTime(null), 'Not checked yet');
 });
+
+test('date and time formats retain the selected timezone and support both clock styles', () => {
+  const value = '2026-10-10T17:05:06Z';
+  const twelve = dateTime(value, 'UTC', { dateFormat: 'dmy', timeFormat: '12' });
+  assert.match(twelve, /^10\/10\/2026/);
+  assert.match(twelve, /5:05:06/);
+  assert.match(twelve, /PM/);
+  const twentyFour = dateTime(value, 'UTC', { dateFormat: 'iso', timeFormat: '24' });
+  assert.match(twentyFour, /^2026-10-10/);
+  assert.match(twentyFour, /17:05:06/);
+  assert.doesNotMatch(twentyFour, /PM/);
+});

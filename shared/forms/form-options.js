@@ -8,7 +8,7 @@ export const builtinChoices = {
     priority: ['low', 'medium', 'high'],
     status: ['todo', 'in_progress', 'blocked', 'done', 'archived'],
   },
-  knowledge: { status: ['draft', 'published', 'archived'] },
+  knowledge: { status: ['draft', 'published', 'archived'], articleType: ['article', 'runbook'] },
 };
 /** Human-readable defaults do not change stored canonical values. */
 export function optionLabel(value) {
@@ -42,6 +42,7 @@ export const workFields = {
     ['description', 'Description', false],
   ],
   knowledge: [
+    ['articleType', 'Type', true],
     ['title', 'Title', true],
     ['status', 'Status', true],
     ['serviceId', 'Service', false],

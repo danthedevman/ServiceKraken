@@ -20,6 +20,12 @@ test('resolution enforces configurable notes and mandatory fields; knowledge lin
   });
   const base = `http://127.0.0.1:${server.address().port}/api`;
   async function request(path, cookie, method = 'GET', body) {
+    if (path === '/knowledge' && method === 'POST' && !body.knowledgeBaseId) {
+      const baseRecord = await request('/knowledge-bases', cookie, 'POST', {
+        title: 'Test runbooks',
+      });
+      if (baseRecord.status === 201) body = { ...body, knowledgeBaseId: baseRecord.data.item.id };
+    }
     const response = await fetch(base + path, {
       method,
       headers: {

@@ -25,13 +25,18 @@ export async function settings(db, workspaceId) {
       );
     data = await db.collection('operations').findOne({ _id: workspaceId });
   }
-  if (data.taskFields)
-    data.taskFields = [
-      ...data.taskFields,
-      ...workBuiltinFields('tasks').filter(
-        (field) => !data.taskFields.some((saved) => saved.id === field.id),
-      ),
-    ];
+  for (const [key, kind] of [
+    ['taskFields', 'tasks'],
+    ['knowledgeFields', 'knowledge'],
+  ]) {
+    if (data[key])
+      data[key] = [
+        ...data[key],
+        ...workBuiltinFields(kind).filter(
+          (field) => !data[key].some((saved) => saved.id === field.id),
+        ),
+      ];
+  }
   // Present the previous built-in label consistently while retaining custom labels.
   data.fields = data.fields.map((field) =>
     field.id === 'knowledgeIds' && field.label === 'Knowledge articles'

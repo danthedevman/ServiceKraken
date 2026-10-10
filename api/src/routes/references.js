@@ -30,6 +30,7 @@ export function installReferenceRoutes(app, db) {
       incidents: ['incidents', 'title'],
       tasks: ['tasks', 'title'],
       knowledge: ['articles', 'title'],
+      knowledgeBases: ['knowledgeBases', 'title'],
       monitors: ['monitors', 'name'],
     };
     if (definitions[type]) {

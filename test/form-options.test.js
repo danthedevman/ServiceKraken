@@ -47,7 +47,37 @@ test('built-in dropdown values cannot be deleted or remapped; custom choices req
     field.id === 'status' ? { ...field, choices } : field,
   );
   const schema = validateFields(legacy, legacy);
-  assert.throws(() => validateFields(legacy), /cannot be changed/);
+  assert.deepEqual(validateFields(legacy), legacy);
+  const relabeled = legacy.map((field) =>
+    field.id === 'status'
+      ? {
+          ...field,
+          label: 'Workflow',
+          choices: choices.map((option) =>
+            option.value === 'open' ? { ...option, label: 'New' } : option,
+          ),
+        }
+      : field,
+  );
+  assert.equal(
+    validateFields(relabeled, legacy).find((field) => field.id === 'status').label,
+    'Workflow',
+  );
+  for (const change of [
+    choices.filter((option) => option.value !== added.value),
+    choices.map((option) =>
+      option.value === added.value ? { ...option, base: 'resolved' } : option,
+    ),
+    choices.map((option) => (option.value === added.value ? { ...option, hidden: true } : option)),
+  ])
+    assert.throws(
+      () =>
+        validateFields(
+          legacy.map((field) => (field.id === 'status' ? { ...field, choices: change } : field)),
+          legacy,
+        ),
+      /cannot be removed or changed/,
+    );
   const result = resolveChoices({ statusOption: added.value }, schema, 'incidents');
   assert.equal(result.status, 'open');
   assert.equal(result.statusLabel, 'Waiting on vendor');
@@ -93,5 +123,36 @@ test('hidden and removed custom choices reject new values but preserve saved his
   assert.throws(
     () => validateFields([...builtins, { ...field, type: 'number' }], previous, builtins, 'tasks'),
     /change its type/,
+  );
+});
+
+test('admins can configure bounded plain-text help for System Fields and custom fields', () => {
+  const fields = workBuiltinFields('tasks').map((field) => ({
+    ...field,
+    helpText: 'Explain what to enter.',
+  }));
+  fields.push({
+    id: 'aaaaaaaaaaaaaaaaaaaaaaaa',
+    type: 'text',
+    label: 'Demo field',
+    required: false,
+    archived: false,
+    options: [],
+    helpText: 'Use a demo value.',
+  });
+  assert.equal(
+    validateFields(fields, workBuiltinFields('tasks'), workBuiltinFields('tasks'), 'tasks')[0]
+      .helpText,
+    'Explain what to enter.',
+  );
+  assert.throws(
+    () =>
+      validateFields(
+        fields.map((field) => ({ ...field, helpText: 'x'.repeat(1001) })),
+        workBuiltinFields('tasks'),
+        workBuiltinFields('tasks'),
+        'tasks',
+      ),
+    /1000/,
   );
 });

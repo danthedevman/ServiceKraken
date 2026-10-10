@@ -47,6 +47,7 @@ export class Query {
       return `(CASE WHEN ${this.bool(ex(arg[0]))} THEN ${ex(arg[1])} ELSE ${ex(arg[2])} END)`;
     if (op === '$convert')
       return `to_jsonb(COALESCE(${this.text(`sk_scalar(${ex(arg.input)})`)}, ''::text))`;
+    if (op === '$concat') return `to_jsonb(${arg.map((part) => this.text(ex(part))).join(' || ')})`;
     if (op === '$regexMatch')
       return `to_jsonb(COALESCE(${this.text(ex(arg.input))}, '') ${arg.options === 'i' ? '~*' : '~'} ${this.param(arg.regex, 'text')})`;
     if (op === '$dateToString')

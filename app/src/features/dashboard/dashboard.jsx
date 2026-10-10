@@ -1,3 +1,4 @@
+import { RecordHeader } from '../../components/record-actions.jsx';
 import { useUiPreferences } from '../../preferences/ui-preferences.jsx';
 import { DateTime } from '../../preferences/date-time.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
@@ -5,7 +6,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { arc, pie, scaleLinear, format } from 'd3';
 import { DataTable } from '../../components/data-table.jsx';
-import { RecordTabs } from '../../components/record-tabs.jsx';
+import { Select } from '../../components/forms/select.jsx';
 import { useResource } from '../../data/use-resource.js';
 import { RefreshButton } from '../../components/icon-button.jsx';
 import { displayValue } from '../../lib/display-value.js';
@@ -442,38 +443,182 @@ export function Dashboard() {
     );
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="page-title">Dashboard</h1>
-        <RefreshButton
-          busy={response.pending || health.pending}
-          label="Refresh dashboard"
-          onClick={() => Promise.all([response.refresh(), health.refresh()])}
-        />
-      </div>
+      <RecordHeader>
+        <div className="flex w-full items-center justify-between gap-4">
+          <label className="field-label block w-full max-w-sm">
+            <span className="sr-only">Dashboard View</span>
+            <Select
+              aria-label="Dashboard View"
+              className="!mt-0"
+              value={dashboardTab}
+              disabled={!preferencesReady}
+              onChange={(event) => setPreference('dashboardTab', event.target.value)}
+            >
+              <option value="overview">Overview</option>
+              <option value="incidents">Incidents</option>
+              <option value="tasks">Tasks</option>
+              <option value="services">Service Health</option>
+            </Select>
+          </label>
+          <RefreshButton
+            busy={response.pending || health.pending}
+            label="Refresh dashboard"
+            bare
+            onClick={() => Promise.all([response.refresh(), health.refresh()])}
+          />
+        </div>
+      </RecordHeader>
       {(response.error || health.error) && (
         <p role="alert" className="text-rose-700 dark:text-rose-400">
           {response.error || health.error}
         </p>
       )}
-      {preferencesReady ? (
-        <RecordTabs
-          selectedId={dashboardTab}
-          onSelect={(id) => setPreference('dashboardTab', id)}
-          label="Dashboard reports"
-          tabs={[
-            { id: 'incidents', label: 'Incidents', content: incidents },
-            { id: 'tasks', label: 'Tasks', content: tasks },
-            { id: 'services', label: 'Service Health', content: services },
-          ]}
-        />
-      ) : (
-        <div className="h-[49px]" aria-hidden="true" />
-      )}
+      {preferencesReady &&
+        (dashboardTab === 'overview' ? (
+          <Overview
+            data={data}
+            chart={chart}
+            services={health.data?.services ?? []}
+            reportHref={reportHref}
+          />
+        ) : dashboardTab === 'tasks' ? (
+          tasks
+        ) : dashboardTab === 'services' ? (
+          services
+        ) : (
+          incidents
+        ))}
       {data && (
         <p className="text-xs text-slate-500">
           Updated {<DateTime value={data.generatedAt} />} · Refreshes every 30 seconds
         </p>
       )}
+    </div>
+  );
+}
+
+/** Summarize authorized domains with complete server counts and actionable report links. */
+function Overview({ data, chart, services, reportHref }) {
+  if (!data?.overview || !chart) return null;
+  const overview = data.overview;
+  const count = (values) => Object.values(values ?? {}).reduce((sum, value) => sum + value, 0);
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <Score
+          label="Unresolved Incidents"
+          value={count(data.severity)}
+          note={`${data.severity.critical ?? 0} critical · ${data.unassigned} unassigned`}
+          href={reportHref('incidents')}
+        />
+        <Score
+          label="Outstanding Tasks"
+          value={count(data.taskStatus)}
+          note={`${data.overdue} overdue · ${data.taskStatus.blocked ?? 0} blocked`}
+          href={reportHref('tasks')}
+        />
+        <Score
+          label="Services"
+          value={overview.services}
+          note={`${chart.counts.down ?? 0} down monitors · ${chart.counts.degraded ?? 0} degraded monitors`}
+          href={reportHref('services')}
+        />
+        <Score
+          label="Knowledge Bases"
+          value={overview.knowledgeBases}
+          note={`${overview.articleStatus.published ?? 0} published articles · ${overview.articleStatus.draft ?? 0} drafts`}
+          href="/knowledge"
+        />
+        <Score
+          label="On-call Coverage"
+          value={overview.activeShifts}
+          note={`${overview.scheduledShifts} current or upcoming shifts`}
+          href="/on-call"
+        />
+        <Score
+          label="Collections"
+          value={overview.collections}
+          note="Service organization across the workspace"
+          href="/collections"
+        />
+        <Score label="Groups" value={overview.groups} note="Teams and ownership" href="/groups" />
+        {overview.users !== undefined && (
+          <Score
+            label="Active Users"
+            value={overview.users}
+            note="Enabled workspace accounts"
+            href="/workspace"
+          />
+        )}
+        {overview.enabledIntegrations !== undefined && (
+          <Score
+            label="Enabled Integrations"
+            value={overview.enabledIntegrations}
+            note="Configured notification and workflow connections"
+            href="/integrations"
+          />
+        )}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2" aria-label="Overview charts">
+        <BarChart
+          title="Incident Severity"
+          note="Unresolved incidents by severity"
+          href={reportHref('incidents')}
+          rows={['critical', 'high', 'medium', 'low'].map((key) => ({
+            label: displayValue(key),
+            value: data.severity[key] ?? 0,
+            color: severityColors[key],
+            href: reportHref('severity', key),
+          }))}
+        />
+        <PieChart
+          title="Task Status"
+          note="Outstanding tasks by workflow status"
+          href={reportHref('tasks')}
+          rows={['todo', 'in_progress', 'blocked'].map((key) => ({
+            label: displayValue(key),
+            value: data.taskStatus[key] ?? 0,
+            href: reportHref('taskStatus', key),
+          }))}
+        />
+        <PieChart
+          title="Service Health"
+          note="Current health across services"
+          href={reportHref('services')}
+          rows={['up', 'degraded', 'down', 'unknown'].map((key) => ({
+            label: key === 'up' ? 'Operational' : displayValue(key),
+            value: services.filter((service) => (service.status || 'unknown') === key).length,
+            href: reportHref('serviceHealth', key),
+          }))}
+        />
+        <BarChart
+          title="Knowledge Article Status"
+          note="Articles across all knowledge bases"
+          href="/knowledge/articles"
+          rows={Object.entries(overview.articleStatus).map(([key, value]) => ({
+            label: displayValue(key),
+            value,
+            href: '/knowledge/articles',
+          }))}
+        />
+      </div>
+      <section className="panel p-5">
+        <h2 className="font-semibold">Important Reports</h2>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {[
+            ['Critical and High Incidents', reportHref('urgent')],
+            ['Unassigned Incidents', reportHref('unassigned')],
+            ['Overdue Tasks', reportHref('overdue')],
+            ['Monitor Health', reportHref('monitors')],
+            ['Knowledge Articles', '/knowledge/articles'],
+            ['Service Status', '/status'],
+          ].map(([label, href]) => (
+            <Link key={label} className="btn-secondary" to={href}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

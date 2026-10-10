@@ -1,3 +1,4 @@
+import { memberFilter } from '../repositories/members.js';
 import { incidentView } from '../domain/incidents.js';
 /** Register response-dashboard routes; authentication and workspace policy run in app.js. */
 export function installResponseDashboardRoutes(app, db, appOrigin) {
@@ -78,7 +79,51 @@ export function installResponseDashboardRoutes(app, db, appOrigin) {
         .aggregate([{ $match: outstanding }, { $group: { _id: '$priority', count: { $sum: 1 } } }])
         .toArray(),
     ]);
+    const [bases, articleStatus, operations, catalog, members] = await Promise.all([
+      db.collection('knowledgeBases').countDocuments({ workspaceId }),
+      db
+        .collection('articles')
+        .aggregate([
+          { $match: { workspaceId } },
+          { $group: { _id: '$status', count: { $sum: 1 } } },
+        ])
+        .toArray(),
+      db
+        .collection('operations')
+        .findOne({ _id: workspaceId }, { projection: { groups: 1, shifts: 1, integrations: 1 } }),
+      db
+        .collection('catalogs')
+        .findOne({ _id: workspaceId }, { projection: { services: 1, collections: 1 } }),
+      req.role === 'admin'
+        ? db
+            .collection('users')
+            .countDocuments({ $and: [memberFilter(workspaceId), { disabled: { $ne: true } }] })
+        : null,
+    ]);
+    const now = Date.now();
+    const overview = {
+      knowledgeBases: bases,
+      articleStatus: Object.fromEntries(articleStatus.map((row) => [row._id, row.count])),
+      services: catalog?.services?.length ?? 0,
+      collections: catalog?.collections?.length ?? 0,
+      groups: operations?.groups?.length ?? 0,
+      activeShifts:
+        operations?.shifts?.filter(
+          (shift) => Date.parse(shift.start) <= now && Date.parse(shift.end) > now,
+        ).length ?? 0,
+      scheduledShifts:
+        operations?.shifts?.filter((shift) => Date.parse(shift.end) > now).length ?? 0,
+      ...(req.role === 'admin'
+        ? {
+            users: members,
+            enabledIntegrations:
+              operations?.integrations?.filter((integration) => integration.enabled !== false)
+                .length ?? 0,
+          }
+        : {}),
+    };
     res.json({
+      overview,
       incidentStatus: Object.fromEntries(incidentStatus.map((row) => [row._id, row.count])),
       taskPriority: Object.fromEntries(taskPriority.map((row) => [row._id, row.count])),
       severity: Object.fromEntries(severity.map((row) => [row._id, row.count])),

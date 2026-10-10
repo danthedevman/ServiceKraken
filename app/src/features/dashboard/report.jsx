@@ -58,7 +58,7 @@ export function DashboardReport() {
         description={
           kind === 'uptime'
             ? 'Last 30 UTC days. Uptime is successful checks divided by recorded checks across these rows.'
-            : 'Records matching the dashboard report. Search and export remain within this scope.'
+            : undefined
         }
         source={`dashboard-report?${scope}`}
         rowHref={href}

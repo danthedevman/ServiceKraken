@@ -108,6 +108,7 @@ export async function statusData(db, userId, serializeMonitor, publicView = fals
     monitors,
     services,
     collections,
+    backgroundColor: data.backgroundColor ?? null,
     banner: data.banner?.enabled ? data.banner : null,
     generatedAt: new Date(),
   };

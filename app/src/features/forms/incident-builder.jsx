@@ -1,3 +1,4 @@
+import { RecordHeader } from '../../components/record-actions.jsx';
 import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { useUiPreferences } from '../../preferences/ui-preferences.jsx';
@@ -53,7 +54,7 @@ function Reorder({ index, length, onMove, label = 'item' }) {
     </span>
   );
 }
-/** Custom choices can be hidden or removed; built-ins can only be hidden or relabeled. */
+/** System choices accept labels and additions; custom-field options also support removal. */
 function OptionsEditor({ field, kind, onChange }) {
   const builtin = field.type === 'builtin',
     bases = builtinChoices[kind]?.[field.id];
@@ -100,7 +101,7 @@ function OptionsEditor({ field, kind, onChange }) {
             <label className="field-label">
               Workflow meaning
               <Select
-                disabled={bases.includes(option.value)}
+                disabled={builtin}
                 value={option.base}
                 onChange={(event) =>
                   commit(
@@ -118,36 +119,38 @@ function OptionsEditor({ field, kind, onChange }) {
               </Select>
             </label>
           )}
-          <div className="flex flex-wrap items-center gap-2">
-            <Reorder
-              index={index}
-              length={options.length}
-              onMove={(offset) => commit(move(options, index, offset))}
-            />
-            <button
-              type="button"
-              className="btn-secondary"
-              aria-pressed={option.hidden}
-              onClick={() =>
-                commit(
-                  options.map((row, i) => (i === index ? { ...row, hidden: !row.hidden } : row)),
-                )
-              }
-            >
-              {option.hidden ? 'Show option' : 'Hide option'}
-            </button>
-            {(!builtin || !bases.includes(option.value)) && (
-              <ConfirmDeleteButton
-                confirmation="Remove this custom option? Save the form configuration to apply the change."
-                confirmLabel="Remove"
+          {!builtin && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Reorder
+                index={index}
+                length={options.length}
+                onMove={(offset) => commit(move(options, index, offset))}
+              />
+              <button
                 type="button"
-                className="btn-danger"
-                onConfirm={() => commit(options.filter((_, i) => i !== index))}
+                className="btn-secondary"
+                aria-pressed={option.hidden}
+                onClick={() =>
+                  commit(
+                    options.map((row, i) => (i === index ? { ...row, hidden: !row.hidden } : row)),
+                  )
+                }
               >
-                Remove
-              </ConfirmDeleteButton>
-            )}
-          </div>
+                {option.hidden ? 'Show option' : 'Hide option'}
+              </button>
+              {(!builtin || !bases.includes(option.value)) && (
+                <ConfirmDeleteButton
+                  confirmation="Remove this custom option? Save the form configuration to apply the change."
+                  confirmLabel="Remove"
+                  type="button"
+                  className="btn-danger"
+                  onConfirm={() => commit(options.filter((_, i) => i !== index))}
+                >
+                  Remove
+                </ConfirmDeleteButton>
+              )}
+            </div>
+          )}
         </div>
       ))}
       <label className="field-label">
@@ -211,7 +214,7 @@ function OptionsEditor({ field, kind, onChange }) {
 /** One admin form builder for incidents, tasks, and knowledge. */
 export function IncidentBuilderPage({ kind = 'incidents' }) {
   const [version, setVersion] = useState(0);
-  const { user } = useContext(AuthContext),
+  const { user, loading } = useContext(AuthContext),
     path =
       kind === 'incidents'
         ? '/incident-fields'
@@ -221,7 +224,7 @@ export function IncidentBuilderPage({ kind = 'incidents' }) {
   const resource = useResource(user?.role === 'admin' ? path : null);
   return (
     <div className="space-y-3">
-      {user?.role !== 'admin' ? (
+      {loading || !user ? null : user.role !== 'admin' ? (
         <p>Workspace admin access is required.</p>
       ) : (
         <>
@@ -271,7 +274,12 @@ function Builder({ initial, path, kind, onCancel }) {
         .includes(query),
     );
   const update = (changes) => {
-    if (!editing || save.busy || field?.type === 'builtin') return;
+    if (!editing || save.busy) return;
+    if (
+      field?.type === 'builtin' &&
+      Object.keys(changes).some((key) => !['label', 'helpText', 'choices'].includes(key))
+    )
+      return;
     setSaved(false);
     setFields(fields.map((row) => (row.id === selected ? { ...row, ...changes } : row)));
   };
@@ -279,69 +287,76 @@ function Builder({ initial, path, kind, onCancel }) {
     <>
       <Notice error={save.error} />
       {saved && <p role="status">Form saved.</p>}
-      <div className="flex flex-wrap justify-end gap-3">
-        {!editing ? (
-          <button
-            type="button"
-            className="btn-secondary gap-2"
-            onClick={() => {
-              setFields(initial.fields);
-              setRevision(initial.revision);
-              setSavedIds(initial.fields.map((field) => field.id));
-              setSaved(false);
-              setEditing(true);
-            }}
-          >
-            <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
-            Edit
-          </button>
-        ) : (
-          <>
-            <button
-              className="btn-secondary gap-2"
-              disabled={save.busy || fields.filter((row) => row.type !== 'builtin').length >= 20}
-              onClick={() => {
-                const id = newId();
-                setSearch('');
-                setFields([
-                  ...fields,
-                  {
-                    id,
-                    label: 'New Field',
-                    type: 'text',
-                    required: false,
-                    archived: false,
-                    options: [],
-                  },
-                ]);
-                selectField(id);
-                setSaved(false);
-              }}
-            >
-              <PlusIcon className="h-5 w-5" aria-hidden="true" />
-              Add Custom Field
-            </button>
-            <button type="button" className="btn-secondary" disabled={save.busy} onClick={onCancel}>
-              Cancel
-            </button>
+      <RecordHeader>
+        <div className="flex flex-wrap justify-end gap-3">
+          {!editing ? (
             <button
               type="button"
-              className="btn-primary"
-              disabled={save.busy}
-              onClick={() =>
-                save.run(path, 'PUT', { fields, revision }, () => {
-                  setRevision(revision + 1);
-                  setSavedIds(fields.map((row) => row.id));
-                  setSaved(true);
-                  setEditing(false);
-                })
-              }
+              className="btn-secondary gap-2"
+              onClick={() => {
+                setFields(initial.fields);
+                setRevision(initial.revision);
+                setSavedIds(initial.fields.map((field) => field.id));
+                setSaved(false);
+                setEditing(true);
+              }}
             >
-              {save.busy ? 'Saving…' : 'Save'}
+              <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
+              Edit
             </button>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <button
+                className="btn-secondary gap-2"
+                disabled={save.busy || fields.filter((row) => row.type !== 'builtin').length >= 20}
+                onClick={() => {
+                  const id = newId();
+                  setSearch('');
+                  setFields([
+                    ...fields,
+                    {
+                      id,
+                      label: 'New Field',
+                      type: 'text',
+                      required: false,
+                      archived: false,
+                      options: [],
+                    },
+                  ]);
+                  selectField(id);
+                  setSaved(false);
+                }}
+              >
+                <PlusIcon className="h-5 w-5" aria-hidden="true" />
+                Add Custom Field
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={save.busy}
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={save.busy}
+                onClick={() =>
+                  save.run(path, 'PUT', { fields, revision }, () => {
+                    setRevision(revision + 1);
+                    setSavedIds(fields.map((row) => row.id));
+                    setSaved(true);
+                    setEditing(false);
+                  })
+                }
+              >
+                {save.busy ? 'Saving…' : 'Save'}
+              </button>
+            </>
+          )}
+        </div>
+      </RecordHeader>
       <RecordWorkspace
         showToolbar={false}
         label="Field settings"
@@ -352,10 +367,7 @@ function Builder({ initial, path, kind, onCancel }) {
               <p className="text-sm text-slate-500">Select a field to view its settings.</p>
             )}
             {field && (
-              <fieldset
-                disabled={!editing || save.busy || field.type === 'builtin'}
-                className="space-y-4"
-              >
+              <fieldset disabled={!editing || save.busy} className="space-y-4">
                 <Field name="label" label="Label" errors={save.fields}>
                   <input
                     value={field.label}
@@ -363,8 +375,17 @@ function Builder({ initial, path, kind, onCancel }) {
                     onChange={(event) => update({ label: event.target.value })}
                   />
                 </Field>
+                <Field name="helpText" label="Help Text" errors={save.fields}>
+                  <textarea
+                    value={field.helpText ?? ''}
+                    maxLength={1000}
+                    rows={3}
+                    onChange={(event) => update({ helpText: event.target.value })}
+                  />
+                </Field>
                 <label className="flex items-center gap-2">
                   <Toggle
+                    disabled={field.type === 'builtin'}
                     checked={field.required}
                     onChange={(event) => update({ required: event.target.checked })}
                   />
@@ -372,7 +393,8 @@ function Builder({ initial, path, kind, onCancel }) {
                 </label>
                 {field.type === 'builtin' ? (
                   <p className="text-sm text-slate-500">
-                    System Fields can be reordered. Their other settings are locked.
+                    System Fields can be reordered and relabeled. Select fields accept additional
+                    options; existing values and workflow meanings stay fixed.
                   </p>
                 ) : (
                   <>
@@ -514,6 +536,9 @@ function Builder({ initial, path, kind, onCancel }) {
                   )
                 ) : (
                   <CustomField field={row} value={preview[row.id]} onChange={() => {}} />
+                )}
+                {row.type === 'builtin' && row.helpText && (
+                  <p className="field-hint whitespace-pre-wrap">{row.helpText}</p>
                 )}
               </fieldset>
             </div>

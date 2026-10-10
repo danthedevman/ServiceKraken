@@ -22,11 +22,16 @@ import { ErrorNotice } from '../components/feedback.jsx';
 /** Private application shell with navigation and sign-out. */
 export function Layout() {
   const location = useLocation();
+  const dashboardPage = ['/', '/dashboard'].includes(location.pathname);
   const recordPage =
     location.pathname === '/profile' ||
-    /^\/(incidents|tasks|knowledge|services|collections|monitors|groups|integrations|workspace|on-call)\/(?!new(?:\/|$)|fields(?:\/|$))[^/]+\/?$/.test(
+    /^\/(incidents|tasks|knowledge)\/fields\/?$/.test(location.pathname) ||
+    /^\/knowledge\/bases\/[a-f0-9]{24}\/?$/.test(location.pathname) ||
+    /^\/(incidents|tasks|knowledge|services|collections|monitors|groups|integrations|workspace|on-call)\/(?!new(?:\/|$)|fields(?:\/|$)|articles(?:\/|$)|ai(?:\/|$))[^/]+\/?$/.test(
       location.pathname,
     );
+  const formPage = /\/(new|invite|password|settings|ai)(?:\/|$)/.test(location.pathname);
+  const recordLayout = recordPage || formPage;
   const listPage = [
     '/dashboard/reports',
     '/settings/audit',
@@ -36,6 +41,7 @@ export function Layout() {
     '/incidents',
     '/tasks',
     '/knowledge',
+    '/knowledge/articles',
     '/groups',
     '/workspace',
     '/integrations',
@@ -76,34 +82,30 @@ export function Layout() {
         id="main"
         data-record-collapsed={recordPage ? rightCollapsed : undefined}
         className={
-          listPage
-            ? 'list-main'
-            : recordPage
-              ? 'record-main mx-auto max-w-none'
-              : 'mx-auto min-h-[calc(100dvh-5rem)] max-w-6xl space-y-6 p-4 lg:p-6'
+          listPage ? 'list-main' : recordLayout ? 'record-main mx-auto max-w-none' : 'page-main'
         }
       >
         <RolePreview banner />
-        {recordPage ? (
-          <div className="record-sticky-header space-y-3">
-            <Breadcrumbs resolveNames={!sessionLoading} />
-            <div ref={setRecordHeader} />
-          </div>
-        ) : (
-          <Breadcrumbs resolveNames={!sessionLoading} />
-        )}
+        <div className={`record-sticky-header${dashboardPage ? ' dashboard-header' : ''}`}>
+          {!dashboardPage && <Breadcrumbs resolveNames={!sessionLoading} />}
+          <div ref={setRecordHeader} />
+        </div>
         <ErrorNotice>{error}</ErrorNotice>
         <div
           key={location.pathname}
           className={
-            listPage ? 'list-outlet' : recordPage ? 'record-scroll-area space-y-6' : 'space-y-6'
+            listPage
+              ? 'list-outlet'
+              : recordLayout
+                ? 'record-scroll-area space-y-6'
+                : 'page-scroll-area space-y-6'
           }
-          tabIndex={recordPage ? 0 : undefined}
-          role={recordPage ? 'region' : undefined}
-          aria-label={recordPage ? 'Record content' : undefined}
+          tabIndex={recordLayout ? 0 : undefined}
+          role={recordLayout ? 'region' : undefined}
+          aria-label={recordLayout ? 'Record content' : undefined}
         >
-          <RecordHeaderContext.Provider value={recordPage ? recordHeader : null}>
-            <Outlet />
+          <RecordHeaderContext.Provider value={recordHeader}>
+            {!sessionLoading && user ? <Outlet /> : null}
           </RecordHeaderContext.Provider>
         </div>
       </main>

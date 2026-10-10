@@ -1,3 +1,4 @@
+import { RecordHeader } from './record-actions.jsx';
 import { useUiPreferences } from '../preferences/ui-preferences.jsx';
 import { Skeleton } from './skeleton.jsx';
 import { RelatedListContext } from './record-tabs.jsx';
@@ -156,6 +157,7 @@ function DataTableView({
       if (!pending.signal.aborted) setExporting(false);
     }
   }
+  const Toolbar = fullPage ? RecordHeader : React.Fragment;
   return (
     <section
       className={
@@ -166,82 +168,88 @@ function DataTableView({
             : 'data-table panel overflow-hidden'
       }
     >
-      <div
-        className={`flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 ${related ? 'px-4 py-3' : 'px-6 py-5'}`}
-      >
-        <div className={related ? 'sr-only' : undefined}>
-          <Heading className={fullPage ? 'page-title' : 'font-semibold'}>{title}</Heading>
-          {description && <p className="mt-1 text-xs text-slate-400">{description}</p>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {actions}
-          <TableColumns
-            columns={orderedColumns}
-            hidden={columnLayout.hidden}
-            onToggle={(key) =>
-              setColumnLayout((value) => ({
-                ...value,
-                hidden: value.hidden.includes(key)
-                  ? value.hidden.filter((item) => item !== key)
-                  : [...value.hidden, key],
-              }))
-            }
-            onMove={(index, offset) => {
-              const order = orderedColumns.map((column) => column.key);
-              [order[index], order[index + offset]] = [order[index + offset], order[index]];
-              setColumnLayout((value) => ({ ...value, order }));
-            }}
-            onReset={() => setColumnLayout(null)}
-          />
-          <button
-            type="button"
-            className="btn-secondary table-filter-toggle gap-2"
-            aria-label="Filters"
-            title="Filters"
-            aria-expanded={filtersOpen}
-            aria-pressed={filtersOpen}
-            aria-controls={filtersId}
-            onClick={() => setPreference('filtersOpen', !filtersOpen)}
-          >
-            <FunnelIcon className="h-5 w-5" aria-hidden="true" />
-            {filtersActive && (
-              <span className="rounded-full bg-blue-100 px-2 text-xs text-blue-800 dark:bg-blue-950 dark:text-blue-200">
-                Active
-              </span>
-            )}
-          </button>
-          {(remote?.onRefresh || onRefresh) && (
-            <RefreshButton
-              busy={busy}
-              onClick={async () => {
-                setRefreshing(true);
-                setExportError('');
-                try {
-                  await (remote?.onRefresh || onRefresh)();
-                } catch (error) {
-                  setExportError(error.message);
-                } finally {
-                  setRefreshing(false);
-                }
+      <Toolbar>
+        <div
+          className={
+            fullPage
+              ? 'flex items-center gap-2'
+              : `flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 ${related ? 'px-4 py-3' : 'px-6 py-5'}`
+          }
+        >
+          <div className={related || fullPage ? 'sr-only' : undefined}>
+            <Heading className={fullPage ? 'page-title' : 'font-semibold'}>{title}</Heading>
+            {description && <p className="mt-1 text-xs text-slate-400">{description}</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <TableColumns
+              columns={orderedColumns}
+              hidden={columnLayout.hidden}
+              onToggle={(key) =>
+                setColumnLayout((value) => ({
+                  ...value,
+                  hidden: value.hidden.includes(key)
+                    ? value.hidden.filter((item) => item !== key)
+                    : [...value.hidden, key],
+                }))
+              }
+              onMove={(index, offset) => {
+                const order = orderedColumns.map((column) => column.key);
+                [order[index], order[index + offset]] = [order[index + offset], order[index]];
+                setColumnLayout((value) => ({ ...value, order }));
               }}
-              label={`Refresh ${title.toLowerCase()}`}
+              onReset={() => setColumnLayout(null)}
             />
-          )}
-          <ActionMenu label={`${title} actions`}>
-            {secondaryActions}
             <button
               type="button"
-              className="btn-secondary gap-2"
-              disabled={exporting || busy || invalid}
-              onClick={exportRows}
-              title="Export All Filtered Rows, Across All Pages"
+              className="btn-secondary table-filter-toggle gap-2"
+              aria-label="Filters"
+              title="Filters"
+              aria-expanded={filtersOpen}
+              aria-pressed={filtersOpen}
+              aria-controls={filtersId}
+              onClick={() => setPreference('filtersOpen', !filtersOpen)}
             >
-              <ArrowDownTrayIcon className="h-5 w-5" aria-hidden="true" />
-              {exporting ? 'Exporting…' : 'Export CSV'}
+              <FunnelIcon className="h-5 w-5" aria-hidden="true" />
+              {filtersActive && (
+                <span className="rounded-full bg-blue-100 px-2 text-xs text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                  Active
+                </span>
+              )}
             </button>
-          </ActionMenu>
+            {(remote?.onRefresh || onRefresh) && (
+              <RefreshButton
+                busy={busy}
+                onClick={async () => {
+                  setRefreshing(true);
+                  setExportError('');
+                  try {
+                    await (remote?.onRefresh || onRefresh)();
+                  } catch (error) {
+                    setExportError(error.message);
+                  } finally {
+                    setRefreshing(false);
+                  }
+                }}
+                label={`Refresh ${title.toLowerCase()}`}
+              />
+            )}
+            <ActionMenu label={`${title} actions`}>
+              {secondaryActions}
+              <button
+                type="button"
+                className="btn-secondary gap-2"
+                disabled={exporting || busy || invalid}
+                onClick={exportRows}
+                title="Export All Filtered Rows, Across All Pages"
+              >
+                <ArrowDownTrayIcon className="h-5 w-5" aria-hidden="true" />
+                {exporting ? 'Exporting…' : 'Export CSV'}
+              </button>
+            </ActionMenu>
+            {actions}
+          </div>
         </div>
-      </div>
+      </Toolbar>
       {toolbar}
       <div
         id={filtersId}

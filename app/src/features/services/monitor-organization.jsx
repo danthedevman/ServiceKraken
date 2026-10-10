@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { useCatalog } from './use-catalog.js';
 
 import { ServiceOwnership } from './detail.jsx';
+import { ReferenceValue } from '../../components/reference-value.jsx';
 
 /** Show monitor organization with direct editing links; component edits use the monitor form. */
 export function MonitorOrganization({ monitor }) {
@@ -54,16 +55,7 @@ export function MonitorOrganization({ monitor }) {
             <div>
               <dt className="field-label">Service</dt>
               <dd className="mt-2 text-sm">
-                {service ? (
-                  <Link
-                    className="text-blue-700 dark:text-blue-400 hover:underline"
-                    to={`/services/${service.id}/edit`}
-                  >
-                    {service.name} · Edit
-                  </Link>
-                ) : (
-                  'Unassigned'
-                )}
+                <ReferenceValue type="services" id={monitor.serviceId} label={service?.name} />
               </dd>
               {service?.description && (
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -80,13 +72,12 @@ export function MonitorOrganization({ monitor }) {
               <dd className="mt-2 flex flex-wrap gap-3 text-sm">
                 {dependencies.length
                   ? dependencies.map((dependency) => (
-                      <Link
+                      <ReferenceValue
                         key={dependency.id}
-                        className="text-blue-700 dark:text-blue-400 hover:underline"
-                        to={`/services/${dependency.id}/edit`}
-                      >
-                        {dependency.name} · Edit
-                      </Link>
+                        type="services"
+                        id={dependency.id}
+                        label={dependency.name}
+                      />
                     ))
                   : 'None'}
                 {service && (
@@ -104,13 +95,12 @@ export function MonitorOrganization({ monitor }) {
               <dd className="mt-2 flex flex-wrap gap-3 text-sm">
                 {collections.length
                   ? collections.map((collection) => (
-                      <Link
+                      <ReferenceValue
                         key={collection.id}
-                        className="text-blue-700 dark:text-blue-400 hover:underline"
-                        to={`/collections/${collection.id}/edit`}
-                      >
-                        {collection.name} · Edit
-                      </Link>
+                        type="collections"
+                        id={collection.id}
+                        label={collection.name}
+                      />
                     ))
                   : 'None'}
                 <Link className="text-blue-700 dark:text-blue-400 underline" to="/collections">

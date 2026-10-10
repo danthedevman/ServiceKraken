@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../auth/auth-context.js';
 import { ActionMenu } from './action-menu.jsx';
 import { StateBadge } from './state-badge.jsx';
+import { ReferenceValue } from './reference-value.jsx';
 import { RecordActionContext, RecordHeader } from './record-actions.jsx';
 import { recordNumber } from '../lib/record-number.js';
 import React, { useContext, useId, useState } from 'react';
@@ -52,32 +53,36 @@ export function RecordWorkspace({
         <div className="record-body min-w-0 space-y-3">
           {showToolbar && (
             <RecordHeader>
-              <div className="record-toolbar flex min-h-12 flex-wrap items-center justify-between gap-3">
-                <div className="flex min-w-0 flex-wrap items-center gap-3">
-                  <span
-                    className="break-all font-mono text-xs text-slate-500"
-                    aria-label="Record number"
-                  >
-                    {recordNumber(kind, item)}
-                  </span>
-                  {state && <StateBadge status={state} label={item?.statusLabel} />}
-                </div>
+              <div className="record-toolbar flex flex-wrap items-center justify-end gap-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div ref={setToolbar} className="flex flex-wrap items-center gap-2">
-                    {onEdit && <EditRecordButton onClick={onEdit} />}
-                    {actions}
-                  </div>
                   {(showFormBuilder || secondaryActions) && (
                     <ActionMenu label="Record actions">
                       {secondaryActions}
                       {showFormBuilder && <Link to={`/${kind}/fields`}>Form Builder</Link>}
                     </ActionMenu>
                   )}
+                  <div ref={setToolbar} className="flex flex-wrap items-center gap-2">
+                    {onEdit && <EditRecordButton onClick={onEdit} />}
+                    {actions}
+                  </div>
                 </div>
               </div>
             </RecordHeader>
           )}
-          <RecordActionContext.Provider value={toolbar}>{children}</RecordActionContext.Provider>
+          <RecordActionContext.Provider value={toolbar}>
+            {item && (
+              <div className="record-identity flex flex-wrap items-center gap-3 py-2">
+                <span
+                  className="break-all font-mono text-xs text-slate-500"
+                  aria-label="Record number"
+                >
+                  {recordNumber(kind, item)}
+                </span>
+                {state && <StateBadge status={state} label={item?.statusLabel} />}
+              </div>
+            )}
+            {children}
+          </RecordActionContext.Provider>
         </div>
         <aside aria-label={label} data-collapsed={collapsed} className="record-sidebar min-w-0">
           <div className="record-sidebar-header">
@@ -141,9 +146,25 @@ export function RecordMetadata({ item, extra = [] }) {
     ...extra,
     ['Record ID', item.id],
     ['Created', date(item.createdAt) || 'Not recorded'],
-    ['Created by', person(item.createdBy, item.createdById)],
+    [
+      'Created by',
+      <ReferenceValue
+        key="created-by"
+        type="members"
+        id={item.createdById}
+        label={person(item.createdBy, item.createdById)}
+      />,
+    ],
     ['Last updated', date(item.updatedAt) || 'Not recorded'],
-    ['Updated by', person(item.updatedBy, item.updatedById)],
+    [
+      'Updated by',
+      <ReferenceValue
+        key="updated-by"
+        type="members"
+        id={item.updatedById}
+        label={person(item.updatedBy, item.updatedById)}
+      />,
+    ],
     ['Revision', item.revision],
     ['Source', item.source ? displayValue(item.source) : null],
     ['Resolved', date(item.resolvedAt)],

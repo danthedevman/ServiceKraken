@@ -20,18 +20,40 @@ The motivation, product direction, and workflow decisions come from my experienc
 
 ChatGPT was used during development. Running ServiceTrident does not require a ChatGPT subscription or an OpenAI API key.
 
+Optional AI features let a workspace connect its own OpenAI or Claude API account. Admins configure the provider, model identifier, and API key under **Integrations → AI Provider**. Keys use the existing encrypted integration storage. Summaries, article/runbook drafting, and knowledge answers become available when a provider is configured and are enabled by default; users can disable each feature in **Profile → AI Features**. Provider charges apply. Only selected record text, prompts, and matching published knowledge excerpts are sent; generated drafts require review and a normal record save. Generation is limited to 10 requests per user per minute and 1,000 per workspace per UTC day. Back up the integration-encryption key along with the database.
+
+## App preview
+
+These current dark-mode screenshots contain **synthetic demo data only**. They are captured in an isolated browser that intercepts every API request and blocks external requests; no live workspace is read or modified. [Reproduce the captures](app/public/help/README.md).
+
+### Overview dashboard
+
+![Dark-mode Overview dashboard with demo bar and pie charts across incident severity, tasks, and service health](app/public/help/readme-dashboard-dark.png)
+
+### Tasks board
+
+![Dark-mode demo task board with custom status lanes and shared ordering controls](app/public/help/readme-tasks-dark.png)
+
+### Knowledge runbook
+
+![Dark-mode demo runbook with numbered recovery steps](app/public/help/readme-runbook-dark.png)
+
+### Profile themes
+
+![Dark-mode demo profile with ten color schemes and accessibility settings](app/public/help/readme-themes-dark.png)
+
 ## What you can do
 
-| Area                | Capabilities                                                                                                                                                    |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Services            | Define ownership, primary contacts, dependencies, and collections; view related incidents, knowledge, and checks.                                               |
-| Monitoring          | Check HTTP/HTTPS endpoints with HEAD or GET, choose intervals from 1 minute to 24 hours, inspect response events, and follow redirects when explicitly enabled. |
-| Incident response   | Track severity and state, assign work, link knowledge, add public-facing comments or internal work notes, and resolve or reopen incidents.                      |
-| Tasks and knowledge | Organize follow-up work, write rich-text articles, embed images, and attach files to records.                                                                   |
-| On-call and people  | Manage teammates, groups, contact details, roles, and scheduled coverage.                                                                                       |
-| Status pages        | Share service health privately or through a public page, with history, branding, and global or service-specific announcements.                                  |
-| Reporting           | Use incident and task dashboards, server-side table search and filtering, CSV exports, and an admin audit log.                                                  |
-| Customization       | Configure form fields and choices, required fields, themes, and saved navigation preferences.                                                                   |
+| Area                | Capabilities                                                                                                                                                                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Services            | Define ownership, primary contacts, dependencies, and collections; view related incidents, knowledge, and checks.                                                                                                                 |
+| Monitoring          | Check HTTP/HTTPS endpoints with HEAD or GET, choose intervals from 1 minute to 24 hours, inspect response events, and follow redirects when explicitly enabled.                                                                   |
+| Incident response   | Track severity and state, assign work, link knowledge, add public-facing comments or internal work notes, and resolve or reopen incidents.                                                                                        |
+| Tasks and knowledge | Use the default task Kanban with custom status lanes, shared card ordering, admin-only global lane ordering, and a separate archive list. Create knowledge bases before adding rich-text articles; embed images and attach files. |
+| On-call and people  | Manage teammates, groups, contact details, roles, and scheduled coverage.                                                                                                                                                         |
+| Status pages        | Share service health privately or through a public page, with history, branding, and global or service-specific announcements.                                                                                                    |
+| Reporting           | Use incident and task dashboards, server-side table search and filtering, CSV exports, and an admin audit log.                                                                                                                    |
+| Customization       | Configure form fields and choices, required fields, themes, and saved navigation preferences.                                                                                                                                     |
 
 Admins manage configuration and membership. Responders work on incidents, tasks, and articles. Viewers have read-only workspace access. Users can create incidents and see incidents opened by or for them.
 
@@ -250,8 +272,8 @@ Save it as a Render secret and keep a secure backup. For an existing installatio
 
 Choose one database configuration and apply it to all three Node services:
 
-| Database                             | Environment variables                                                                                                         |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Database                             | Environment variables                                                                                                          |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
 | Render Postgres, internal connection | `DATABASE_PROVIDER=postgres`, `DATABASE_URL=<internal connection URL>`, `DATABASE_SCHEMA=servicetrident`, `DATABASE_SSL=false` |
 | MongoDB                              | `DATABASE_PROVIDER=mongodb`, `MONGODB_URI=<authenticated connection URL>`, `MONGODB_DB=servicetrident`                         |
 

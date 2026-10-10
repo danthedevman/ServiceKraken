@@ -21,6 +21,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCatalog } from './use-catalog.js';
 
 import { CatalogForm } from './form.jsx';
+import { ReferenceValue, ReferenceValues } from '../../components/reference-value.jsx';
 
 /** Bookmarkable record view shared by services and collections. */
 export function CatalogDetailPage({ kind = 'services' }) {
@@ -52,12 +53,15 @@ export function CatalogDetailPage({ kind = 'services' }) {
     })[status] || 'Unknown';
   const state = (item) =>
     health.data?.[kind]?.find((row) => row.id === item.id)?.status || 'unknown';
-  const names = (ids) =>
-    ids
-      .map(
-        (value) => data.services.find((service) => service.id === value)?.name || 'Deleted service',
-      )
-      .join(', ') || 'None';
+  const names = (ids) => (
+    <ReferenceValues
+      type="services"
+      ids={ids}
+      getLabel={(value) =>
+        data.services.find((service) => service.id === value)?.name || 'Deleted service'
+      }
+    />
+  );
   async function remove() {
     setBusy(true);
     setError('');
@@ -186,10 +190,16 @@ export function CatalogDetailPage({ kind = 'services' }) {
                   <div>
                     <dt>Collections</dt>
                     <dd>
-                      {data.collections
-                        .filter((collection) => collection.serviceIds.includes(selected.id))
-                        .map((collection) => collection.name)
-                        .join(', ') || 'None'}
+                      <ReferenceValues
+                        type="collections"
+                        ids={data.collections
+                          .filter((collection) => collection.serviceIds.includes(selected.id))
+                          .map((collection) => collection.id)}
+                        getLabel={(id) =>
+                          data.collections.find((collection) => collection.id === id)?.name ||
+                          'Unavailable collection'
+                        }
+                      />
                     </dd>
                   </div>
                 </dl>
@@ -269,19 +279,35 @@ export function ServiceOwnership({ service, members = [], groups = [] }) {
     <dl className="grid gap-3 text-sm sm:grid-cols-3">
       <div>
         <dt className="font-medium">Owners</dt>
-        <dd>{service.ownerIds?.map(name).join(', ') || 'Unassigned'}</dd>
+        <dd>
+          <ReferenceValues
+            type="members"
+            ids={service.ownerIds}
+            getLabel={name}
+            empty="Unassigned"
+          />
+        </dd>
       </div>
       <div>
         <dt className="font-medium">Owning groups</dt>
         <dd>
-          {service.ownerGroupIds
-            ?.map((id) => groups.find((g) => g.id === id)?.name || 'Unavailable group')
-            .join(', ') || 'Unassigned'}
+          <ReferenceValues
+            type="groups"
+            ids={service.ownerGroupIds}
+            getLabel={(id) => groups.find((g) => g.id === id)?.name || 'Unavailable group'}
+            empty="Unassigned"
+          />
         </dd>
       </div>
       <div>
         <dt className="font-medium">Primary contact</dt>
-        <dd>{service.primaryContactId ? name(service.primaryContactId) : 'Unassigned'}</dd>
+        <dd>
+          <ReferenceValue
+            type="members"
+            id={service.primaryContactId}
+            label={service.primaryContactId ? name(service.primaryContactId) : undefined}
+          />
+        </dd>
       </div>
     </dl>
   );

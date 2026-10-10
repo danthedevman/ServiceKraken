@@ -77,7 +77,7 @@ export function AttachmentDropzone({ accept, disabled, onUpload, onError }) {
         </span>
         <span className="text-xs font-normal">Documents, images, logs, and ZIP files</span>
       </button>
-      <p id={hintId} className="text-xs text-slate-500">
+      <p id={hintId} className="px-1 pt-2 pb-1 text-xs leading-relaxed text-slate-500">
         Up to 20 attachments per record, including embedded images · 5 MB per file
       </p>
     </div>

@@ -12,7 +12,7 @@ export function ThemeProvider({ children }) {
   );
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.documentElement.style.backgroundColor = theme === 'dark' ? '#020617' : '#f7f9fa';
+    document.documentElement.style.backgroundColor = 'var(--app-background)';
     document.documentElement.style.colorScheme = theme;
     document
       .querySelector('meta[name="theme-color"]')

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { DEFAULT_UI_PREFERENCES } from '../../shared/domain/ui-preferences.js';
 import { randomUUID } from 'node:crypto';
 import { connectDatabase } from '../../shared/persistence/database.js';
 import { createApp } from '../../api/src/app.js';
@@ -65,11 +66,9 @@ test(
       rightCollapsed: true,
     });
     assert.deepEqual(right.data.preferences, {
+      ...DEFAULT_UI_PREFERENCES,
       leftCollapsed: true,
       rightCollapsed: true,
-      filtersOpen: false,
-      tableLayouts: {},
-      dashboardTab: 'incidents',
     });
     await request('/auth/preferences', owner.cookie, 'PATCH', { filtersOpen: true });
     const tableLayouts = {
@@ -84,12 +83,26 @@ test(
       (await request('/auth/preferences', owner.cookie, 'PATCH', { dashboardTab: 'tasks' })).status,
       200,
     );
+    const appearance = {
+      colorScheme: 'forest',
+      highContrast: true,
+      reduceMotion: true,
+      textScale: 'large',
+      timeFormat: '24',
+      dateFormat: 'iso',
+      aiSummaries: false,
+    };
+    assert.equal(
+      (await request('/auth/preferences', owner.cookie, 'PATCH', appearance)).status,
+      200,
+    );
     const anotherSession = await request('/auth/login', null, 'POST', credentials);
     assert.deepEqual(anotherSession.data.user.uiPreferences, {
       ...right.data.preferences,
       filtersOpen: true,
       dashboardTab: 'tasks',
       tableLayouts,
+      ...appearance,
     });
     assert.equal((await request('/auth/me', other.cookie)).data.user.uiPreferences, null);
     assert.equal(

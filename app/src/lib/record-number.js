@@ -3,6 +3,7 @@ const prefixes = {
   events: 'EVT',
   tasks: 'TASK',
   knowledge: 'KB',
+  knowledgeBases: 'KBASE',
   services: 'SVC',
   collections: 'COL',
   monitors: 'MON',

@@ -1,3 +1,4 @@
+import { colorSchemeIds } from './color-schemes.js';
 import { InputError } from '../validation/input-error.js';
 
 export const DEFAULT_UI_PREFERENCES = Object.freeze({
@@ -5,7 +6,16 @@ export const DEFAULT_UI_PREFERENCES = Object.freeze({
   rightCollapsed: false,
   filtersOpen: false,
   tableLayouts: {},
-  dashboardTab: 'incidents',
+  dashboardTab: 'overview',
+  colorScheme: 'ocean',
+  highContrast: false,
+  reduceMotion: false,
+  textScale: 'standard',
+  timeFormat: 'locale',
+  dateFormat: 'locale',
+  aiSummaries: true,
+  aiDrafting: true,
+  aiKnowledgeAnswers: true,
 });
 
 /** Store only bounded column identifiers, never row data or arbitrary user properties. */
@@ -38,8 +48,12 @@ function validTableLayouts(value) {
 
 /** Validate the small allowlist of supported preference values. */
 function validPreference(key, value) {
+  if (key === 'timeFormat') return ['locale', '12', '24'].includes(value);
+  if (key === 'dateFormat') return ['locale', 'iso', 'dmy', 'mdy', 'long'].includes(value);
+  if (key === 'colorScheme') return colorSchemeIds.includes(value);
+  if (key === 'textScale') return ['standard', 'large', 'larger'].includes(value);
   if (key === 'tableLayouts') return validTableLayouts(value);
-  if (key === 'dashboardTab') return ['incidents', 'tasks', 'services'].includes(value);
+  if (key === 'dashboardTab') return ['overview', 'incidents', 'tasks', 'services'].includes(value);
   return typeof value === 'boolean';
 }
 

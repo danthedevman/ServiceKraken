@@ -1,9 +1,11 @@
+import { RecordHeader } from '../../components/record-actions.jsx';
 import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { Toggle } from '../../components/forms/toggle.jsx';
 import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
 import { FormPage } from '../../components/forms/form-page.jsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ReferenceField } from '../../components/forms/reference-field.jsx';
+import { ReferenceValue, ReferenceValues } from '../../components/reference-value.jsx';
 import { Modal } from '../../components/modal.jsx';
 import React, { useContext, useId, useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline';
@@ -205,20 +207,21 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
           <dl className="grid gap-4 sm:grid-cols-2">
             <div>
               <dt>Teammate</dt>
-              <dd>{name(existing.userId)}</dd>
+              <dd>
+                <ReferenceValue type="members" id={existing.userId} label={name(existing.userId)} />
+              </dd>
             </div>
             <div>
               <dt>Services</dt>
               <dd>
-                {existing.serviceIds.length
-                  ? existing.serviceIds
-                      .map(
-                        (value) =>
-                          services.find((service) => service.id === value)?.name ||
-                          'Unavailable service',
-                      )
-                      .join(', ')
-                  : 'All services'}
+                <ReferenceValues
+                  type="services"
+                  ids={existing.serviceIds}
+                  getLabel={(value) =>
+                    services.find((service) => service.id === value)?.name || 'Unavailable service'
+                  }
+                  empty="All services"
+                />
               </dd>
             </div>
             <div>
@@ -351,7 +354,7 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
     ) : (
       <FormPage title={existing ? 'Edit Coverage' : 'Add Coverage'}>
         {editorForm}
-        <div className="form-actions">{editorActions}</div>
+        <RecordHeader>{editorActions}</RecordHeader>
       </FormPage>
     );
   return (
@@ -367,24 +370,26 @@ function Calendar({ schedule, members, services, admin, form, id, onReset }) {
           {editorForm}
         </Modal>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="w-full sm:w-80">
-          <ReferenceField
-            referenceType="services"
-            label="Service"
-            hideLabel
-            placeholder="All services"
-            value={serviceId}
-            onChange={setService}
-          />
+      <RecordHeader>
+        <div className="flex items-center gap-3">
+          <div className="w-full sm:w-80">
+            <ReferenceField
+              referenceType="services"
+              label="Service"
+              hideLabel
+              placeholder="All services"
+              value={serviceId}
+              onChange={setService}
+            />
+          </div>
+          {admin && (
+            <button className="btn-primary gap-2" onClick={() => fresh()}>
+              <PlusIcon className="h-5 w-5" />
+              Add Coverage
+            </button>
+          )}
         </div>
-        {admin && (
-          <button className="btn-primary gap-2" onClick={() => fresh()}>
-            <PlusIcon className="h-5 w-5" />
-            Add Coverage
-          </button>
-        )}
-      </div>
+      </RecordHeader>
       <Notice error={!editor ? save.error || error : ''} />
       <section className="panel p-4">
         <div className="mb-4 flex items-center justify-between">

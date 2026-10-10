@@ -57,3 +57,30 @@ test('built-in display labels are human-readable without changing stored values'
   assert.equal(displayValue('servicenow'), 'ServiceNow');
   assert.equal(displayValue('high'), 'High');
 });
+
+test('runbooks validate bounded ordered steps and default older records to articles', () => {
+  assert.equal(
+    validateWork({ title: 'Guide', content: 'Text' }, 'knowledge').articleType,
+    'article',
+  );
+  const runbook = validateWork(
+    {
+      title: 'Recovery',
+      articleType: 'runbook',
+      steps: [{ title: 'Check', instructions: 'Verify health.' }],
+    },
+    'knowledge',
+  );
+  assert.equal(runbook.steps[0].title, 'Check');
+  assert.match(runbook.content, /1. Check/);
+  assert.throws(
+    () => validateWork({ title: 'Recovery', articleType: 'runbook', steps: [] }, 'knowledge'),
+    /runbook steps/,
+  );
+  assert.throws(() =>
+    validateWork(
+      { title: 'Recovery', articleType: 'runbook', steps: [{ title: '', instructions: 'Check' }] },
+      'knowledge',
+    ),
+  );
+});

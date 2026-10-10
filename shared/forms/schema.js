@@ -6,7 +6,7 @@ import { identifier } from '../validation/fields.js';
 import { choice } from '../validation/fields.js';
 import { references } from '../validation/fields.js';
 
-/** Built-in configuration is locked; existing saved settings are preserved. */
+/** System Field labels and additional choices are configurable; identity and workflow stay stable. */
 export const BUILTIN_FIELDS = [
   { id: 'title', label: 'Title', type: 'builtin', required: true },
   { id: 'serviceId', label: 'Service', type: 'builtin', required: true },
@@ -39,13 +39,35 @@ export function validateFields(
     seen.add(id);
     if (builtin) {
       const saved = previous.find((entry) => entry.id === id) ?? builtin;
+      const selectable = !!builtinChoices[kind]?.[id];
       if (
         [...new Set([...Object.keys(saved), ...Object.keys(field)])].some(
-          (key) => JSON.stringify(field[key]) !== JSON.stringify(saved[key]),
+          (key) =>
+            key !== 'label' &&
+            key !== 'helpText' &&
+            !(selectable && key === 'choices') &&
+            JSON.stringify(field[key]) !== JSON.stringify(saved[key]),
         )
       )
         invalid('fields', 'System Field settings cannot be changed.');
-      return { ...saved };
+      const result = { ...saved, label: text(field.label, 'label', 80) };
+      if (field.helpText !== undefined)
+        result.helpText = text(field.helpText, 'helpText', 1000, false);
+      if (selectable && field.choices !== undefined) {
+        result.choices = validateChoices(field.choices, kind, id);
+        // Existing option identities and mappings must survive relabeling and additions.
+        for (const old of fieldChoices(kind, saved)) {
+          const next = result.choices.find((option) => option.value === old.value);
+          if (!next || next.base !== old.base || next.hidden !== (old.hidden === true))
+            invalid(
+              'fields',
+              'Existing System Field options and workflow meanings cannot be removed or changed.',
+            );
+        }
+      } else if (selectable && saved.choices) {
+        invalid('fields', 'Existing System Field options cannot be removed.');
+      }
+      return result;
     }
     const type = choice(
       field.type,
@@ -63,6 +85,9 @@ export function validateFields(
     return {
       id,
       label: text(field.label, 'label', 80),
+      ...(field.helpText !== undefined
+        ? { helpText: text(field.helpText, 'helpText', 1000, false) }
+        : {}),
       type,
       required: field.required === true,
       archived: field.archived === true,
@@ -183,7 +208,9 @@ export function resolveChoices(body, schema, kind, current = null) {
             : kind === 'tasks'
               ? 'todo'
               : 'draft'
-          : 'medium');
+          : field === 'articleType'
+            ? 'article'
+            : 'medium');
     const option = options.find((row) => row.value === selected);
     const unchanged = !!current && selected === (current[key] ?? current[field]);
     if ((!option || option.hidden) && !unchanged) invalid(field, 'Choose an available option.');

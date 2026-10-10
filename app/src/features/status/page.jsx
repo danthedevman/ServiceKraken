@@ -4,7 +4,8 @@ import { Cog6ToothIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/ou
 import { Select } from '../../components/forms/select.jsx';
 import { statusRange } from '../../../../shared/domain/status-range.js';
 import { StatusMessage } from './message.jsx';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { backgroundInk } from '../../../../shared/status/appearance.js';
 import { ServiceHistory } from './service-history.jsx';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AdminOnly } from '../../auth/role-gates.jsx';
@@ -25,14 +26,32 @@ export function StatusPage({ publicView = false }) {
     `${publicView ? `/public/status/${token}` : '/status'}?range=${range}`,
     30000,
   );
+  useEffect(() => {
+    if (!data?.backgroundColor) return;
+    const previous = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = data.backgroundColor;
+    return () => {
+      document.body.style.backgroundColor = previous;
+    };
+  }, [data?.backgroundColor]);
+  const ink = backgroundInk(data?.backgroundColor);
   return (
-    <section className="space-y-6">
+    <section
+      className="space-y-6"
+      style={
+        data?.backgroundColor
+          ? { backgroundColor: data.backgroundColor, padding: '1.5rem', borderRadius: '4px' }
+          : undefined
+      }
+    >
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {!publicView && data?.iconUrl && (
             <img src={data.iconUrl} alt="" className="h-10 w-10 object-contain" />
           )}
-          <h1 className="page-title">Service Status</h1>
+          <h1 className="page-title" style={{ color: ink }}>
+            Service Status
+          </h1>
         </div>
         <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
           <label className="field-label !min-w-0 flex-1 sm:w-64">
@@ -85,7 +104,7 @@ export function StatusPage({ publicView = false }) {
       ) : (
         <>
           <StatusMessage message={data.banner} />
-          <ul className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+          <ul className="panel px-5 divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
             {data.services.map((service) => (
               <li
                 key={service.id}
@@ -108,7 +127,9 @@ export function StatusPage({ publicView = false }) {
           {!data.services.length && (
             <p className="text-sm text-slate-500">No services have been added yet.</p>
           )}
-          <p className="text-xs text-slate-500">Updated {<DateTime value={data.generatedAt} />}</p>
+          <p style={{ color: ink }} className="text-xs text-slate-500">
+            Updated {<DateTime value={data.generatedAt} />}
+          </p>
         </>
       )}
     </section>

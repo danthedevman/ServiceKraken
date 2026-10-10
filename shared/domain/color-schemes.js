@@ -1,0 +1,21 @@
+/** Palette identifiers are persisted; role colours for errors and health remain distinct. */
+export const COLOR_SCHEMES = [
+  { id: 'ocean', name: 'Ocean', hue: 215, neutral: 215, background: '#f4f7fb', dark: '#0c1524' },
+  { id: 'forest', name: 'Forest', hue: 145, neutral: 145, background: '#f2f7f3', dark: '#0d1a12' },
+  { id: 'teal', name: 'Teal', hue: 180, neutral: 180, background: '#f0f8f8', dark: '#0b1b1b' },
+  { id: 'indigo', name: 'Indigo', hue: 235, neutral: 235, background: '#f5f5fc', dark: '#131329' },
+  { id: 'plum', name: 'Plum', hue: 285, neutral: 285, background: '#f8f4fa', dark: '#1e1024' },
+  { id: 'rose', name: 'Rose', hue: 340, neutral: 340, background: '#fcf4f7', dark: '#241019' },
+  { id: 'amber', name: 'Amber', hue: 35, neutral: 35, background: '#faf7f0', dark: '#22190c' },
+  { id: 'slate', name: 'Slate', hue: 210, neutral: 210, background: '#f3f5f7', dark: '#111820' },
+  {
+    id: 'espresso',
+    name: 'Espresso',
+    hue: 20,
+    neutral: 25,
+    background: '#faf5f0',
+    dark: '#21150e',
+  },
+  { id: 'cobalt', name: 'Cobalt', hue: 225, neutral: 220, background: '#f2f5fc', dark: '#0e1428' },
+];
+export const colorSchemeIds = COLOR_SCHEMES.map((scheme) => scheme.id);

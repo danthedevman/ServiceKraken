@@ -1,11 +1,14 @@
 import { notify } from '../../data/toast.js';
+import { AIAssistant } from '../ai/ai.jsx';
+import { writeApi } from '../../data/query-client.js';
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { FormSkeleton } from '../../components/skeleton.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { TableSearch } from '../../components/table-search.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
 import { mandatoryErrors } from '../../../../shared/forms/schema.js';
-import { RecordActions } from '../../components/record-actions.jsx';
+import { RecordActions, RecordHeader } from '../../components/record-actions.jsx';
 import { IncidentDiscussion } from './discussion.jsx';
 import { CancelButton } from '../../components/forms/cancel-button.jsx';
 import { RecordWorkspace, RecordMetadata } from '../../components/record-workspace.jsx';
@@ -22,7 +25,7 @@ import { fieldChoices, recordFields } from '../../../../shared/forms/form-option
 import { displayValue } from '../../lib/display-value.js';
 import { WorkTable } from '../work/work.jsx';
 import { AutoTextarea } from '../../components/forms/auto-textarea.jsx';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../auth/auth-context.js';
 import { useResource } from '../../data/use-resource.js';
@@ -30,6 +33,7 @@ import { DataTable } from '../../components/data-table.jsx';
 import { downloadCsv } from '../../lib/csv-download.js';
 import { CustomField, Field, Notice } from '../../components/forms/fields.jsx';
 import { useSave } from '../../data/use-save.js';
+import { ReferenceValue } from '../../components/reference-value.jsx';
 
 /** Paginated incident reporting with identical server filters for CSV exports. */
 export function IncidentsPage({ initialServiceId = '', related = false }) {
@@ -233,11 +237,13 @@ export function IncidentPage({ edit = false }) {
         <div className="flex items-center justify-between gap-3">
           {!id && <h1 className="page-title">Create Incident</h1>}
           {!id && user?.role === 'admin' && (
-            <ActionMenu label="Form actions">
-              <Link className="btn-secondary" to="/incidents/fields">
-                Form builder
-              </Link>
-            </ActionMenu>
+            <RecordHeader>
+              <ActionMenu label="Form actions">
+                <Link className="btn-secondary" to="/incidents/fields">
+                  Form builder
+                </Link>
+              </ActionMenu>
+            </RecordHeader>
           )}
         </div>
       )}
@@ -283,41 +289,67 @@ export function IncidentPage({ edit = false }) {
                 }
                 actions={
                   canEdit && !editing ? (
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      disabled={transition.busy}
-                      onClick={() => {
-                        const reopening = item.status === 'resolved';
-                        const notesRequired = schema.data.fields.some(
-                          (field) => field.id === 'resolutionNotes' && field.required,
-                        );
-                        if (reopening || !notesRequired) {
+                    item.status === 'resolved' ? (
+                      <ConfirmDeleteButton
+                        className="btn-primary"
+                        title="Reopen Incident"
+                        confirmation={`Reopen “${item.title}”? This returns the incident to Open and may notify responders. Monitor-created incidents will require manual resolution after reopening.`}
+                        confirmLabel="Reopen"
+                        busyLabel="Reopening…"
+                        confirmClassName="btn-primary"
+                        onConfirm={async () => {
                           const option = fieldChoices(
                             'incidents',
                             schema.data.fields.find((field) => field.id === 'status'),
-                          ).find(
-                            (entry) =>
-                              !entry.hidden && entry.base === (reopening ? 'open' : 'resolved'),
-                          );
-                          transition.run(`/incidents/${id}`, 'PATCH', {
-                            revision: item.revision,
-                            statusOption: option?.value || (reopening ? 'open' : 'resolved'),
+                          ).find((entry) => !entry.hidden && entry.base === 'open');
+                          await writeApi(`/incidents/${id}`, {
+                            method: 'PATCH',
+                            body: {
+                              revision: item.revision,
+                              statusOption: option?.value || 'open',
+                            },
                           });
-                        } else {
-                          setResolving(true);
-                          setEditingId(id);
-                        }
-                      }}
-                    >
-                      {transition.busy
-                        ? item.status === 'resolved'
-                          ? 'Reopening…'
-                          : 'Resolving…'
-                        : item.status === 'resolved'
-                          ? 'Reopen'
-                          : 'Resolve'}
-                    </button>
+                        }}
+                      >
+                        Reopen
+                      </ConfirmDeleteButton>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={transition.busy}
+                        onClick={() => {
+                          const reopening = item.status === 'resolved';
+                          const notesRequired = schema.data.fields.some(
+                            (field) => field.id === 'resolutionNotes' && field.required,
+                          );
+                          if (reopening || !notesRequired) {
+                            const option = fieldChoices(
+                              'incidents',
+                              schema.data.fields.find((field) => field.id === 'status'),
+                            ).find(
+                              (entry) =>
+                                !entry.hidden && entry.base === (reopening ? 'open' : 'resolved'),
+                            );
+                            transition.run(`/incidents/${id}`, 'PATCH', {
+                              revision: item.revision,
+                              statusOption: option?.value || (reopening ? 'open' : 'resolved'),
+                            });
+                          } else {
+                            setResolving(true);
+                            setEditingId(id);
+                          }
+                        }}
+                      >
+                        {transition.busy
+                          ? item.status === 'resolved'
+                            ? 'Reopening…'
+                            : 'Resolving…'
+                          : item.status === 'resolved'
+                            ? 'Reopen'
+                            : 'Resolve'}
+                      </button>
+                    )
                   ) : undefined
                 }
                 sidebar={
@@ -328,13 +360,24 @@ export function IncidentPage({ edit = false }) {
                         ['Status', item.statusLabel || displayValue(item.status)],
                         ['Severity', item.severityLabel || displayValue(item.severity)],
                         ['Source', displayValue(item.source)],
-                        ['Opened by', memberName(item.createdById)],
+                        [
+                          'Opened by',
+                          <ReferenceValue
+                            key="opened-by"
+                            type="members"
+                            id={item.createdById}
+                            label={memberName(item.createdById)}
+                          />,
+                        ],
                       ]}
                     />
                   </>
                 }
               >
                 <AttachmentLinks kind="incidents" recordId={item.id} />
+                {!editing && (
+                  <AIAssistant key={item.id} action="summary" kind="incidents" id={item.id} />
+                )}
                 {canEdit && editing ? (
                   <IncidentEditor
                     key={`${id}-${formVersion}`}
@@ -360,7 +403,13 @@ export function IncidentPage({ edit = false }) {
                     <dl className="grid gap-4 text-sm sm:grid-cols-2">
                       <div>
                         <dt className="font-medium">Service</dt>
-                        <dd>{item.serviceName}</dd>
+                        <dd>
+                          <ReferenceValue
+                            type="services"
+                            id={item.serviceId}
+                            label={item.serviceName}
+                          />
+                        </dd>
                       </div>
                       <div>
                         <dt className="font-medium">Status</dt>
@@ -376,15 +425,33 @@ export function IncidentPage({ edit = false }) {
                       </div>
                       <div>
                         <dt className="font-medium">Assignment group</dt>
-                        <dd>{item.assignmentGroupName || 'Unassigned'}</dd>
+                        <dd>
+                          <ReferenceValue
+                            type="groups"
+                            id={item.assignmentGroupId}
+                            label={item.assignmentGroupName}
+                          />
+                        </dd>
                       </div>
                       <div>
                         <dt className="font-medium">Assigned to</dt>
-                        <dd>{memberName(item.assigneeId)}</dd>
+                        <dd>
+                          <ReferenceValue
+                            type="members"
+                            id={item.assigneeId}
+                            label={memberName(item.assigneeId)}
+                          />
+                        </dd>
                       </div>
                       <div>
                         <dt className="font-medium">Opened for</dt>
-                        <dd>{memberName(item.openedForId)}</dd>
+                        <dd>
+                          <ReferenceValue
+                            type="members"
+                            id={item.openedForId}
+                            label={memberName(item.openedForId)}
+                          />
+                        </dd>
                       </div>
                     </dl>
                     <dl>
@@ -569,6 +636,7 @@ function IncidentEditor({
     save = useSave(),
     { user } = useContext(AuthContext);
   const [current] = useState(incident);
+  const formRef = useRef(null);
   const [clientErrors, setClientErrors] = useState({});
   const errors = { ...save.fields, ...clientErrors };
   const [articleSearch, setArticleSearch] = useState('');
@@ -644,6 +712,7 @@ function IncidentEditor({
           multiple
           referenceType="knowledge"
           label={field.label + (field.required ? ' *' : '')}
+          helpText={field.helpText}
           value={value.knowledgeIds}
           options={[
             ...new Map(
@@ -665,6 +734,7 @@ function IncidentEditor({
           key={name}
           referenceType="groups"
           label={field.label + (field.required ? ' *' : '')}
+          helpText={field.helpText}
           value={value.assignmentGroupId}
           onChange={(next) =>
             setValue((old) => ({ ...old, assignmentGroupId: next, assigneeId: '' }))
@@ -679,6 +749,7 @@ function IncidentEditor({
           referenceType={name === 'serviceId' ? 'services' : 'members'}
           key={name}
           label={field.label + (field.required ? ' *' : '')}
+          helpText={field.helpText}
           options={(name === 'serviceId'
             ? services
             : members.filter((member) => !member.disabled || member.id === value[name])
@@ -733,6 +804,7 @@ function IncidentEditor({
         key={name}
         name={name}
         label={field.label + (field.required ? ' *' : '')}
+        helpText={field.helpText}
         errors={errors}
       >
         {input}
@@ -741,6 +813,7 @@ function IncidentEditor({
   };
   const form = (
     <form
+      ref={formRef}
       className="form-body"
       noValidate
       onSubmit={(e) => {
@@ -789,15 +862,30 @@ function IncidentEditor({
       {!incident && <AttachmentPicker draft={draft} />}
       <RecordActions>
         <CancelButton onCancel={onClose} to={'/incidents'} disabled={save.busy} />
-        <button className="btn-primary" disabled={save.busy || draft.busy}>
-          {save.busy
-            ? 'Saving…'
-            : resolving
-              ? 'Resolve incident'
-              : current
-                ? 'Save incident'
-                : 'Create Incident'}
-        </button>
+        {current?.status === 'resolved' && selectedStatus !== 'resolved' ? (
+          <ConfirmDeleteButton
+            className="btn-primary"
+            disabled={save.busy || draft.busy}
+            title="Reopen Incident"
+            confirmation={`Save changes and reopen “${current.title}”? This returns the incident to an active status and may notify responders.`}
+            confirmLabel="Save and Reopen"
+            busyLabel="Saving…"
+            confirmClassName="btn-primary"
+            onConfirm={() => formRef.current.requestSubmit()}
+          >
+            Save incident
+          </ConfirmDeleteButton>
+        ) : (
+          <button className="btn-primary" disabled={save.busy || draft.busy}>
+            {save.busy
+              ? 'Saving…'
+              : resolving
+                ? 'Resolve incident'
+                : current
+                  ? 'Save incident'
+                  : 'Create Incident'}
+          </button>
+        )}
       </RecordActions>
     </form>
   );

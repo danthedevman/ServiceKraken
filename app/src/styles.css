@@ -81,7 +81,7 @@
     @apply block text-sm font-medium text-slate-700 dark:text-slate-300;
   }
   .field-hint {
-    @apply mt-2 block text-xs font-normal leading-5 text-slate-400;
+    @apply mt-2 block text-xs font-normal leading-5 text-slate-500 dark:text-slate-400;
   }
   .badge {
     @apply inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium;
@@ -585,7 +585,7 @@ body:has(.record-main) #main + footer {
 
 /* Reserve the saved rail width even while a record's initial data is loading. */
 @media (min-width: 1200px) {
-  main.record-main {
+  main.record-main[data-record-collapsed] {
     margin-right: 20rem;
   }
   main.record-main[data-record-collapsed='true'] {
@@ -1322,15 +1322,44 @@ a.btn-danger:hover,
 
 /* Breadcrumbs and actions sit outside the scrolling content, including wrapped mobile controls. */
 .record-sticky-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 25;
   padding: 1rem;
   padding-top: 0.75rem;
-  background: #f7f9fa;
+  background: var(--app-background);
   border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  overflow-x: auto;
+}
+
+/* The breadcrumb is the single page title; reading-document titles remain in the content. */
+#main:has(nav[aria-label='Breadcrumb']) .page-title {
+  display: none;
+}
+@media (min-width: 1200px) {
+  .record-sticky-header,
+  .record-sidebar-header {
+    height: 4.5rem;
+    min-height: 4.5rem;
+    padding-block: 0.75rem;
+  }
+  .record-sticky-header {
+    flex-wrap: nowrap;
+  }
+  .record-sticky-header > nav {
+    min-width: 0;
+  }
+  .record-sticky-header > div {
+    flex-shrink: 0;
+  }
 }
 [data-theme='dark'] .record-sticky-header {
-  background: #020617;
+  background: var(--app-background);
   border-bottom-color: #334155;
 }
 @media (min-width: 1024px) {
@@ -1392,4 +1421,428 @@ a.btn-danger:hover,
 /* Selected tabs render in their final state; preference restoration must not animate the highlight. */
 .record-tabs > [role='tablist'] > [role='tab'] {
   transition: none;
+}
+
+/* Lanes fill the available page and grow naturally with their cards. */
+.task-board-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.task-board-toolbar {
+  flex-shrink: 0;
+  padding: 1.5rem;
+}
+.task-board-toolbar > * + * {
+  margin-top: 1rem;
+}
+.task-board {
+  display: grid;
+  grid-template-columns: repeat(var(--task-lane-count, 4), minmax(16rem, 1fr));
+  gap: 1rem;
+  flex: 1 0 auto;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 0 1.5rem 1.5rem;
+  align-items: stretch;
+}
+.task-lane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: visible;
+}
+.task-lane > header,
+.task-lane > footer {
+  flex-shrink: 0;
+}
+.task-lane-cards {
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+}
+@media (max-width: 767px) {
+  .task-board-toolbar {
+    padding: 1rem;
+  }
+  .task-board {
+    padding: 0 1rem 1rem;
+  }
+}
+.task-lane-over {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+.task-card {
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  background: #f8fafc;
+  padding: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.task-card[draggable='true'] {
+  cursor: grab;
+}
+[data-theme='dark'] .task-card {
+  border-color: #475569;
+  background: #0f172a;
+}
+
+/* Static outlines and insertion bars make drag targets clear without layout animation. */
+.task-lane {
+  position: relative;
+}
+.task-dropzone {
+  outline: 1px dashed #2563eb;
+  outline-offset: -1px;
+}
+.task-drag-source {
+  opacity: 0.45;
+}
+.task-lane-drop-before {
+  box-shadow: -5px 0 0 #2563eb;
+}
+.task-lane-drop-after {
+  box-shadow: 5px 0 0 #2563eb;
+}
+.task-card-drop-before {
+  box-shadow: 0 -5px 0 #2563eb;
+}
+.task-card-drop-after {
+  box-shadow: 0 5px 0 #2563eb;
+}
+.task-drop-hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 0.5rem;
+  background: #1d4ed8;
+  color: white;
+  font-size: 0.75rem;
+  text-align: center;
+  pointer-events: none;
+}
+.task-lane header[draggable='true'] {
+  cursor: grab;
+}
+
+.knowledge-reader {
+  max-width: 54rem;
+  margin: 0 auto;
+}
+.knowledge-reader-header {
+  padding: 1.5rem 0 2rem;
+  border-bottom: 1px solid var(--color-slate-200);
+}
+.knowledge-reader-header h1 {
+  margin: 1rem 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+.knowledge-type {
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  background: var(--color-blue-50);
+  color: var(--color-blue-800);
+  font-weight: 600;
+}
+.knowledge-summary {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  margin-bottom: 1rem;
+  color: var(--color-slate-600);
+}
+.knowledge-reading-content {
+  padding: 2rem 0;
+  font-size: 1rem;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+.knowledge-reading-content h2 {
+  font-size: 1.5rem;
+  font-weight: 650;
+  margin: 2rem 0 1rem;
+}
+.runbook-process {
+  list-style: none;
+  padding: 0;
+}
+.runbook-process li {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--color-slate-200);
+}
+.runbook-step-number {
+  display: grid;
+  place-items: center;
+  align-self: start;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: var(--color-blue-700);
+  color: white;
+  font-weight: 600;
+}
+.runbook-process h3 {
+  font-size: 1.125rem;
+  font-weight: 650;
+  margin-bottom: 0.5rem;
+}
+.knowledge-additional dt {
+  font-weight: 600;
+}
+.knowledge-additional dl > div {
+  margin-bottom: 1rem;
+}
+[data-theme='dark'] .knowledge-reader-header,
+[data-theme='dark'] .runbook-process li {
+  border-color: var(--color-slate-700);
+}
+[data-theme='dark'] .knowledge-summary {
+  color: var(--color-slate-300);
+}
+[data-theme='dark'] .knowledge-type {
+  background: var(--color-blue-950);
+  color: var(--color-blue-200);
+}
+
+:root {
+  --app-background-light: #f4f7fb;
+  --app-background-dark: #0c1524;
+  --app-background: var(--app-background-light);
+}
+:root[data-theme='dark'] {
+  --app-background: var(--app-background-dark);
+}
+body {
+  background-color: var(--app-background);
+}
+.theme-choice {
+  outline: 1px solid var(--color-slate-300);
+}
+.theme-choice-selected {
+  outline: 2px solid var(--color-blue-700);
+}
+.theme-choice:focus-within {
+  outline: 3px solid var(--color-blue-600);
+  outline-offset: 2px;
+}
+.theme-choice input[type='radio'] {
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--color-blue-700);
+}
+:root[data-text-scale='large'] {
+  font-size: 18px;
+}
+:root[data-text-scale='larger'] {
+  font-size: 20px;
+}
+:root[data-contrast='high'] {
+  --color-slate-500: #334155 !important;
+  --color-slate-400: #475569 !important;
+}
+:root[data-contrast='high'][data-theme='dark'] {
+  --color-slate-500: #cbd5e1 !important;
+  --color-slate-400: #e2e8f0 !important;
+}
+[data-contrast='high'] :is(input, textarea, select, .select-trigger, .panel, .btn-secondary) {
+  outline: 1px solid currentColor;
+}
+[data-reduce-motion='true'] *,
+[data-reduce-motion='true'] *::before,
+[data-reduce-motion='true'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+.record-sticky-header > nav {
+  min-width: 0;
+  flex: 1;
+}
+.record-sticky-header > div {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.record-sticky-header .form-actions {
+  margin: 0;
+  padding: 0;
+}
+.record-sticky-header nav ol {
+  flex-wrap: nowrap;
+}
+
+/* Keep list and form actions compact, with a consistent target and visible focus. */
+#main :is(.btn-primary, .btn-secondary, .btn-danger),
+.modal :is(.btn-primary, .btn-secondary, .btn-danger) {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+#main :is(.btn-primary, .btn-secondary, .btn-danger) > svg {
+  width: 1rem;
+  height: 1rem;
+}
+#main .record-sticky-header .form-actions {
+  border-top: 0;
+}
+
+.record-sticky-header :is(.form-actions, header, header > div) {
+  flex-wrap: nowrap;
+}
+
+@media (min-width: 768px) {
+  .record-main > .record-scroll-area {
+    overflow-y: auto;
+  }
+}
+
+.record-sticky-header.dashboard-header {
+  padding-inline: 0;
+  border-bottom: 0;
+}
+.dashboard-header > div {
+  width: 100%;
+}
+
+/* Subtle field outlines distinguish controls from both light and dark surfaces. */
+:is(
+  input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select,
+  .select-trigger,
+  .history-select,
+  .reference-control,
+  .rich-editor-field
+) {
+  border: 1px solid #cbd5e1;
+}
+[data-theme='dark']
+  :is(
+    input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']),
+    textarea,
+    select,
+    .select-trigger,
+    .history-select,
+    .reference-control,
+    .rich-editor-field
+  ) {
+  border-color: #475569;
+}
+.reference-control input:not([type='checkbox']),
+.record-sidebar .reference-control input:not([type='checkbox']) {
+  border: 0;
+}
+
+/* Composite controls own one outline; their native/internal fields have no second border. */
+.reference-control
+  input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='range']) {
+  border: 0;
+  box-shadow: none;
+}
+.custom-select > select[aria-hidden='true'] {
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.custom-select {
+  border: 0;
+}
+.reference-options {
+  inset: auto;
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+}
+
+/* Shell headers begin at the navigation top; padding belongs inside the content region. */
+.page-main {
+  min-height: 100dvh;
+  width: 100%;
+  min-width: 0;
+}
+.page-scroll-area {
+  padding: 1rem;
+}
+.record-sticky-header.dashboard-header {
+  padding-inline: 1rem;
+}
+@media (min-width: 1024px) {
+  .page-scroll-area,
+  .record-sticky-header.dashboard-header {
+    padding-inline: 1.5rem;
+  }
+  .page-scroll-area {
+    padding-block: 1.5rem;
+  }
+}
+.custom-select > select[aria-hidden='true'] {
+  border: 0 !important;
+  padding: 0;
+  box-shadow: none;
+}
+
+.status-colour-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  max-width: 32rem;
+}
+.status-colour-control > input {
+  margin: 0;
+  flex: 1;
+  width: 8rem;
+  min-width: 6rem;
+  font-family: ui-monospace, monospace;
+}
+.status-colour-swatch {
+  display: block;
+  width: 3rem;
+  flex-shrink: 0;
+}
+.status-colour-swatch input[type='color'] {
+  width: 3rem;
+  height: 3rem;
+  margin: 0;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+.status-colour-swatch input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.status-colour-swatch input::-webkit-color-swatch {
+  border: 0;
+  border-radius: 0.2rem;
+}
+.status-colour-swatch input::-moz-color-swatch {
+  border: 0;
+  border-radius: 0.2rem;
+}
+.status-colour-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 32rem;
+  padding: 1.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
 }

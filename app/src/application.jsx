@@ -1,3 +1,4 @@
+import { KnowledgeBasesPage, KnowledgeBasePage } from './features/work/knowledge-bases.jsx';
 import { HelpPage } from './features/help/help.jsx';
 import { Toasts } from './components/toasts.jsx';
 import { AuditPage } from './features/settings/audit.jsx';
@@ -11,6 +12,7 @@ import { IncidentBuilderPage } from './features/forms/incident-builder.jsx';
 import { WorkspacePage, JoinPage } from './features/workspace/workspace.jsx';
 import { OnCallPage } from './features/workspace/on-call.jsx';
 import { IntegrationsPage } from './features/integrations/integrations.jsx';
+import { AIProviderPage } from './features/ai/ai.jsx';
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './data/query-client.js';
@@ -222,7 +224,20 @@ export function App() {
                   }
                 />
                 <Route path="tasks/:id" element={<WorkDetail key="task" />} />
-                <Route path="knowledge" element={<WorkPage key="knowledge" kind="knowledge" />} />
+                <Route path="knowledge" element={<KnowledgeBasesPage />} />
+                <Route
+                  path="knowledge/bases/new"
+                  element={
+                    <ResponderOnly>
+                      <KnowledgeBasePage create />
+                    </ResponderOnly>
+                  }
+                />
+                <Route path="knowledge/bases/:id" element={<KnowledgeBasePage />} />
+                <Route
+                  path="knowledge/articles"
+                  element={<WorkPage key="knowledge" kind="knowledge" />}
+                />
                 <Route
                   path="knowledge/:id"
                   element={<WorkDetail key="article" kind="knowledge" />}
@@ -241,6 +256,7 @@ export function App() {
                 <Route path="incidents/:id" element={<IncidentPage />} />
                 <Route path="on-call" element={<OnCallPage />} />
                 <Route path="integrations" element={<IntegrationsPage />} />
+                <Route path="integrations/ai" element={<AIProviderPage />} />
                 <Route path="workspace" element={<WorkspacePage />} />
                 <Route path="monitors" element={<MonitorList />} />
                 <Route path="profile" element={<ProfilePage />} />

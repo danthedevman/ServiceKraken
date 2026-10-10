@@ -9,11 +9,10 @@ import { integrationUrl } from '../shared/integrations/provider-url.js';
 import { sendNotification } from '../workers/src/notifications/send.js';
 
 const id = () => new ObjectId().toHexString();
-test('built-in settings are locked while custom fields remain configurable', () => {
+test('System Field labels are configurable while types and required settings stay locked', () => {
   assert.throws(() => validateFields(BUILTIN_FIELDS.slice(1)), /cannot be removed/);
   for (const change of [
     { required: false },
-    { label: 'Changed' },
     { archived: true },
     { type: 'text' },
     { choices: [] },
@@ -28,6 +27,12 @@ test('built-in settings are locked while custom fields remain configurable', () 
   }
   assert.deepEqual(validateFields([...BUILTIN_FIELDS].reverse()), [...BUILTIN_FIELDS].reverse());
   assert.deepEqual(validateFields(BUILTIN_FIELDS), BUILTIN_FIELDS);
+  assert.equal(
+    validateFields(
+      BUILTIN_FIELDS.map((field, index) => (index ? field : { ...field, label: 'Summary' })),
+    )[0].label,
+    'Summary',
+  );
   const custom = {
     id: id(),
     label: 'Environment',

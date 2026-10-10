@@ -69,7 +69,12 @@ export function installSearchRoute(app, db) {
       limited ? { _id: req.user._id } : memberFilter(workspaceId),
       ['displayName', 'email'],
       'User',
-      req.role === 'admin' ? () => '/workspace' : null,
+      (row) =>
+        req.role === 'admin'
+          ? `/workspace/${row._id}`
+          : String(row._id) === String(req.user._id)
+            ? '/profile'
+            : undefined,
     );
     if (!limited) {
       search(
@@ -117,7 +122,7 @@ export function installSearchRoute(app, db) {
                         type: name,
                         title: row.name,
                         label: name === 'services' ? 'Service' : 'Collection',
-                        href: `/${name}?view=${row.id}`,
+                        href: `/${name}/${row.id}`,
                       })),
               ),
             ),
@@ -140,7 +145,7 @@ export function installSearchRoute(app, db) {
                   type: 'groups',
                   title: row.name,
                   label: 'Group',
-                  href: '/groups',
+                  href: `/groups/${row.id}`,
                 })),
             ),
         );

@@ -13,7 +13,6 @@ import { Field, Notice } from '../../components/forms/fields.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
 import { useSave } from '../../data/use-save.js';
 import { displayValue } from '../../lib/display-value.js';
-import { ThemeToggle } from '../../preferences/theme.jsx';
 import { USER_DETAIL_FIELDS, userDetails } from '../../../../shared/domain/user-details.js';
 
 /** One directory record layout for profiles and workspace members; private controls are self-only. */
@@ -77,10 +76,6 @@ export function UserRecord({ member }) {
       </p>
       {own && !editing && (
         <section className="mt-8 space-y-5 border-t border-slate-200 pt-6 dark:border-slate-700">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Appearance</span>
-            <ThemeToggle />
-          </div>
           <PrivateProfileSettings member={member} />
         </section>
       )}

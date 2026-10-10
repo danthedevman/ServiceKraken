@@ -40,7 +40,9 @@ export function infiniteResourceOptions(path, account) {
     queryFn: ({ signal, pageParam }) =>
       api(`${path}${path.includes('?') ? '&' : '?'}page=${pageParam}`, { signal }),
     getNextPageParam: (lastPage, _pages, lastPageParam) =>
-      lastPage.hasMore ? lastPageParam + 1 : undefined,
+      (lastPage.hasMore ?? lastPage.page * lastPage.pageSize < lastPage.total)
+        ? lastPageParam + 1
+        : undefined,
   };
 }
 

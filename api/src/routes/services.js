@@ -1,3 +1,4 @@
+import { statusBackground } from '@servicetrident/shared/status/appearance';
 import { healthPolicy } from '@servicetrident/shared/domain/service-health';
 import { publicOrigin, subscriptionMailer } from '@servicetrident/shared/status/subscriptions';
 import { installStatusIconRoutes } from './status-icon.js';
@@ -280,6 +281,7 @@ export function installServiceRoutes(app, db) {
       subscriptionIntegrationId: data.subscriptionIntegrationId ?? '',
       publicOrigin: data.publicOrigin || process.env.APP_ORIGIN || 'http://127.0.0.1:8090',
       visibility: data.visibility,
+      backgroundColor: data.backgroundColor ?? null,
       publicPath: `/status/public/${data.publicToken}`,
       revision: data.revision,
       banner: data.banner ?? { enabled: false, level: 'info', text: '' },
@@ -292,6 +294,8 @@ export function installServiceRoutes(app, db) {
     const data = await catalog(db, req.workspaceId);
     if (req.body.revision !== undefined && req.body.revision !== data.revision)
       throw new InputError('Status settings changed. Reload before saving.', 409);
+    if (req.body.backgroundColor !== undefined)
+      data.backgroundColor = statusBackground(req.body.backgroundColor);
     if (req.body.banner !== undefined) data.banner = statusMessage(req.body.banner);
     if (req.body.serviceMessages !== undefined) {
       const messages = req.body.serviceMessages;
@@ -365,6 +369,7 @@ export function installServiceRoutes(app, db) {
       subscriptionIntegrationId: data.subscriptionIntegrationId ?? '',
       publicOrigin: data.publicOrigin || process.env.APP_ORIGIN || 'http://127.0.0.1:8090',
       visibility: data.visibility,
+      backgroundColor: data.backgroundColor ?? null,
       publicPath: `/status/public/${data.publicToken}`,
       revision: data.revision,
       banner: data.banner ?? { enabled: false, level: 'info', text: '' },

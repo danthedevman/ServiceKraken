@@ -1,10 +1,12 @@
+import { ConfirmDeleteButton } from '../../components/confirm-delete-button.jsx';
+import { DateTime } from '../../preferences/date-time.jsx';
 import { notify } from '../../data/toast.js';
 import { FormSkeleton, Skeleton } from '../../components/skeleton.jsx';
 import { Select } from '../../components/forms/select.jsx';
 import { TableSearch } from '../../components/table-search.jsx';
 import { StateBadge } from '../../components/state-badge.jsx';
 import { mandatoryErrors } from '../../../../shared/forms/schema.js';
-import { RecordActions } from '../../components/record-actions.jsx';
+import { RecordActions, RecordHeader } from '../../components/record-actions.jsx';
 import { RecordTabs } from '../../components/record-tabs.jsx';
 import { CancelButton } from '../../components/forms/cancel-button.jsx';
 import {
@@ -25,6 +27,7 @@ import {
   embeddedImageIds,
   validateRichContent,
 } from '../../../../shared/files/rich-content.js';
+import { AIAssistant } from '../ai/ai.jsx';
 import { ReferenceField } from '../../components/forms/reference-field.jsx';
 import { fieldChoices, recordFields } from '../../../../shared/forms/form-options.js';
 import { displayValue } from '../../lib/display-value.js';
@@ -39,6 +42,8 @@ import { downloadCsv } from '../../lib/csv-download.js';
 import { AutoTextarea } from '../../components/forms/auto-textarea.jsx';
 import { Field, CustomField, Notice } from '../../components/forms/fields.jsx';
 import { useSave } from '../../data/use-save.js';
+import { TaskBoard } from './task-board.jsx';
+import { ReferenceValue } from '../../components/reference-value.jsx';
 
 const RichEditor = lazy(() =>
   import('../files/rich-editor.jsx').then((module) => ({ default: module.RichEditor })),
@@ -58,10 +63,18 @@ export function WorkPage({ kind = 'tasks' }) {
     next.delete('create');
     return <Navigate replace to={`/${kind}/new?${next}`} />;
   }
+  if (kind === 'tasks' && !['list', 'archived'].includes(params.get('view')))
+    return (
+      <TaskBoard
+        serviceId={params.get('serviceId') ?? ''}
+        incidentId={params.get('incidentId') ?? ''}
+      />
+    );
   return (
     <WorkTable
       fullPage
       kind={kind}
+      archived={kind === 'tasks' && params.get('view') === 'archived'}
       initialServiceId={params.get('serviceId') ?? ''}
       initialIncidentId={params.get('incidentId') ?? ''}
     />
@@ -77,11 +90,13 @@ export function WorkCreatePage({ kind = 'tasks' }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="page-title">Create {kind === 'tasks' ? 'Task' : 'Knowledge Article'}</h1>
         {user?.role === 'admin' && (
-          <ActionMenu label="Form actions">
-            <Link className="btn-secondary" to={`/${kind}/fields`}>
-              Form builder
-            </Link>
-          </ActionMenu>
+          <RecordHeader>
+            <ActionMenu label="Form actions">
+              <Link className="btn-secondary" to={`/${kind}/fields`}>
+                Form builder
+              </Link>
+            </ActionMenu>
+          </RecordHeader>
         )}
       </div>
       <WorkEditor
@@ -101,9 +116,11 @@ export function WorkTable({
   kind = 'tasks',
   initialServiceId = '',
   initialIncidentId = '',
+  initialKnowledgeBaseId = '',
   create = false,
   onCreateClose,
   related = false,
+  archived = false,
 }) {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext),
@@ -124,9 +141,10 @@ export function WorkTable({
   const query = new URLSearchParams({
     searchColumn,
     search,
-    status,
+    status: archived ? 'archived' : status,
     serviceId,
     incidentId: initialIncidentId,
+    knowledgeBaseId: initialKnowledgeBaseId,
     page,
     pageSize,
     sortBy,
@@ -204,22 +222,41 @@ export function WorkTable({
       <DataTable
         deletePath={`/${kind}`}
         fullPage={fullPage}
+        secondaryActions={
+          task &&
+          fullPage && (
+            <>
+              <Link
+                className="btn-secondary"
+                to={`/tasks?${new URLSearchParams({ serviceId, incidentId: initialIncidentId })}`}
+              >
+                Board View
+              </Link>
+              <Link
+                className="btn-secondary"
+                to={`/tasks?${new URLSearchParams({ serviceId, incidentId: initialIncidentId, view: archived ? 'list' : 'archived' })}`}
+              >
+                {archived ? 'Active Tasks' : 'Archived Tasks'}
+              </Link>
+            </>
+          )
+        }
         actions={
           canEdit && (
             <button
               className="btn-primary gap-2"
               onClick={() =>
                 navigate(
-                  `/${kind}/new?${new URLSearchParams({ serviceId, incidentId: initialIncidentId })}`,
+                  `/${kind}/new?${new URLSearchParams({ serviceId, incidentId: initialIncidentId, knowledgeBaseId: initialKnowledgeBaseId })}`,
                 )
               }
             >
-              <PlusIcon className="h-5 w-5" />
+              <PlusIcon className="h-5 w-5" aria-hidden="true" />
               Create
             </button>
           )
         }
-        title={task ? 'Tasks' : 'Knowledge'}
+        title={task ? (archived ? 'Archived Tasks' : 'Tasks') : 'Knowledge'}
         rows={resource.data?.items ?? []}
         columns={columns}
         rowKey={(r) => r.id}
@@ -258,17 +295,24 @@ export function WorkTable({
                 setPage(1);
               }}
             />
-            <label className="field-label">
-              Status
-              <Select value={status} onChange={change(setStatus)}>
-                <option value="">All active statuses</option>
-                {(task ? TASK_STATUSES : ARTICLE_STATUSES).map((v) => (
-                  <option key={v} value={v}>
-                    {label(v)}
-                  </option>
-                ))}
-              </Select>
-            </label>
+            {!archived && (
+              <label className="field-label">
+                Status
+                <Select value={status} onChange={change(setStatus)}>
+                  <option value="">All active statuses</option>
+                  {(task && fullPage
+                    ? TASK_STATUSES.filter((v) => v !== 'archived')
+                    : task
+                      ? TASK_STATUSES
+                      : ARTICLE_STATUSES
+                  ).map((v) => (
+                    <option key={v} value={v}>
+                      {label(v)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            )}
             {!related && (
               <label className="field-label">
                 Service
@@ -357,6 +401,7 @@ export function WorkDetail({ kind = 'tasks' }) {
             }
           >
             {task && <AttachmentLinks kind="tasks" recordId={item.id} />}
+            {task && !editing && <AIAssistant action="summary" kind="tasks" id={item.id} />}
             {canEdit && editing ? (
               <WorkEditor
                 key={`${id}-${formVersion}`}
@@ -364,8 +409,20 @@ export function WorkDetail({ kind = 'tasks' }) {
                 item={item}
                 onClose={resetForm}
               />
+            ) : !task ? (
+              <KnowledgeReader item={item} />
             ) : (
               <article className="record-details space-y-6">
+                {!task && (
+                  <Field label="Knowledge Base">
+                    <ReferenceValue
+                      type="knowledgeBases"
+                      id={item.knowledgeBaseId}
+                      label={item.knowledgeBaseTitle}
+                      empty="Unassigned legacy article"
+                    />
+                  </Field>
+                )}
                 <dl className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
                     <dt>Title</dt>
@@ -390,16 +447,11 @@ export function WorkDetail({ kind = 'tasks' }) {
                   <div>
                     <dt className="font-medium">Service</dt>
                     <dd>
-                      {item.serviceId ? (
-                        <Link
-                          className="text-blue-700 dark:text-blue-300"
-                          to={`/services/${item.serviceId}`}
-                        >
-                          {item.serviceName}
-                        </Link>
-                      ) : (
-                        'Unassigned'
-                      )}
+                      <ReferenceValue
+                        type="services"
+                        id={item.serviceId}
+                        label={item.serviceName}
+                      />
                     </dd>
                   </div>
                   {task && (
@@ -407,25 +459,32 @@ export function WorkDetail({ kind = 'tasks' }) {
                       <div>
                         <dt className="font-medium">Incident</dt>
                         <dd>
-                          {item.incidentId ? (
-                            <Link
-                              className="text-blue-700 dark:text-blue-300"
-                              to={`/incidents/${item.incidentId}`}
-                            >
-                              {item.incidentTitle}
-                            </Link>
-                          ) : (
-                            'Unassigned'
-                          )}
+                          <ReferenceValue
+                            type="incidents"
+                            id={item.incidentId}
+                            label={item.incidentTitle}
+                          />
                         </dd>
                       </div>
                       <div>
                         <dt className="font-medium">Assignment group</dt>
-                        <dd>{item.assignmentGroupName || 'Unassigned'}</dd>
+                        <dd>
+                          <ReferenceValue
+                            type="groups"
+                            id={item.assignmentGroupId}
+                            label={item.assignmentGroupName}
+                          />
+                        </dd>
                       </div>
                       <div>
                         <dt className="font-medium">Assigned to</dt>
-                        <dd>{item.assigneeName || 'Unassigned'}</dd>
+                        <dd>
+                          <ReferenceValue
+                            type="members"
+                            id={item.assigneeId}
+                            label={item.assigneeName}
+                          />
+                        </dd>
                       </div>
                       <div>
                         <dt className="font-medium">Due date</dt>
@@ -571,7 +630,9 @@ function WorkForm({
   save,
   schema,
 }) {
+  const [params] = useSearchParams();
   const [clientErrors, setClientErrors] = useState({});
+  const [contentVersion, setContentVersion] = useState(0);
   const errors = { ...save.fields, ...clientErrors };
   const task = kind === 'tasks',
     navigate = useNavigate();
@@ -584,7 +645,15 @@ function WorkForm({
     return (
       options.find(
         (row) =>
-          !row.hidden && row.base === (field === 'status' ? (task ? 'todo' : 'draft') : 'medium'),
+          !row.hidden &&
+          row.base ===
+            (field === 'status'
+              ? task
+                ? 'todo'
+                : 'draft'
+              : field === 'articleType'
+                ? 'article'
+                : 'medium'),
       )?.value ||
       options.find((row) => !row.hidden)?.value ||
       ''
@@ -605,10 +674,19 @@ function WorkForm({
           incidentId: item?.incidentId ?? initialIncidentId,
         }
       : {
+          articleTypeOption: item?.articleTypeOption ?? item?.articleType ?? 'article',
+          steps: item?.steps ?? [],
+          knowledgeBaseId: item?.knowledgeBaseId ?? params.get('knowledgeBaseId') ?? '',
           summary: item?.summary ?? '',
           contentDocument: item?.contentDocument ?? textDocument(item?.content ?? ''),
         }),
   }));
+  const runbook =
+    !task &&
+    fieldChoices(
+      'knowledge',
+      schema.find((field) => field.id === 'articleType') ?? { id: 'articleType' },
+    ).find((option) => option.value === value.articleTypeOption)?.base === 'runbook';
   const [revision] = useState(item?.revision),
     [incidentSearch, setIncidentSearch] = useState('');
   const choices = useResource(
@@ -627,6 +705,7 @@ function WorkForm({
       }
       key={field.id}
       label={field.label + (field.required ? ' *' : '')}
+      helpText={field.helpText}
       options={options}
       value={selectedValue}
       onChange={change}
@@ -665,6 +744,7 @@ function WorkForm({
           key={name}
           referenceType="groups"
           label={field.label + (field.required ? ' *' : '')}
+          helpText={field.helpText}
           value={value.assignmentGroupId}
           onChange={(next) =>
             setValue((old) => ({ ...old, assignmentGroupId: next, assigneeId: '' }))
@@ -705,8 +785,8 @@ function WorkForm({
       return (
         <section key={name} className="space-y-2">
           <h2 className="field-label">
-            {field.label}
-            {field.required ? ' *' : ''}
+            {runbook ? 'Introduction (optional)' : field.label}
+            {!runbook && field.required ? ' *' : ''}
           </h2>
           <Suspense
             fallback={
@@ -716,7 +796,9 @@ function WorkForm({
             }
           >
             <RichEditor
+              key={contentVersion}
               label={field.label}
+              helpText={field.helpText}
               value={value.contentDocument}
               onChange={(document) => set('contentDocument', document)}
               uploadImage={(file) => draft.upload(file, { inline: true })}
@@ -727,7 +809,7 @@ function WorkForm({
         </section>
       );
     let input;
-    if (name === 'status' || name === 'priority') {
+    if (name === 'status' || name === 'priority' || name === 'articleType') {
       const options = fieldChoices(kind, field),
         key = `${name}Option`,
         chosen = value[key];
@@ -771,6 +853,7 @@ function WorkForm({
         key={name}
         name={name}
         label={field.label + (field.required ? ' *' : '')}
+        helpText={field.helpText}
         errors={errors}
       >
         {input}
@@ -793,9 +876,22 @@ function WorkForm({
           notify(error.message, 'error');
           return;
         }
+        if (
+          runbook &&
+          (!value.steps.length ||
+            value.steps.some((step) => !step.title.trim() || !step.instructions.trim()))
+        ) {
+          setClientErrors({ steps: 'Add a title and instructions to at least one runbook step.' });
+          return;
+        }
         const required = mandatoryErrors(schema, {
           ...value,
-          content,
+          content: runbook
+            ? [content, ...value.steps.map((step) => `${step.title} ${step.instructions}`)].join(
+                '\n',
+              )
+            : content,
+          articleType: value.articleTypeOption,
           status: value.statusOption,
           priority: value.priorityOption,
         });
@@ -828,7 +924,127 @@ function WorkForm({
         }
       />
 
+      {!task && (
+        <ReferenceField
+          label="Knowledge Base"
+          error={errors.knowledgeBaseId}
+          referenceType="knowledgeBases"
+          value={value.knowledgeBaseId}
+          onChange={(next) => set('knowledgeBaseId', next)}
+        />
+      )}
       {layout.map(control)}
+      {!task && (
+        <AIAssistant
+          action="draft"
+          articleType={runbook ? 'runbook' : 'article'}
+          onDraft={(generated) => {
+            setContentVersion((version) => version + 1);
+            setValue((old) => ({
+              ...old,
+              title: generated.title,
+              summary: generated.summary,
+              contentDocument: textDocument(generated.content),
+              steps: generated.steps,
+            }));
+          }}
+        />
+      )}
+      {runbook && (
+        <section className="space-y-4" aria-label="Runbook steps">
+          <h2 className="text-lg font-semibold">Runbook Steps</h2>
+          {errors.steps && (
+            <p role="alert" className="text-rose-700 dark:text-rose-400">
+              {errors.steps}
+            </p>
+          )}
+          {value.steps.map((step, index) => (
+            <fieldset key={index} className="panel space-y-3 p-4">
+              <legend className="font-semibold">Step {index + 1}</legend>
+              <label className="field-label block">
+                Step Title
+                <input
+                  required
+                  maxLength={160}
+                  value={step.title}
+                  onChange={(event) =>
+                    set(
+                      'steps',
+                      value.steps.map((old, at) =>
+                        at === index ? { ...old, title: event.target.value } : old,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <label className="field-label block">
+                Instructions
+                <AutoTextarea
+                  aria-label="Instructions"
+                  required
+                  maxLength={5000}
+                  value={step.instructions}
+                  onChange={(event) =>
+                    set(
+                      'steps',
+                      value.steps.map((old, at) =>
+                        at === index ? { ...old, instructions: event.target.value } : old,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={index === 0}
+                  onClick={() => {
+                    const steps = [...value.steps];
+                    [steps[index - 1], steps[index]] = [steps[index], steps[index - 1]];
+                    set('steps', steps);
+                  }}
+                >
+                  Move Step Up
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={index === value.steps.length - 1}
+                  onClick={() => {
+                    const steps = [...value.steps];
+                    [steps[index + 1], steps[index]] = [steps[index], steps[index + 1]];
+                    set('steps', steps);
+                  }}
+                >
+                  Move Step Down
+                </button>
+                <ConfirmDeleteButton
+                  className="btn-danger"
+                  confirmation={`Remove step “${step.title || `Step ${index + 1}`}” and its instructions?`}
+                  onConfirm={() =>
+                    set(
+                      'steps',
+                      value.steps.filter((_, at) => at !== index),
+                    )
+                  }
+                >
+                  Remove Step
+                </ConfirmDeleteButton>
+              </div>
+            </fieldset>
+          ))}
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={value.steps.length >= 30}
+            onClick={() => set('steps', [...value.steps, { title: '', instructions: '' }])}
+          >
+            Add Step
+          </button>
+        </section>
+      )}
+
       {!item && (
         <AttachmentPicker draft={draft} imageIds={embeddedImageIds(value.contentDocument)} />
       )}
@@ -842,5 +1058,75 @@ function WorkForm({
         </button>
       </RecordActions>
     </form>
+  );
+}
+
+/** Reading layout keeps article typography and numbered process steps separate from edit controls. */
+function KnowledgeReader({ item }) {
+  const runbook = item.articleType === 'runbook';
+  return (
+    <article className="knowledge-reader">
+      <header className="knowledge-reader-header">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="knowledge-type">
+            {item.articleTypeLabel || (runbook ? 'Runbook' : 'Article')}
+          </span>
+          <ReferenceValue
+            type="knowledgeBases"
+            id={item.knowledgeBaseId}
+            label={item.knowledgeBaseTitle}
+            empty="Unassigned legacy article"
+          />
+        </div>
+        <h1>{item.title}</h1>
+        {item.summary && <p className="knowledge-summary">{item.summary}</p>}
+        <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+          {item.updatedAt && (
+            <span>
+              Updated <DateTime value={item.updatedAt} />
+            </span>
+          )}
+          {item.serviceId && (
+            <ReferenceValue type="services" id={item.serviceId} label={item.serviceName} />
+          )}
+        </div>
+      </header>
+      <div className="knowledge-reading-content">
+        <Suspense fallback={<p role="status">Loading article…</p>}>
+          <ArticleContent document={item.contentDocument} text={runbook ? '' : item.content} />
+        </Suspense>
+        {runbook && (
+          <section aria-label="Runbook process">
+            <h2>Step-by-Step Process</h2>
+            <ol className="runbook-process">
+              {item.steps?.map((step, index) => (
+                <li key={index}>
+                  <span className="runbook-step-number" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3>{step.title}</h3>
+                    <p className="whitespace-pre-wrap">{step.instructions}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+        {item.fields?.length > 0 && (
+          <section className="knowledge-additional">
+            <h2>Additional Information</h2>
+            <dl>
+              {item.fields.map((field) => (
+                <div key={field.id}>
+                  <dt>{field.label}</dt>
+                  <dd>{String(item.custom?.[field.id] ?? '—')}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+      </div>
+    </article>
   );
 }

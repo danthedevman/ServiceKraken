@@ -13,7 +13,9 @@ export const RecordActionContext = createContext(null);
 
 /** Move existing form actions into the record toolbar while preserving native form submission. */
 export function RecordActions({ children }) {
-  const toolbar = useContext(RecordActionContext);
+  const recordToolbar = useContext(RecordActionContext);
+  const pageToolbar = useContext(RecordHeaderContext);
+  const toolbar = recordToolbar ?? pageToolbar;
   const anchor = useRef(null);
   const generatedId = useId();
   const [formId, setFormId] = useState(null);
